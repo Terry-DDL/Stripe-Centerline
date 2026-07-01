@@ -1,12 +1,17 @@
-"""Run the first reference-line and ROI debug-image pipeline."""
+"""Run the ROI selection and preprocessing debug-image pipeline."""
 
 from config import CONFIG
 from image_processing import (
+    apply_vertical_close_roi,
     calculate_reference_point_global,
     calculate_roi_bounds_global,
+    create_black_mask_roi,
+    create_close_delta_roi,
     create_original_with_centerline,
+    create_otsu_binary_roi,
     create_roi_debug_image,
     crop_roi_global,
+    gaussian_blur_roi,
     load_grayscale_image,
     save_debug_image,
     validate_config,
@@ -14,7 +19,7 @@ from image_processing import (
 
 
 def main() -> int:
-    """Create and save the three requested debug images."""
+    """Create and save ROI selection and preprocessing debug images."""
 
     try:
         validate_config(CONFIG)
@@ -33,14 +38,26 @@ def main() -> int:
         roi_debug = create_roi_debug_image(
             image_with_centerline, bounds_global, CONFIG
         )
-        image_roi = crop_roi_global(image_gray, bounds_global)
+        image_gray_roi = crop_roi_global(image_gray, bounds_global)
+        image_blurred_roi = gaussian_blur_roi(image_gray_roi, CONFIG)
+        otsu_binary_roi = create_otsu_binary_roi(image_blurred_roi)
+        vertical_close_roi = apply_vertical_close_roi(otsu_binary_roi, CONFIG)
+        close_delta_roi = create_close_delta_roi(
+            otsu_binary_roi, vertical_close_roi
+        )
+        black_mask_roi = create_black_mask_roi(vertical_close_roi)
 
         CONFIG.output_dir.mkdir(parents=True, exist_ok=True)
         save_debug_image(
             CONFIG.original_with_centerline_path, image_with_centerline
         )
         save_debug_image(CONFIG.roi_debug_path, roi_debug)
-        save_debug_image(CONFIG.roi_crop_path, image_roi)
+        save_debug_image(CONFIG.roi_crop_path, image_gray_roi)
+        save_debug_image(CONFIG.roi_gray_path, image_gray_roi)
+        save_debug_image(CONFIG.otsu_binary_path, otsu_binary_roi)
+        save_debug_image(CONFIG.vertical_close_path, vertical_close_roi)
+        save_debug_image(CONFIG.close_delta_path, close_delta_roi)
+        save_debug_image(CONFIG.black_mask_path, black_mask_roi)
 
         print(f"image shape: {image_gray.shape}")
         print(f"x_ref_global: {x_ref_global}")

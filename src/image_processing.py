@@ -37,6 +37,18 @@ def validate_config(config: ProcessingConfig) -> None:
         raise ValueError("roi_half_width_ratio must be greater than 0.0 and at most 1.0")
     if not 0.0 < config.roi_half_height_ratio <= 1.0:
         raise ValueError("roi_half_height_ratio must be greater than 0.0 and at most 1.0")
+    if len(config.blur_kernel) != 2:
+        raise ValueError("blur_kernel must contain width and height")
+
+    blur_kernel_width, blur_kernel_height = config.blur_kernel
+    if blur_kernel_width <= 0 or blur_kernel_width % 2 == 0:
+        raise ValueError("blur_kernel width must be a positive odd number")
+    if blur_kernel_height <= 0 or blur_kernel_height % 2 == 0:
+        raise ValueError("blur_kernel height must be a positive odd number")
+    if config.close_kernel_width <= 0 or config.close_kernel_width % 2 == 0:
+        raise ValueError("close_kernel_width must be a positive odd number")
+    if config.close_kernel_height <= 0 or config.close_kernel_height % 2 == 0:
+        raise ValueError("close_kernel_height must be a positive odd number")
     if config.line_thickness <= 0:
         raise ValueError("line_thickness must be greater than 0")
 
@@ -137,6 +149,49 @@ def crop_roi_global(image_gray, bounds_global: RoiBoundsGlobal):
     if image_roi.size == 0:
         raise ValueError("Cropped ROI is empty")
     return image_roi
+
+
+def gaussian_blur_roi(image_gray_roi, config: ProcessingConfig):
+    """Smooth small grayscale noise before Otsu thresholding."""
+
+    return cv2.GaussianBlur(image_gray_roi, config.blur_kernel, 0)
+
+
+def create_otsu_binary_roi(image_blurred_roi):
+    """Create a binary mask where bright stripe pixels are white."""
+
+    _, otsu_binary_roi = cv2.threshold(
+        image_blurred_roi,
+        0,
+        255,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+    )
+    return otsu_binary_roi
+
+
+def apply_vertical_close_roi(otsu_binary_roi, config: ProcessingConfig):
+    """Connect short vertical gaps in white stripes."""
+
+    close_kernel = cv2.getStructuringElement(
+        cv2.MORPH_RECT,
+        (config.close_kernel_width, config.close_kernel_height),
+    )
+    return cv2.morphologyEx(otsu_binary_roi, cv2.MORPH_CLOSE, close_kernel)
+
+
+def create_close_delta_roi(otsu_binary_roi, vertical_close_roi):
+    """Keep only white pixels newly filled by the close operation."""
+
+    return cv2.bitwise_and(
+        vertical_close_roi,
+        cv2.bitwise_not(otsu_binary_roi),
+    )
+
+
+def create_black_mask_roi(vertical_close_roi):
+    """Create the black-region mask by inverting the closed white mask."""
+
+    return cv2.bitwise_not(vertical_close_roi)
 
 
 def save_debug_image(output_path: Path, image) -> None:
