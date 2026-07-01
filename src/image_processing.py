@@ -49,6 +49,20 @@ def validate_config(config: ProcessingConfig) -> None:
         raise ValueError("close_kernel_width must be a positive odd number")
     if config.close_kernel_height <= 0 or config.close_kernel_height % 2 == 0:
         raise ValueError("close_kernel_height must be a positive odd number")
+    if config.stripe_search_radius_px <= 0:
+        raise ValueError("stripe_search_radius_px must be greater than 0")
+    if config.min_run_width_px <= 0:
+        raise ValueError("min_run_width_px must be greater than 0")
+    if config.max_run_width_px < config.min_run_width_px:
+        raise ValueError("max_run_width_px must be at least min_run_width_px")
+    if config.center_cluster_tolerance_px <= 0:
+        raise ValueError("center_cluster_tolerance_px must be greater than 0")
+    if config.max_width_deviation_ratio < 0.0:
+        raise ValueError("max_width_deviation_ratio must not be negative")
+    if config.min_width_tolerance_px < 0:
+        raise ValueError("min_width_tolerance_px must not be negative")
+    if not 0.0 < config.min_stripe_support_ratio <= 1.0:
+        raise ValueError("min_stripe_support_ratio must be between 0.0 and 1.0")
     if config.line_thickness <= 0:
         raise ValueError("line_thickness must be greater than 0")
 

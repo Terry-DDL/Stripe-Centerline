@@ -16,6 +16,14 @@ from image_processing import (
     save_debug_image,
     validate_config,
 )
+from stripe_analysis import (
+    analysis_to_dict,
+    analyze_adjacent_stripes,
+    create_adjacent_stripes_result_debug,
+    create_black_run_candidates_debug,
+    create_stripe_center_votes_debug,
+    save_analysis_json,
+)
 
 
 def main() -> int:
@@ -46,6 +54,21 @@ def main() -> int:
             otsu_binary_roi, vertical_close_roi
         )
         black_mask_roi = create_black_mask_roi(vertical_close_roi)
+        x_ref_roi = x_ref_global - bounds_global.x0_global
+        stripe_analysis = analyze_adjacent_stripes(
+            black_mask_roi,
+            x_ref_roi,
+            x_ref_global,
+            bounds_global.x0_global,
+            CONFIG,
+        )
+        black_run_candidates = create_black_run_candidates_debug(
+            black_mask_roi, stripe_analysis, CONFIG
+        )
+        stripe_center_votes = create_stripe_center_votes_debug(stripe_analysis)
+        adjacent_stripes_result = create_adjacent_stripes_result_debug(
+            image_gray_roi, stripe_analysis
+        )
 
         CONFIG.output_dir.mkdir(parents=True, exist_ok=True)
         save_debug_image(
@@ -58,6 +81,12 @@ def main() -> int:
         save_debug_image(CONFIG.vertical_close_path, vertical_close_roi)
         save_debug_image(CONFIG.close_delta_path, close_delta_roi)
         save_debug_image(CONFIG.black_mask_path, black_mask_roi)
+        save_debug_image(CONFIG.black_run_candidates_path, black_run_candidates)
+        save_debug_image(CONFIG.stripe_center_votes_path, stripe_center_votes)
+        save_debug_image(
+            CONFIG.adjacent_stripes_result_path, adjacent_stripes_result
+        )
+        save_analysis_json(CONFIG.stripe_results_path, stripe_analysis, CONFIG)
 
         print(f"image shape: {image_gray.shape}")
         print(f"x_ref_global: {x_ref_global}")
@@ -73,7 +102,21 @@ def main() -> int:
             "ROI width and height: "
             f"{bounds_global.width_roi} x {bounds_global.height_roi}"
         )
-        return 0
+        result = analysis_to_dict(stripe_analysis, CONFIG)["result"]
+        print(f"stripe detection success: {result['success']}")
+        for side in ("left", "right"):
+            side_result = result[side]
+            if side_result is None:
+                print(f"{side}: no valid stripe")
+                continue
+            print(
+                f"{side}: "
+                f"center_x_roi={side_result['center_x_roi']}, "
+                f"center_x_global={side_result['center_x_global']}, "
+                f"distance_px={side_result['distance_px']}, "
+                f"valid_row_ratio={side_result['valid_row_ratio']}"
+            )
+        return 0 if stripe_analysis.success else 1
     except (FileNotFoundError, OSError, ValueError) as error:
         print(f"Error: {error}")
         return 1
