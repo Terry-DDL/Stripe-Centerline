@@ -12,7 +12,20 @@ class ProcessingConfig:
     """Tunable paths, ROI ratios, and debug drawing settings."""
 
     image_path: Path = PROJECT_ROOT / "images" / "Sample 1.bmp"
-    output_dir: Path = PROJECT_ROOT / "outputs"
+    sweep_image_paths: tuple[Path, ...] = (
+        PROJECT_ROOT / "images" / "Sample 1.bmp",
+        PROJECT_ROOT / "images" / "Sample 2.bmp",
+    )
+    sweep_ref_x_globals: tuple[int, ...] = (
+        850,
+        900,
+        950,
+        1000,
+        1050,
+        1100,
+        1150,
+    )
+    output_root_dir: Path = PROJECT_ROOT / "outputs"
     original_with_centerline_filename: str = "original_with_centerline.png"
     roi_debug_filename: str = "roi_debug.png"
     roi_crop_filename: str = "roi_crop.png"
@@ -47,6 +60,13 @@ class ProcessingConfig:
     reference_line_color_bgr: tuple[int, int, int] = (0, 0, 255)
     roi_rectangle_color_bgr: tuple[int, int, int] = (0, 255, 0)
     line_thickness: int = 2
+
+    @property
+    def output_dir(self) -> Path:
+        """Return the image-specific output directory."""
+
+        output_folder_name = self.image_path.stem.replace(" ", "_")
+        return self.output_root_dir / output_folder_name
 
     @property
     def original_with_centerline_path(self) -> Path:
