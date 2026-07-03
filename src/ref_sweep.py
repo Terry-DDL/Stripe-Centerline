@@ -68,6 +68,12 @@ def _summary_row(
         warning_flags.append("no_valid_left_stripe")
     if analysis.right_track is None:
         warning_flags.append("no_valid_right_stripe")
+    if any(
+        track.side == "on_reference"
+        and track.rejection_reasons == ["center_on_reference"]
+        for track in analysis.tracks
+    ):
+        warning_flags.append("on_reference_candidate")
     if result.x_ref_global - half_width_roi < 0:
         warning_flags.append("roi_clipped_left")
     if result.x_ref_global + half_width_roi > image_width:

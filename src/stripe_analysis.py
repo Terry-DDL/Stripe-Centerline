@@ -627,29 +627,21 @@ def create_adjacent_stripes_result_debug(
     image_gray_roi,
     analysis: AdjacentStripeAnalysis,
 ):
-    """Overlay valid run centers and the final three vertical lines."""
+    """Distinguish sampled supporting centers from final centerlines."""
 
     result_image = cv2.cvtColor(image_gray_roi, cv2.COLOR_GRAY2BGR)
     height_roi = image_gray_roi.shape[0]
-    cv2.line(
-        result_image,
-        (analysis.x_ref_roi, 0),
-        (analysis.x_ref_roi, height_roi - 1),
-        (0, 0, 255),
-        2,
-    )
 
-    for track, color in (
-        (analysis.left_track, (255, 0, 0)),
-        (analysis.right_track, (0, 255, 255)),
+    for track, point_color in (
+        (analysis.left_track, (150, 80, 80)),
+        (analysis.right_track, (40, 150, 150)),
     ):
         if track is None:
             continue
-        for run in track.valid_runs:
+        sample_step = max(1, (len(track.valid_runs) + 49) // 50)
+        for run in track.valid_runs[::sample_step]:
             x_run = int(run.center_x_roi + 0.5)
-            cv2.circle(result_image, (x_run, run.y_roi), 1, color, -1)
-        x_track = int(track.center_x_roi + 0.5)
-        cv2.line(result_image, (x_track, 0), (x_track, height_roi - 1), color, 2)
+            result_image[run.y_roi, x_run] = point_color
 
     status = "SUCCESS" if analysis.success else "FAILED"
     cv2.putText(
@@ -672,7 +664,7 @@ def create_adjacent_stripes_result_debug(
         else:
             distance_px = abs(track.center_x_roi - analysis.x_ref_roi)
             text = (
-                f"{label}: x={track.center_x_roi:.1f} "
+                f"{label} final: x={track.center_x_roi:.1f} "
                 f"d={distance_px:.1f} "
                 f"rows={track.assigned_row_count}->{track.valid_row_count}"
             )
@@ -687,4 +679,37 @@ def create_adjacent_stripes_result_debug(
             cv2.LINE_AA,
         )
         text_y += 22
+
+    cv2.putText(
+        result_image,
+        "solid: REF red, L blue, R yellow; dots: sampled valid centers",
+        (10, text_y),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.38,
+        (220, 220, 220),
+        1,
+        cv2.LINE_AA,
+    )
+
+    for track, color in (
+        (analysis.left_track, (255, 0, 0)),
+        (analysis.right_track, (0, 255, 255)),
+    ):
+        if track is None:
+            continue
+        x_track = int(track.center_x_roi + 0.5)
+        cv2.line(
+            result_image,
+            (x_track, 0),
+            (x_track, height_roi - 1),
+            color,
+            1,
+        )
+    cv2.line(
+        result_image,
+        (analysis.x_ref_roi, 0),
+        (analysis.x_ref_roi, height_roi - 1),
+        (0, 0, 255),
+        1,
+    )
     return result_image
