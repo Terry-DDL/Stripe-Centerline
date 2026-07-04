@@ -15,6 +15,18 @@ class ProcessingConfig:
     sweep_image_paths: tuple[Path, ...] = (
         PROJECT_ROOT / "images" / "Sample 1.bmp",
         PROJECT_ROOT / "images" / "Sample 2.bmp",
+        PROJECT_ROOT / "images" / "Stripe_01_date20250601_t113239765.bmp",
+        PROJECT_ROOT / "images" / "Stripe_02_e0_t105204227_v-41p8_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_03_e0_t105348300_v-41p8_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_04_e0_t105403334_v7p8651_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_06_e0_t160727286_v0p9056_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_07_e0_t160816815_v12p0066_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_08_e0_t160911003_v13p2083_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+        PROJECT_ROOT / "images" / "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+        PROJECT_ROOT / "images" / "Stripe_12_e1_t220320710_v7p3386_do.bmp",
     )
     sweep_ref_x_globals: tuple[int, ...] = (
         850,
@@ -117,4 +129,18 @@ class ProcessingConfig:
         return self.output_dir / self.stripe_results_filename
 
 
+@dataclass(frozen=True)
+class InteractiveConfig:
+    """Tunable settings used only by interactive point analysis."""
+
+    output_root_dir: Path = PROJECT_ROOT / "outputs" / "interactive"
+    roi_half_width_px: int = 250
+    roi_half_height_px: int = 250
+    rotation_min_angle_deg: float = -10.0
+    rotation_max_angle_deg: float = 10.0
+    rotation_angle_step_deg: float = 0.25
+    display_max_width_px: int = 1100
+
+
 CONFIG = ProcessingConfig()
+INTERACTIVE_CONFIG = InteractiveConfig()
