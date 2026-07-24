@@ -14,13 +14,162 @@ sys.path.insert(0, str(SRC_DIR))
 
 from config import InteractiveConfig, ProcessingConfig  # noqa: E402
 from interactive_pipeline import (  # noqa: E402
+    _apply_neighbor_consistency_guard,
+    _effective_adaptive_block_size,
     calculate_interactive_roi_bounds,
     estimate_rotation_shadow,
     run_interactive_case,
+    validate_interactive_config,
 )
+from interactive_analysis import select_interactive_tracks  # noqa: E402
+from stripe_analysis import analyze_adjacent_stripes  # noqa: E402
 
 
 class InteractivePipelineTests(unittest.TestCase):
+    def test_adaptive_block_size_must_be_odd_and_at_least_three(self):
+        for invalid_block_size in (1, 2, 30):
+            with self.subTest(block_size=invalid_block_size):
+                with self.assertRaises(ValueError):
+                    validate_interactive_config(
+                        InteractiveConfig(
+                            adaptive_threshold_block_size=(
+                                invalid_block_size
+                            )
+                        )
+                    )
+
+    def test_adaptive_block_size_reduces_for_small_roi(self):
+        block_size, warnings = _effective_adaptive_block_size(
+            (20, 10),
+            InteractiveConfig(adaptive_threshold_block_size=31),
+        )
+
+        self.assertEqual(block_size, 9)
+        self.assertIn(
+            "adaptive_block_size_reduced_for_roi",
+            warnings,
+        )
+
+    def test_adaptive_is_disabled_when_roi_is_too_small(self):
+        block_size, warnings = _effective_adaptive_block_size(
+            (3, 30),
+            InteractiveConfig(),
+        )
+
+        self.assertIsNone(block_size)
+        self.assertIn("adaptive_disabled_roi_too_small", warnings)
+
+    def test_neighbor_guard_warns_without_clearing_skipped_stripes(self):
+        mask = np.zeros((100, 300), dtype=np.uint8)
+        for center_x in (50, 130, 250):
+            mask[:, center_x - 5 : center_x + 6] = 255
+        for center_x in (170, 210):
+            mask[:40, center_x - 5 : center_x + 6] = 255
+        processing_config = ProcessingConfig(stripe_search_radius_px=150)
+        analysis = analyze_adjacent_stripes(
+            mask,
+            133,
+            133,
+            0,
+            processing_config,
+        )
+        selection = select_interactive_tracks(
+            mask,
+            133,
+            50,
+            analysis,
+            processing_config,
+        )
+
+        guarded, details = _apply_neighbor_consistency_guard(
+            selection,
+            analysis,
+            processing_config,
+            InteractiveConfig(),
+        )
+
+        self.assertTrue(selection.success)
+        self.assertTrue(guarded.success)
+        self.assertIsNotNone(guarded.left_track)
+        self.assertIsNotNone(guarded.right_track)
+        self.assertIn(
+            "selected_stripes_not_immediate_neighbors",
+            guarded.warning_flags,
+        )
+        self.assertTrue(details["checked"])
+        self.assertFalse(details["passed"])
+        self.assertGreater(
+            details["span_pitch_ratio"],
+            InteractiveConfig().neighbor_max_span_pitch_ratio,
+        )
+
+    def test_neighbor_guard_warns_when_pitch_cannot_be_verified(self):
+        mask = np.zeros((100, 320), dtype=np.uint8)
+        mask[:, 45:56] = 255
+        mask[:, 125:136] = 255
+        mask[:, 205:276] = 255
+        processing_config = ProcessingConfig(stripe_search_radius_px=160)
+        analysis = analyze_adjacent_stripes(
+            mask,
+            133,
+            133,
+            0,
+            processing_config,
+        )
+        selection = select_interactive_tracks(
+            mask,
+            133,
+            50,
+            analysis,
+            processing_config,
+        )
+
+        guarded, details = _apply_neighbor_consistency_guard(
+            selection,
+            analysis,
+            processing_config,
+            InteractiveConfig(),
+        )
+
+        self.assertTrue(selection.success)
+        self.assertFalse(details["checked"])
+        self.assertTrue(guarded.success)
+        self.assertIn(
+            "neighbor_consistency_not_verifiable",
+            guarded.warning_flags,
+        )
+
+    def test_neighbor_guard_accepts_one_pitch_on_each_side(self):
+        mask = np.zeros((100, 300), dtype=np.uint8)
+        for center_x in (50, 130, 210):
+            mask[:, center_x - 5 : center_x + 6] = 255
+        processing_config = ProcessingConfig(stripe_search_radius_px=150)
+        analysis = analyze_adjacent_stripes(
+            mask,
+            133,
+            133,
+            0,
+            processing_config,
+        )
+        selection = select_interactive_tracks(
+            mask,
+            133,
+            50,
+            analysis,
+            processing_config,
+        )
+
+        guarded, details = _apply_neighbor_consistency_guard(
+            selection,
+            analysis,
+            processing_config,
+            InteractiveConfig(),
+        )
+
+        self.assertTrue(guarded.success)
+        self.assertTrue(details["passed"])
+        self.assertEqual(details["span_pitch_ratio"], 1.0)
+
     def test_roi_is_fixed_size_away_from_edges(self):
         bounds = calculate_interactive_roi_bounds(
             (2000, 2000),
@@ -29,8 +178,8 @@ class InteractivePipelineTests(unittest.TestCase):
             InteractiveConfig(),
         )
         self.assertEqual(bounds.width_roi, 500)
-        self.assertEqual(bounds.height_roi, 500)
-        self.assertEqual((bounds.x0_global, bounds.y0_global), (750, 650))
+        self.assertEqual(bounds.height_roi, 200)
+        self.assertEqual((bounds.x0_global, bounds.y0_global), (750, 800))
 
     def test_roi_clips_without_moving_the_click(self):
         bounds = calculate_interactive_roi_bounds(
@@ -40,7 +189,7 @@ class InteractivePipelineTests(unittest.TestCase):
             InteractiveConfig(),
         )
         self.assertEqual((bounds.x0_global, bounds.y0_global), (0, 0))
-        self.assertEqual((bounds.x1_global, bounds.y1_global), (290, 280))
+        self.assertEqual((bounds.x1_global, bounds.y1_global), (290, 130))
 
     def test_rotation_shadow_finds_known_small_tilt(self):
         vertical = np.zeros((300, 300), dtype=np.uint8)
@@ -58,7 +207,7 @@ class InteractivePipelineTests(unittest.TestCase):
 
         self.assertAlmostEqual(estimate.best_angle_deg, -4.0, delta=0.5)
 
-    def test_pipeline_saves_debug_and_keeps_rotation_shadow_only(self):
+    def test_vertical_pipeline_keeps_original_detection_space(self):
         image = np.full((600, 600), 255, dtype=np.uint8)
         for center_x in (210, 300, 390):
             image[:, center_x - 5 : center_x + 6] = 0
@@ -85,7 +234,135 @@ class InteractivePipelineTests(unittest.TestCase):
             self.assertTrue(
                 (Path(temporary_directory) / "interactive_results.json").is_file()
             )
-            self.assertEqual(len(result.debug_images), 13)
+            arbitration = result.report["candidate_arbitration"]
+            self.assertEqual(
+                set(arbitration["candidates"]),
+                {
+                    "original_otsu",
+                    "original_adaptive",
+                    "rotated_otsu",
+                    "rotated_adaptive",
+                },
+            )
+            self.assertIn(
+                result.report["interactive_result"]["threshold_method"],
+                ("otsu", "adaptive"),
+            )
+            self.assertTrue(result.report["rotation_shadow"]["guard_reasons"])
+            self.assertIn("unrotated_black_mask.png", result.debug_images)
+            self.assertIn(
+                "rotation_candidate_black_mask.png",
+                result.debug_images,
+            )
+
+    def test_tilted_pipeline_rotates_before_detection(self):
+        vertical = np.full((600, 600), 255, dtype=np.uint8)
+        for center_x in (210, 300, 390):
+            vertical[:, center_x - 5 : center_x + 6] = 0
+        tilted = cv2.warpAffine(
+            vertical,
+            cv2.getRotationMatrix2D((299.5, 299.5), 4.0, 1.0),
+            (600, 600),
+            flags=cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_REFLECT_101,
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = run_interactive_case(
+                tilted,
+                300,
+                300,
+                Path(temporary_directory),
+                ProcessingConfig(),
+                InteractiveConfig(),
+                image_name="tilted.png",
+            )
+
+            rotation = result.report["rotation_shadow"]
+            self.assertTrue(rotation["applied_to_detection"])
+            self.assertAlmostEqual(rotation["applied_angle_deg"], -4.0, delta=0.5)
+            self.assertEqual(rotation["detection_space"], "rotated")
+            self.assertTrue(result.selection.success)
+            left_line = result.report["interactive_result"]["left"][
+                "line_endpoints_global"
+            ]
+            self.assertNotEqual(left_line[0][0], left_line[1][0])
+
+    def test_brightened_saturated_image_keeps_same_neighbors(self):
+        image = np.full((600, 600), 120, dtype=np.uint8)
+        for center_x in (210, 300, 390):
+            image[:, center_x - 5 : center_x + 6] = 0
+        brightened = np.clip(
+            image.astype(np.int16) + 150,
+            0,
+            255,
+        ).astype(np.uint8)
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            original = run_interactive_case(
+                image,
+                303,
+                300,
+                Path(temporary_directory) / "original",
+                ProcessingConfig(),
+                InteractiveConfig(),
+                image_name="original.png",
+            )
+            saturated = run_interactive_case(
+                brightened,
+                303,
+                300,
+                Path(temporary_directory) / "brightened",
+                ProcessingConfig(),
+                InteractiveConfig(),
+                image_name="brightened.png",
+            )
+
+        self.assertTrue(original.selection.success)
+        self.assertTrue(saturated.selection.success)
+        self.assertEqual(
+            original.report["interactive_result"]["left"][
+                "center_x_global"
+            ],
+            saturated.report["interactive_result"]["left"][
+                "center_x_global"
+            ],
+        )
+        self.assertEqual(
+            original.report["interactive_result"]["right"][
+                "center_x_global"
+            ],
+            saturated.report["interactive_result"]["right"][
+                "center_x_global"
+            ],
+        )
+
+    def test_clipped_roi_does_not_apply_rotation(self):
+        vertical = np.full((600, 600), 255, dtype=np.uint8)
+        for center_x in (30, 120, 210):
+            vertical[:, center_x - 5 : center_x + 6] = 0
+        tilted = cv2.warpAffine(
+            vertical,
+            cv2.getRotationMatrix2D((299.5, 299.5), 4.0, 1.0),
+            (600, 600),
+            flags=cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_REFLECT_101,
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = run_interactive_case(
+                tilted,
+                30,
+                300,
+                Path(temporary_directory),
+                ProcessingConfig(),
+                InteractiveConfig(),
+                image_name="clipped.png",
+            )
+
+            rotation = result.report["rotation_shadow"]
+            self.assertFalse(rotation["applied_to_detection"])
+            self.assertIn(
+                "rotation_not_applied_to_clipped_roi",
+                rotation["guard_reasons"],
+            )
 
 
 if __name__ == "__main__":

@@ -8,6 +8,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from candidate_quality import (
+    build_candidate_quality,
+    candidate_quality_key,
+    quality_difference_reason,
+)
 from config import InteractiveConfig, ProcessingConfig
 from image_processing import (
     RoiBoundsGlobal,
@@ -23,6 +28,13 @@ from interactive_analysis import (
     InteractiveStripeSelection,
     select_interactive_tracks,
 )
+from pitch_reference import (
+    PitchReferenceMap,
+    build_pitch_reference_map,
+    create_pitch_reference_debug,
+    evaluate_pitch_guard,
+    validate_pitch_reference_config,
+)
 from stripe_analysis import (
     AdjacentStripeAnalysis,
     StripeTrack,
@@ -33,7 +45,7 @@ from stripe_analysis import (
 
 @dataclass(frozen=True)
 class RotationShadowResult:
-    """Explainable angle estimate that does not affect detection yet."""
+    """Explainable angle estimate used by guarded rotation detection."""
 
     best_angle_deg: float
     zero_angle_score: float
@@ -46,6 +58,41 @@ class RotationShadowResult:
 
 
 @dataclass(frozen=True)
+class RoiProcessingStages:
+    """Preprocessing images for one unrotated or corrected ROI."""
+
+    image_gray: np.ndarray
+    threshold_method: str
+    threshold_binary: np.ndarray
+    threshold_warning_flags: tuple[str, ...]
+    vertical_close: np.ndarray
+    close_delta: np.ndarray
+    black_mask: np.ndarray
+
+    @property
+    def otsu_binary(self) -> np.ndarray:
+        """Keep the old debug-image attribute available to callers."""
+
+        return self.threshold_binary
+
+
+@dataclass(frozen=True)
+class DetectionCandidate:
+    """One geometry + threshold result before layered arbitration."""
+
+    geometry: str
+    threshold_method: str
+    stages: RoiProcessingStages
+    analysis: AdjacentStripeAnalysis
+    selection: InteractiveStripeSelection
+    neighbor_consistency: dict
+    pitch_guard: dict
+    quality: dict
+    rotation_matrix: np.ndarray
+    inverse_rotation_matrix: np.ndarray
+
+
+@dataclass(frozen=True)
 class InteractivePipelineResult:
     """Data and debug images produced for one clicked point."""
 
@@ -55,20 +102,34 @@ class InteractivePipelineResult:
     click_y_roi: int
     bounds_global: RoiBoundsGlobal
     legacy_analysis: AdjacentStripeAnalysis
+    active_analysis: AdjacentStripeAnalysis
     selection: InteractiveStripeSelection
     rotation_shadow: RotationShadowResult
+    rotation_applied: bool
     report: dict
     debug_images: dict[str, np.ndarray]
     output_dir: Path
+    pitch_reference_map: PitchReferenceMap
 
 
 def validate_interactive_config(config: InteractiveConfig) -> None:
     """Validate settings that belong only to the interactive workflow."""
 
+    validate_pitch_reference_config(config)
     if config.roi_half_width_px <= 0:
         raise ValueError("roi_half_width_px must be greater than 0")
     if config.roi_half_height_px <= 0:
         raise ValueError("roi_half_height_px must be greater than 0")
+    if config.selection_zoom_half_width_px <= 0:
+        raise ValueError(
+            "selection_zoom_half_width_px must be greater than 0"
+        )
+    if config.selection_zoom_half_height_px <= 0:
+        raise ValueError(
+            "selection_zoom_half_height_px must be greater than 0"
+        )
+    if config.selection_zoom_scale <= 1.0:
+        raise ValueError("selection_zoom_scale must be greater than 1")
     if config.rotation_min_angle_deg > config.rotation_max_angle_deg:
         raise ValueError("rotation_min_angle_deg must not exceed maximum")
     if config.rotation_angle_step_deg <= 0.0:
@@ -78,6 +139,43 @@ def validate_interactive_config(config: InteractiveConfig) -> None:
         <= config.rotation_max_angle_deg
     ):
         raise ValueError("rotation shadow angle range must include zero")
+    if config.rotation_min_abs_angle_deg < 0.0:
+        raise ValueError("rotation_min_abs_angle_deg must not be negative")
+    if config.rotation_min_relative_score_gain < 0.0:
+        raise ValueError(
+            "rotation_min_relative_score_gain must not be negative"
+        )
+    if config.rotation_min_peak_separation < 0.0:
+        raise ValueError("rotation_min_peak_separation must not be negative")
+    if (
+        not isinstance(config.adaptive_threshold_block_size, int)
+        or isinstance(config.adaptive_threshold_block_size, bool)
+    ):
+        raise ValueError(
+            "adaptive_threshold_block_size must be an integer"
+        )
+    if config.adaptive_threshold_block_size < 3:
+        raise ValueError(
+            "adaptive_threshold_block_size must be at least 3"
+        )
+    if config.adaptive_threshold_block_size % 2 == 0:
+        raise ValueError(
+            "adaptive_threshold_block_size must be odd"
+        )
+    if not isinstance(config.adaptive_threshold_enabled, bool):
+        raise ValueError("adaptive_threshold_enabled must be boolean")
+    if not isinstance(config.adaptive_threshold_c, (int, float)) or (
+        not math.isfinite(config.adaptive_threshold_c)
+    ):
+        raise ValueError("adaptive_threshold_c must be finite")
+    if config.neighbor_max_span_pitch_ratio <= 1.0:
+        raise ValueError(
+            "neighbor_max_span_pitch_ratio must be greater than 1"
+        )
+    if config.neighbor_min_pitch_track_count < 3:
+        raise ValueError(
+            "neighbor_min_pitch_track_count must be at least 3"
+        )
     if config.display_max_width_px <= 0:
         raise ValueError("display_max_width_px must be greater than 0")
 
@@ -109,6 +207,74 @@ def calculate_interactive_roi_bounds(
         y1_global=min(
             height_global, click_y_global + config.roi_half_height_px
         ),
+    )
+
+
+def _effective_adaptive_block_size(
+    roi_shape: tuple[int, ...],
+    config: InteractiveConfig,
+) -> tuple[int | None, tuple[str, ...]]:
+    """Return a legal adaptive block size for this ROI."""
+
+    short_side = min(roi_shape[:2])
+    requested = config.adaptive_threshold_block_size
+    if short_side <= 3:
+        return None, ("adaptive_disabled_roi_too_small",)
+    if requested < short_side:
+        return requested, ()
+    effective = short_side - 1
+    if effective % 2 == 0:
+        effective -= 1
+    if effective < 3:
+        return None, ("adaptive_disabled_roi_too_small",)
+    return effective, ("adaptive_block_size_reduced_for_roi",)
+
+
+def _preprocess_roi(
+    image_gray_roi,
+    config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    threshold_method: str,
+) -> RoiProcessingStages:
+    """Run one configured threshold method and shared morphology."""
+
+    blurred_roi = gaussian_blur_roi(image_gray_roi, config)
+    warning_flags = ()
+    if threshold_method == "otsu":
+        threshold_binary_roi = create_otsu_binary_roi(blurred_roi)
+    elif threshold_method == "adaptive":
+        block_size, warning_flags = _effective_adaptive_block_size(
+            image_gray_roi.shape,
+            interactive_config,
+        )
+        if block_size is None:
+            raise ValueError("adaptive threshold is unavailable for this ROI")
+        threshold_binary_roi = cv2.adaptiveThreshold(
+            blurred_roi,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            block_size,
+            interactive_config.adaptive_threshold_c,
+        )
+    else:
+        raise ValueError(f"unsupported threshold method: {threshold_method}")
+    vertical_close_roi = apply_vertical_close_roi(
+        threshold_binary_roi,
+        config,
+    )
+    close_delta_roi = create_close_delta_roi(
+        threshold_binary_roi, vertical_close_roi
+    )
+    black_mask_roi = create_black_mask_roi(vertical_close_roi)
+    return RoiProcessingStages(
+        image_gray=image_gray_roi,
+        threshold_method=threshold_method,
+        threshold_binary=threshold_binary_roi,
+        threshold_warning_flags=warning_flags,
+        vertical_close=vertical_close_roi,
+        close_delta=close_delta_roi,
+        black_mask=black_mask_roi,
     )
 
 
@@ -203,7 +369,7 @@ def _create_rotation_score_chart(
     cv2.circle(chart, points[zero_index], 4, (0, 0, 255), -1)
     cv2.putText(
         chart,
-        "Rotation shadow: yellow=best, red=0 deg (not applied)",
+        "Rotation score: yellow=best, red=0 deg",
         (12, 20),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.5,
@@ -238,7 +404,7 @@ def estimate_rotation_shadow(
     binary_roi,
     config: InteractiveConfig,
 ) -> RotationShadowResult:
-    """Estimate a correction angle without changing the detector input."""
+    """Estimate a correction angle for guarded rotation detection."""
 
     angles_deg = np.arange(
         config.rotation_min_angle_deg,
@@ -281,6 +447,466 @@ def estimate_rotation_shadow(
             angles_deg, scores_array, best_index
         ),
     )
+
+
+def _relative_rotation_score_gain(rotation: RotationShadowResult) -> float:
+    if rotation.zero_angle_score <= 0.0:
+        return 0.0
+    return max(
+        0.0,
+        (rotation.best_score - rotation.zero_angle_score)
+        / rotation.zero_angle_score,
+    )
+
+
+def _rotation_guard_reasons(
+    rotation: RotationShadowResult,
+    roi_warning_flags: list[str],
+    config: InteractiveConfig,
+) -> list[str]:
+    """Explain why an estimated angle should not alter detection."""
+
+    reasons = []
+    if not config.rotation_apply_enabled:
+        reasons.append("rotation_application_disabled")
+    if abs(rotation.best_angle_deg) < config.rotation_min_abs_angle_deg:
+        reasons.append("rotation_angle_below_minimum")
+    if (
+        _relative_rotation_score_gain(rotation)
+        < config.rotation_min_relative_score_gain
+    ):
+        reasons.append("rotation_score_gain_below_minimum")
+    if rotation.peak_separation < config.rotation_min_peak_separation:
+        reasons.append("rotation_peak_separation_below_minimum")
+    if np.isclose(
+        rotation.best_angle_deg,
+        config.rotation_min_angle_deg,
+    ) or np.isclose(
+        rotation.best_angle_deg,
+        config.rotation_max_angle_deg,
+    ):
+        reasons.append("rotation_best_angle_at_search_boundary")
+    if any(flag.startswith("roi_clipped_") for flag in roi_warning_flags):
+        reasons.append("rotation_not_applied_to_clipped_roi")
+    return reasons
+
+
+def _neighbor_consistency_check(
+    selection: InteractiveStripeSelection,
+    analysis: AdjacentStripeAnalysis,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+) -> dict:
+    """Check that every selected neighbor is only one stripe pitch away."""
+
+    details = {
+        "checked": False,
+        "passed": None,
+        "local_pitch_px": None,
+        "selected_span_px": None,
+        "span_pitch_ratio": None,
+        "max_span_pitch_ratio": (
+            interactive_config.neighbor_max_span_pitch_ratio
+        ),
+        "pitch_track_count": 0,
+        "reason": None,
+    }
+    if not selection.success:
+        details["reason"] = "selection_not_successful"
+        return details
+    if (
+        selection.left_track is None
+        or selection.right_track is None
+    ):
+        details["reason"] = "missing_selected_side"
+        return details
+
+    stable_tracks = [
+        track
+        for track in analysis.tracks
+        if track.valid_row_ratio
+        >= processing_config.min_stripe_support_ratio
+        and track.rejection_reasons in ([], ["center_on_reference"])
+    ]
+    if len(stable_tracks) < interactive_config.neighbor_min_pitch_track_count:
+        details["reason"] = "insufficient_tracks_for_pitch_check"
+        return details
+
+    stable_widths = [track.median_width_px for track in stable_tracks]
+    typical_width = float(np.median(stable_widths))
+    min_normal_width = typical_width * 0.5
+    max_normal_width = (
+        typical_width
+        * (1.0 + processing_config.max_width_deviation_ratio)
+        + processing_config.min_width_tolerance_px
+    )
+    pitch_tracks = [
+        track
+        for track in analysis.tracks
+        if min_normal_width
+        <= track.median_width_px
+        <= max_normal_width
+    ]
+    if len(pitch_tracks) < interactive_config.neighbor_min_pitch_track_count:
+        details["reason"] = "insufficient_regular_width_tracks"
+        return details
+
+    centers = sorted(track.center_x_roi for track in pitch_tracks)
+    gaps = [
+        right - left
+        for left, right in zip(centers, centers[1:])
+        if right - left > processing_config.center_cluster_tolerance_px
+    ]
+    if len(gaps) < interactive_config.neighbor_min_pitch_track_count - 1:
+        details["reason"] = "insufficient_pitch_gaps"
+        return details
+
+    local_pitch = float(np.median(gaps))
+    if (
+        selection.click_classification == "black_stripe"
+        and selection.clicked_track is not None
+    ):
+        intervals = [
+            (
+                selection.left_track.center_x_roi,
+                selection.clicked_track.center_x_roi,
+            ),
+            (
+                selection.clicked_track.center_x_roi,
+                selection.right_track.center_x_roi,
+            ),
+        ]
+    else:
+        intervals = [
+            (
+                selection.left_track.center_x_roi,
+                selection.right_track.center_x_roi,
+            )
+        ]
+
+    interval_spans = [right - left for left, right in intervals]
+    span_pitch_ratios = [
+        span / max(local_pitch, 1e-12) for span in interval_spans
+    ]
+    selected_span = max(interval_spans)
+    span_pitch_ratio = max(span_pitch_ratios)
+    passed = all(
+        ratio <= interactive_config.neighbor_max_span_pitch_ratio
+        for ratio in span_pitch_ratios
+    )
+    if not passed:
+        reason = "selected_span_exceeds_immediate_neighbor_limit"
+    else:
+        reason = None
+    details.update(
+        {
+            "checked": True,
+            "passed": passed,
+            "local_pitch_px": round(local_pitch, 3),
+            "selected_span_px": round(selected_span, 3),
+            "span_pitch_ratio": round(span_pitch_ratio, 3),
+            "pitch_track_count": len(pitch_tracks),
+            "reason": reason,
+        }
+    )
+    return details
+
+
+def _apply_neighbor_consistency_guard(
+    selection: InteractiveStripeSelection,
+    analysis: AdjacentStripeAnalysis,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+) -> tuple[InteractiveStripeSelection, dict]:
+    """Attach a neighbor warning without discarding detected centerlines."""
+
+    details = _neighbor_consistency_check(
+        selection,
+        analysis,
+        processing_config,
+        interactive_config,
+    )
+    warning_reason = None
+    if details["passed"] is False:
+        warning_reason = "selected_stripes_not_immediate_neighbors"
+    elif (
+        selection.success
+        and not details["checked"]
+    ):
+        warning_reason = "neighbor_consistency_not_verifiable"
+
+    if warning_reason is None:
+        return selection, details
+
+    return (
+        InteractiveStripeSelection(
+            click_classification=selection.click_classification,
+            clicked_track=selection.clicked_track,
+            left_track=selection.left_track,
+            right_track=selection.right_track,
+            success=selection.success,
+            failure_reasons=selection.failure_reasons,
+            warning_flags=selection.warning_flags + (warning_reason,),
+        ),
+        details,
+    )
+
+
+def _rotation_matrix_for_detection(
+    click_x_roi: int,
+    click_y_roi: int,
+    angle_deg: float,
+) -> np.ndarray:
+    """Create the original-ROI to corrected-ROI affine transform."""
+
+    return cv2.getRotationMatrix2D(
+        (float(click_x_roi), float(click_y_roi)),
+        angle_deg,
+        1.0,
+    )
+
+
+def _rotate_grayscale_for_detection(
+    image_gray_roi,
+    rotation_matrix: np.ndarray,
+) -> np.ndarray:
+    """Rotate grayscale data before running unchanged preprocessing."""
+
+    height, width = image_gray_roi.shape[:2]
+    return cv2.warpAffine(
+        image_gray_roi,
+        rotation_matrix,
+        (width, height),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_REFLECT_101,
+    )
+
+
+def _identity_affine_matrix() -> np.ndarray:
+    return np.array(
+        [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+        dtype=np.float64,
+    )
+
+
+def _candidate_threshold_methods(
+    image_gray_roi,
+    config: InteractiveConfig,
+) -> tuple[str, ...]:
+    methods = ["otsu"]
+    block_size, _warnings = _effective_adaptive_block_size(
+        image_gray_roi.shape,
+        config,
+    )
+    if config.adaptive_threshold_enabled and block_size is not None:
+        methods.append("adaptive")
+    return tuple(methods)
+
+
+def _build_detection_candidate(
+    image_gray_detection,
+    geometry: str,
+    threshold_method: str,
+    click_x_roi: int,
+    click_y_roi: int,
+    click_x_global: int,
+    click_y_global: int,
+    bounds: RoiBoundsGlobal,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    pitch_reference_map: PitchReferenceMap,
+    rotation_matrix: np.ndarray,
+    inverse_rotation_matrix: np.ndarray,
+) -> DetectionCandidate:
+    stages = _preprocess_roi(
+        image_gray_detection,
+        processing_config,
+        interactive_config,
+        threshold_method,
+    )
+    analysis = analyze_adjacent_stripes(
+        stages.black_mask,
+        click_x_roi,
+        click_x_global,
+        bounds.x0_global,
+        processing_config,
+    )
+    selection = select_interactive_tracks(
+        stages.black_mask,
+        click_x_roi,
+        click_y_roi,
+        analysis,
+        processing_config,
+        image_gray_roi=stages.image_gray,
+    )
+    selection, neighbor_consistency = _apply_neighbor_consistency_guard(
+        selection,
+        analysis,
+        processing_config,
+        interactive_config,
+    )
+    pitch_guard = evaluate_pitch_guard(
+        selection,
+        click_x_global,
+        click_y_global,
+        pitch_reference_map,
+        interactive_config,
+    )
+    quality = build_candidate_quality(
+        selection,
+        analysis,
+        neighbor_consistency,
+        pitch_guard,
+        click_x_roi,
+        processing_config,
+    )
+    return DetectionCandidate(
+        geometry=geometry,
+        threshold_method=threshold_method,
+        stages=stages,
+        analysis=analysis,
+        selection=selection,
+        neighbor_consistency=neighbor_consistency,
+        pitch_guard=pitch_guard,
+        quality=quality,
+        rotation_matrix=rotation_matrix,
+        inverse_rotation_matrix=inverse_rotation_matrix,
+    )
+
+
+def _build_geometry_candidates(
+    image_gray_detection,
+    geometry: str,
+    click_x_roi: int,
+    click_y_roi: int,
+    click_x_global: int,
+    click_y_global: int,
+    bounds: RoiBoundsGlobal,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    pitch_reference_map: PitchReferenceMap,
+    rotation_matrix: np.ndarray,
+    inverse_rotation_matrix: np.ndarray,
+) -> list[DetectionCandidate]:
+    return [
+        _build_detection_candidate(
+            image_gray_detection,
+            geometry,
+            threshold_method,
+            click_x_roi,
+            click_y_roi,
+            click_x_global,
+            click_y_global,
+            bounds,
+            processing_config,
+            interactive_config,
+            pitch_reference_map,
+            rotation_matrix,
+            inverse_rotation_matrix,
+        )
+        for threshold_method in _candidate_threshold_methods(
+            image_gray_detection,
+            interactive_config,
+        )
+    ]
+
+
+def _select_threshold_candidate(
+    candidates: list[DetectionCandidate],
+) -> tuple[DetectionCandidate, str]:
+    if not candidates:
+        raise ValueError("at least one threshold candidate is required")
+    winner = max(
+        candidates,
+        key=lambda candidate: candidate_quality_key(
+            candidate.quality,
+            candidate.threshold_method,
+        ),
+    )
+    if len(candidates) == 1:
+        return winner, "only_available_threshold_method"
+    loser = next(candidate for candidate in candidates if candidate is not winner)
+    reason = quality_difference_reason(winner.quality, loser.quality)
+    if reason == "quality_equal":
+        reason = "quality_equal_otsu_tie_break"
+    return winner, reason
+
+
+def _select_geometry_candidate(
+    original: DetectionCandidate,
+    rotated: DetectionCandidate | None,
+) -> tuple[DetectionCandidate, str]:
+    if rotated is None:
+        return original, "rotation_not_eligible"
+    original_key = candidate_quality_key(original.quality)
+    rotated_key = candidate_quality_key(rotated.quality)
+    if rotated_key > original_key:
+        return (
+            rotated,
+            quality_difference_reason(rotated.quality, original.quality),
+        )
+    if rotated_key == original_key:
+        return original, "quality_equal_original_tie_break"
+    return (
+        original,
+        quality_difference_reason(original.quality, rotated.quality),
+    )
+
+
+def _selection_for_output(
+    candidate: DetectionCandidate,
+) -> InteractiveStripeSelection:
+    """Convert a hard-invalid raw selection into an explicit failure."""
+
+    if candidate.quality["success"] or not candidate.selection.success:
+        return candidate.selection
+    reasons = tuple(candidate.quality["hard_invalid_reasons"])
+    return InteractiveStripeSelection(
+        click_classification=candidate.selection.click_classification,
+        clicked_track=candidate.selection.clicked_track,
+        left_track=None,
+        right_track=None,
+        success=False,
+        failure_reasons=candidate.selection.failure_reasons + reasons,
+        warning_flags=candidate.selection.warning_flags + reasons,
+    )
+
+
+def _candidate_summary(candidate: DetectionCandidate) -> dict:
+    selection = candidate.selection
+    return {
+        "evaluated": True,
+        "geometry": candidate.geometry,
+        "threshold_method": candidate.threshold_method,
+        "raw_success": selection.success,
+        "quality_success": candidate.quality["success"],
+        "click_classification": selection.click_classification,
+        "failure_reasons": list(selection.failure_reasons),
+        "warning_flags": list(selection.warning_flags),
+        "selected_track_centers_roi": {
+            "left": (
+                None
+                if selection.left_track is None
+                else round(selection.left_track.center_x_roi, 3)
+            ),
+            "clicked": (
+                None
+                if selection.clicked_track is None
+                else round(selection.clicked_track.center_x_roi, 3)
+            ),
+            "right": (
+                None
+                if selection.right_track is None
+                else round(selection.right_track.center_x_roi, 3)
+            ),
+        },
+        "neighbor_consistency": candidate.neighbor_consistency,
+        "pitch_guard": candidate.pitch_guard,
+        "quality": candidate.quality,
+        "threshold_warning_flags": list(
+            candidate.stages.threshold_warning_flags
+        ),
+    }
 
 
 def _sample_track_centers(image, track: StripeTrack, color) -> None:
@@ -427,13 +1053,13 @@ def _create_interactive_votes_debug(
         if track is not None
     }
     for track in analysis.tracks:
-        if (
+        if track.track_id in selected_ids:
+            color = (255, 0, 0) if track is selection.left_track else (0, 255, 255)
+        elif (
             selection.clicked_track is not None
             and track.track_id == selection.clicked_track.track_id
         ):
             color = (0, 140, 255)
-        elif track.track_id in selected_ids:
-            color = (255, 0, 0) if track is selection.left_track else (0, 255, 255)
         elif _stable_for_display(track):
             color = (220, 220, 220)
         else:
@@ -448,7 +1074,7 @@ def _create_interactive_votes_debug(
     )
     cv2.putText(
         chart,
-        "Interactive votes: click magenta; excluded orange; final L blue/R yellow",
+        "Interactive votes: click magenta; clicked orange; final L blue/R yellow",
         (8, 20),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.42,
@@ -463,12 +1089,52 @@ def _stable_for_display(track: StripeTrack) -> bool:
     return track.rejection_reasons in ([], ["center_on_reference"])
 
 
+def _detection_point_to_global(
+    x_detection: float,
+    y_detection: float,
+    inverse_rotation_matrix: np.ndarray,
+    bounds: RoiBoundsGlobal,
+) -> tuple[float, float]:
+    point = np.array(
+        [[[x_detection, y_detection]]],
+        dtype=np.float64,
+    )
+    x_roi, y_roi = cv2.transform(point, inverse_rotation_matrix)[0, 0]
+    return (
+        float(bounds.x0_global + x_roi),
+        float(bounds.y0_global + y_roi),
+    )
+
+
+def _track_line_endpoints_global(
+    track: StripeTrack,
+    roi_height: int,
+    inverse_rotation_matrix: np.ndarray,
+    bounds: RoiBoundsGlobal,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    return (
+        _detection_point_to_global(
+            track.center_x_roi,
+            0.0,
+            inverse_rotation_matrix,
+            bounds,
+        ),
+        _detection_point_to_global(
+            track.center_x_roi,
+            float(roi_height - 1),
+            inverse_rotation_matrix,
+            bounds,
+        ),
+    )
+
+
 def _create_original_overlay(
     image_gray,
     bounds: RoiBoundsGlobal,
     click_x_global: int,
     click_y_global: int,
     selection: InteractiveStripeSelection,
+    inverse_rotation_matrix: np.ndarray,
 ) -> np.ndarray:
     overlay = cv2.cvtColor(image_gray, cv2.COLOR_GRAY2BGR)
     cv2.rectangle(
@@ -484,11 +1150,30 @@ def _create_original_overlay(
     ):
         if track is None:
             continue
-        x_global = int(bounds.x0_global + track.center_x_roi + 0.5)
+        point0, point1 = _track_line_endpoints_global(
+            track,
+            bounds.height_roi,
+            inverse_rotation_matrix,
+            bounds,
+        )
+        line_start = tuple(round(value) for value in point0)
+        line_end = tuple(round(value) for value in point1)
+        visible, line_start, line_end = cv2.clipLine(
+            (
+                bounds.x0_global,
+                bounds.y0_global,
+                bounds.width_roi,
+                bounds.height_roi,
+            ),
+            line_start,
+            line_end,
+        )
+        if not visible:
+            continue
         cv2.line(
             overlay,
-            (x_global, bounds.y0_global),
-            (x_global, bounds.y1_global - 1),
+            line_start,
+            line_end,
             color,
             2,
         )
@@ -508,13 +1193,35 @@ def _track_report(
     track: StripeTrack | None,
     bounds: RoiBoundsGlobal,
     click_x_roi: int,
+    click_y_roi: int,
+    inverse_rotation_matrix: np.ndarray,
 ):
     if track is None:
         return None
+    point0, point1 = _track_line_endpoints_global(
+        track,
+        bounds.height_roi,
+        inverse_rotation_matrix,
+        bounds,
+    )
+    click_y_global = float(bounds.y0_global + click_y_roi)
+    line_dy = point1[1] - point0[1]
+    if abs(line_dy) < 1e-12:
+        center_x_global = point0[0]
+    else:
+        interpolation = (click_y_global - point0[1]) / line_dy
+        center_x_global = point0[0] + interpolation * (
+            point1[0] - point0[0]
+        )
     return {
         "track_id": track.track_id,
         "center_x_roi": round(track.center_x_roi, 3),
-        "center_x_global": round(bounds.x0_global + track.center_x_roi, 3),
+        "center_x_global": round(center_x_global, 3),
+        "center_y_global": round(click_y_global, 3),
+        "line_endpoints_global": [
+            [round(point0[0], 3), round(point0[1], 3)],
+            [round(point1[0], 3), round(point1[1], 3)],
+        ],
         "distance_to_click_px": round(
             abs(track.center_x_roi - click_x_roi), 3
         ),
@@ -554,13 +1261,47 @@ def _build_report(
     click_y_roi: int,
     bounds: RoiBoundsGlobal,
     selection: InteractiveStripeSelection,
-    analysis: AdjacentStripeAnalysis,
+    neighbor_consistency: dict,
+    baseline_neighbor_consistency: dict,
+    rotated_neighbor_consistency: dict | None,
+    baseline_analysis: AdjacentStripeAnalysis,
+    rotated_analysis: AdjacentStripeAnalysis | None,
     rotation: RotationShadowResult,
+    rotation_applied: bool,
+    rotation_guard_reasons: list[str],
+    rotation_fallback_reason: str | None,
+    rotation_matrix: np.ndarray,
+    inverse_rotation_matrix: np.ndarray,
     processing_config: ProcessingConfig,
     interactive_config: InteractiveConfig,
+    pitch_guard: dict,
+    pitch_reference_map: PitchReferenceMap,
+    selected_candidate: DetectionCandidate,
+    candidate_summaries: dict,
+    threshold_selection_reasons: dict,
+    geometry_selection_reason: str,
 ) -> dict:
-    left = _track_report(selection.left_track, bounds, click_x_roi)
-    right = _track_report(selection.right_track, bounds, click_x_roi)
+    left = _track_report(
+        selection.left_track,
+        bounds,
+        click_x_roi,
+        click_y_roi,
+        inverse_rotation_matrix,
+    )
+    right = _track_report(
+        selection.right_track,
+        bounds,
+        click_x_roi,
+        click_y_roi,
+        inverse_rotation_matrix,
+    )
+    clicked = _track_report(
+        selection.clicked_track,
+        bounds,
+        click_x_roi,
+        click_y_roi,
+        inverse_rotation_matrix,
+    )
     stripe_spacing = None
     if selection.left_track is not None and selection.right_track is not None:
         stripe_spacing = round(
@@ -577,8 +1318,22 @@ def _build_report(
     ):
         if flag not in warning_flags:
             warning_flags.append(flag)
+    if rotation_fallback_reason is not None:
+        warning_flags.append(rotation_fallback_reason)
+    if pitch_guard["status"] == "Suspicious":
+        warning_flags.append("whole_image_pitch_suspicious")
+    elif pitch_guard["status"] == "Unable to verify":
+        warning_flags.append("whole_image_pitch_unverifiable")
+    rotated_report = None
+    if rotated_analysis is not None:
+        rotated_report = analysis_to_dict(rotated_analysis, processing_config)
+        rotated_report["coordinate_space"] = (
+            "rotated_roi; use interactive_result for mapped global geometry"
+        )
     return {
-        "algorithm": "interactive_row_run_center_voting",
+        "algorithm": (
+            "interactive_layered_threshold_rotation_row_run_center_voting"
+        ),
         "image_name": image_name,
         "click": {
             "x_global": click_x_global,
@@ -596,26 +1351,69 @@ def _build_report(
             "height_px": bounds.height_roi,
         },
         "rotation_shadow": {
-            "applied_to_detection": False,
+            "applied_to_detection": rotation_applied,
+            "detection_space": selected_candidate.geometry,
             "best_angle_deg": round(rotation.best_angle_deg, 3),
+            "applied_angle_deg": (
+                round(rotation.best_angle_deg, 3) if rotation_applied else 0.0
+            ),
             "zero_angle_score": round(rotation.zero_angle_score, 8),
             "best_score": round(rotation.best_score, 8),
+            "relative_score_gain": round(
+                _relative_rotation_score_gain(rotation), 8
+            ),
             "peak_separation": round(rotation.peak_separation, 8),
+            "guard_eligible": not rotation_guard_reasons,
+            "guard_reasons": rotation_guard_reasons,
+            "fallback_reason": rotation_fallback_reason,
+            "baseline_neighbor_consistency": baseline_neighbor_consistency,
+            "candidate_neighbor_consistency": rotated_neighbor_consistency,
+            "matrix_original_to_detection": rotation_matrix.tolist(),
+            "matrix_detection_to_original": (
+                inverse_rotation_matrix.tolist()
+            ),
         },
         "interactive_result": {
             "success": selection.success,
             "failure_reasons": list(selection.failure_reasons),
             "warning_flags": warning_flags,
+            "threshold_method": selected_candidate.threshold_method,
+            "geometry": selected_candidate.geometry,
+            "combined_pitch_status": selected_candidate.quality[
+                "combined_pitch_status"
+            ],
             "clicked_track_id": (
                 None
                 if selection.clicked_track is None
                 else selection.clicked_track.track_id
             ),
+            "clicked": clicked,
+            "distance_definition": "horizontal_in_detection_space",
+            "neighbor_consistency": neighbor_consistency,
+            "pitch_guard": pitch_guard,
             "stripe_spacing_px": stripe_spacing,
             "left": left,
             "right": right,
         },
-        "legacy_analysis": analysis_to_dict(analysis, processing_config),
+        "candidate_arbitration": {
+            "candidates": candidate_summaries,
+            "threshold_selection_reasons": threshold_selection_reasons,
+            "geometry_selection_reason": geometry_selection_reason,
+            "final_threshold_method": selected_candidate.threshold_method,
+            "final_geometry": selected_candidate.geometry,
+        },
+        "pitch_reference": {
+            "tile_count": len(pitch_reference_map.tiles),
+            "valid_tile_count": pitch_reference_map.valid_tile_count,
+            "tile_width_px": pitch_reference_map.tile_width_px,
+            "tile_height_px": pitch_reference_map.tile_height_px,
+            "stride_x_px": pitch_reference_map.stride_x_px,
+            "stride_y_px": pitch_reference_map.stride_y_px,
+        },
+        "legacy_analysis": analysis_to_dict(
+            baseline_analysis, processing_config
+        ),
+        "rotated_analysis": rotated_report,
     }
 
 
@@ -635,12 +1433,23 @@ def run_interactive_case(
     processing_config: ProcessingConfig,
     interactive_config: InteractiveConfig,
     image_name: str = "interactive_image",
+    pitch_reference_map: PitchReferenceMap | None = None,
 ) -> InteractivePipelineResult:
     """Run one clicked-point case and save explainable debug outputs."""
 
     validate_interactive_config(interactive_config)
     if image_gray.ndim != 2:
         raise ValueError("image_gray must be a single-channel image")
+    if pitch_reference_map is None:
+        pitch_reference_map = build_pitch_reference_map(
+            image_gray,
+            processing_config,
+            interactive_config,
+        )
+    elif pitch_reference_map.image_shape != image_gray.shape[:2]:
+        raise ValueError(
+            "pitch_reference_map image shape does not match image_gray"
+        )
     bounds = calculate_interactive_roi_bounds(
         image_gray.shape,
         click_x_global,
@@ -648,58 +1457,173 @@ def run_interactive_case(
         interactive_config,
     )
     image_gray_roi = crop_roi_global(image_gray, bounds)
-    blurred_roi = gaussian_blur_roi(image_gray_roi, processing_config)
-    otsu_binary_roi = create_otsu_binary_roi(blurred_roi)
-    vertical_close_roi = apply_vertical_close_roi(
-        otsu_binary_roi, processing_config
-    )
-    close_delta_roi = create_close_delta_roi(
-        otsu_binary_roi, vertical_close_roi
-    )
-    black_mask_roi = create_black_mask_roi(vertical_close_roi)
     click_x_roi = click_x_global - bounds.x0_global
     click_y_roi = click_y_global - bounds.y0_global
-    legacy_analysis = analyze_adjacent_stripes(
-        black_mask_roi,
-        click_x_roi,
-        click_x_global,
-        bounds.x0_global,
-        processing_config,
-    )
-    selection = select_interactive_tracks(
-        black_mask_roi,
+    identity_matrix = _identity_affine_matrix()
+    original_candidates = _build_geometry_candidates(
+        image_gray_roi,
+        "original",
         click_x_roi,
         click_y_roi,
-        legacy_analysis,
+        click_x_global,
+        click_y_global,
+        bounds,
         processing_config,
+        interactive_config,
+        pitch_reference_map,
+        identity_matrix,
+        identity_matrix,
+    )
+    original_best, original_threshold_reason = (
+        _select_threshold_candidate(original_candidates)
+    )
+    original_by_method = {
+        candidate.threshold_method: candidate
+        for candidate in original_candidates
+    }
+    original_otsu = original_by_method["otsu"]
+    baseline_stages = original_otsu.stages
+    legacy_analysis = original_otsu.analysis
+    baseline_neighbor_consistency = (
+        original_best.neighbor_consistency
     )
     rotation_shadow = estimate_rotation_shadow(
-        vertical_close_roi,
+        baseline_stages.vertical_close,
         interactive_config,
     )
+    roi_warning_flags = _roi_warning_flags(
+        image_gray.shape,
+        click_x_global,
+        click_y_global,
+        interactive_config,
+    )
+    rotation_guard_reasons = _rotation_guard_reasons(
+        rotation_shadow,
+        roi_warning_flags,
+        interactive_config,
+    )
+    rotated_candidates = []
+    rotated_best = None
+    rotated_threshold_reason = "rotation_not_eligible"
+    rotation_fallback_reason = None
+    rotated_analysis = None
+    rotated_neighbor_consistency = None
+    rotation_candidate_stages = baseline_stages
+
+    if not rotation_guard_reasons:
+        candidate_matrix = _rotation_matrix_for_detection(
+            click_x_roi,
+            click_y_roi,
+            rotation_shadow.best_angle_deg,
+        )
+        rotated_gray_roi = _rotate_grayscale_for_detection(
+            image_gray_roi,
+            candidate_matrix,
+        )
+        candidate_inverse_matrix = cv2.invertAffineTransform(
+            candidate_matrix
+        )
+        rotated_candidates = _build_geometry_candidates(
+            rotated_gray_roi,
+            "rotated",
+            click_x_roi,
+            click_y_roi,
+            click_x_global,
+            click_y_global,
+            bounds,
+            processing_config,
+            interactive_config,
+            pitch_reference_map,
+            candidate_matrix,
+            candidate_inverse_matrix,
+        )
+        rotated_best, rotated_threshold_reason = (
+            _select_threshold_candidate(rotated_candidates)
+        )
+        rotation_candidate_stages = rotated_best.stages
+        rotated_analysis = rotated_best.analysis
+        rotated_neighbor_consistency = rotated_best.neighbor_consistency
+
+    selected_candidate, geometry_selection_reason = (
+        _select_geometry_candidate(original_best, rotated_best)
+    )
+    rotation_applied = selected_candidate.geometry == "rotated"
+    if rotated_best is not None and not rotation_applied:
+        rotation_fallback_reason = (
+            f"rotation_candidate_not_selected_{geometry_selection_reason}"
+        )
+    active_stages = selected_candidate.stages
+    active_analysis = selected_candidate.analysis
+    selection = _selection_for_output(selected_candidate)
+    neighbor_consistency = selected_candidate.neighbor_consistency
+    rotation_matrix = selected_candidate.rotation_matrix
+    inverse_rotation_matrix = selected_candidate.inverse_rotation_matrix
+    pitch_guard = evaluate_pitch_guard(
+        selection,
+        click_x_global,
+        click_y_global,
+        pitch_reference_map,
+        interactive_config,
+    )
+    candidate_summaries = {}
+    for geometry, candidates in (
+        ("original", original_candidates),
+        ("rotated", rotated_candidates),
+    ):
+        by_method = {
+            candidate.threshold_method: candidate
+            for candidate in candidates
+        }
+        for threshold_method in ("otsu", "adaptive"):
+            key = f"{geometry}_{threshold_method}"
+            candidate = by_method.get(threshold_method)
+            if candidate is None:
+                reason = (
+                    "rotation_not_eligible"
+                    if geometry == "rotated" and rotation_guard_reasons
+                    else "threshold_method_unavailable"
+                )
+                candidate_summaries[key] = {
+                    "evaluated": False,
+                    "geometry": geometry,
+                    "threshold_method": threshold_method,
+                    "reason": reason,
+                }
+            else:
+                candidate_summaries[key] = _candidate_summary(candidate)
+    threshold_selection_reasons = {
+        "original": original_threshold_reason,
+        "rotated": rotated_threshold_reason,
+    }
+
     original_overlay = _create_original_overlay(
         image_gray,
         bounds,
         click_x_global,
         click_y_global,
         selection,
+        inverse_rotation_matrix,
     )
     interactive_result = _create_interactive_roi_result(
-        image_gray_roi,
+        active_stages.image_gray,
         click_x_roi,
         click_y_roi,
         selection,
     )
     candidates_debug = _create_interactive_candidates_debug(
-        black_mask_roi,
-        legacy_analysis,
+        active_stages.black_mask,
+        active_analysis,
         selection,
         click_x_roi,
         click_y_roi,
     )
     votes_debug = _create_interactive_votes_debug(
-        legacy_analysis,
+        active_analysis,
         selection,
+    )
+    pitch_reference_debug = create_pitch_reference_debug(
+        image_gray,
+        pitch_reference_map,
     )
     report = _build_report(
         image_name,
@@ -710,30 +1634,67 @@ def run_interactive_case(
         click_y_roi,
         bounds,
         selection,
+        neighbor_consistency,
+        baseline_neighbor_consistency,
+        rotated_neighbor_consistency,
         legacy_analysis,
+        rotated_analysis,
         rotation_shadow,
+        rotation_applied,
+        rotation_guard_reasons,
+        rotation_fallback_reason,
+        rotation_matrix,
+        inverse_rotation_matrix,
         processing_config,
         interactive_config,
+        pitch_guard,
+        pitch_reference_map,
+        selected_candidate,
+        candidate_summaries,
+        threshold_selection_reasons,
+        geometry_selection_reason,
     )
     debug_images = {
         "original_interactive_result.png": original_overlay,
         "roi_debug.png": original_overlay,
         "roi_crop.png": image_gray_roi,
-        "roi_gray.png": image_gray_roi,
-        "otsu_binary.png": otsu_binary_roi,
-        "vertical_close.png": vertical_close_roi,
-        "close_delta.png": close_delta_roi,
-        "black_mask.png": black_mask_roi,
+        "roi_gray.png": active_stages.image_gray,
+        "unrotated_roi_gray.png": baseline_stages.image_gray,
+        "rotation_candidate_roi_gray.png": (
+            rotation_candidate_stages.image_gray
+        ),
+        "otsu_binary.png": active_stages.otsu_binary,
+        "threshold_binary.png": active_stages.threshold_binary,
+        "vertical_close.png": active_stages.vertical_close,
+        "close_delta.png": active_stages.close_delta,
+        "black_mask.png": active_stages.black_mask,
+        "unrotated_black_mask.png": baseline_stages.black_mask,
+        "rotation_candidate_black_mask.png": (
+            rotation_candidate_stages.black_mask
+        ),
         "black_run_candidates.png": candidates_debug,
         "stripe_center_votes.png": votes_debug,
         "interactive_result.png": interactive_result,
         "rotation_score.png": rotation_shadow.score_chart,
         "rotation_preview.png": rotation_shadow.preview_image,
+        "pitch_reference_map.png": pitch_reference_debug,
     }
+    for candidate in original_candidates + rotated_candidates:
+        prefix = f"{candidate.geometry}_{candidate.threshold_method}"
+        debug_images[f"{prefix}_binary.png"] = (
+            candidate.stages.threshold_binary
+        )
+        debug_images[f"{prefix}_black_mask.png"] = (
+            candidate.stages.black_mask
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     for filename, image in debug_images.items():
         save_debug_image(output_dir / filename, image)
     _save_report(output_dir / "interactive_results.json", report)
+    _save_report(
+        output_dir / "pitch_reference_map.json",
+        pitch_reference_map.to_dict(),
+    )
     return InteractivePipelineResult(
         click_x_global=click_x_global,
         click_y_global=click_y_global,
@@ -741,9 +1702,12 @@ def run_interactive_case(
         click_y_roi=click_y_roi,
         bounds_global=bounds,
         legacy_analysis=legacy_analysis,
+        active_analysis=active_analysis,
         selection=selection,
         rotation_shadow=rotation_shadow,
+        rotation_applied=rotation_applied,
         report=report,
         debug_images=debug_images,
         output_dir=output_dir,
+        pitch_reference_map=pitch_reference_map,
     )

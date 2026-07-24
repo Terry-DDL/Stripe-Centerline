@@ -3,4 +3,10 @@ __pycache__/
 *.pyc
 outputs/
 .venv/
+.venv-desktop/
 venv/
+.pytest_cache/
+build/
+dist/
+*.spec
+images/

@@ -63,6 +63,27 @@ def validate_config(config: ProcessingConfig) -> None:
         raise ValueError("min_width_tolerance_px must not be negative")
     if not 0.0 < config.min_stripe_support_ratio <= 1.0:
         raise ValueError("min_stripe_support_ratio must be between 0.0 and 1.0")
+    if not (
+        0.0
+        < config.min_clicked_track_support_ratio
+        <= config.min_stripe_support_ratio
+    ):
+        raise ValueError(
+            "min_clicked_track_support_ratio must be positive and no "
+            "greater than min_stripe_support_ratio"
+        )
+    if config.clicked_track_min_local_contrast < 0.0:
+        raise ValueError(
+            "clicked_track_min_local_contrast must not be negative"
+        )
+    if config.clicked_track_contrast_half_width_px < 3:
+        raise ValueError(
+            "clicked_track_contrast_half_width_px must be at least 3"
+        )
+    if config.clicked_track_contrast_half_height_px < 0:
+        raise ValueError(
+            "clicked_track_contrast_half_height_px must not be negative"
+        )
     if config.line_thickness <= 0:
         raise ValueError("line_thickness must be greater than 0")
 

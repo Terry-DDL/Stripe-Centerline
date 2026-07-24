@@ -1,0 +1,83 @@
+{
+  "reviewer_note": "Confirmed by the user on 2026-07-24 from the 40 numbered review images.",
+  "decisions": {
+    "S09-01": {"choice": "both"},
+    "S09-02": {"choice": "both"},
+    "S09-03": {"choice": "both"},
+    "S09-04": {"choice": "both"},
+    "S09-05": {"choice": "both"},
+    "S09-06": {"choice": "adaptive"},
+    "S09-07": {"choice": "adaptive"},
+    "S09-08": {"choice": "adaptive"},
+    "S09-09": {"choice": "adaptive"},
+    "S09-10": {"choice": "adaptive"},
+    "S09-11": {
+      "choice": "override",
+      "valid_pair": true,
+      "click_classification": "white_region",
+      "clicked_center_x": null,
+      "left_center_x": 272.5,
+      "right_center_x": 291.0,
+      "notes": "Both methods skipped a faint but closer right stripe and incorrectly selected the stripe near x=306."
+    },
+    "S09-12": {
+      "choice": "override",
+      "valid_pair": true,
+      "click_classification": "black_stripe",
+      "clicked_center_x": 564.0,
+      "left_center_x": 545.0,
+      "right_center_x": 578.25,
+      "notes": "The pair is numerically correct, but both methods called the clicked faint black stripe a white region."
+    },
+    "S09-13": {"choice": "both"},
+    "S09-14": {"choice": "adaptive"},
+    "S09-15": {"choice": "both"},
+    "S09-16": {"choice": "both"},
+    "S09-17": {"choice": "both"},
+    "S09-18": {"choice": "both"},
+    "S09-19": {"choice": "both"},
+    "S09-20": {"choice": "both"},
+
+    "S10-01": {"choice": "both"},
+    "S10-02": {"choice": "both"},
+    "S10-03": {"choice": "both"},
+    "S10-04": {"choice": "both"},
+    "S10-05": {"choice": "both"},
+    "S10-06": {"choice": "adaptive"},
+    "S10-07": {"choice": "adaptive"},
+    "S10-08": {"choice": "adaptive"},
+    "S10-09": {"choice": "adaptive"},
+    "S10-10": {"choice": "adaptive"},
+    "S10-11": {"choice": "both"},
+    "S10-12": {"choice": "both"},
+    "S10-13": {"choice": "both"},
+    "S10-14": {"choice": "both"},
+    "S10-15": {"choice": "both"},
+    "S10-16": {
+      "choice": "adaptive",
+      "notes": "No complete valid pair; the adaptive partial left boundary near x=1093.5 is the consistent visible boundary."
+    },
+    "S10-17": {
+      "choice": "adaptive",
+      "notes": "No complete valid pair; the adaptive partial right boundary near x=1297.5 is the consistent visible boundary."
+    },
+    "S10-18": {
+      "choice": "adaptive",
+      "notes": "No complete valid pair; the adaptive partial left boundary near x=1092.5 is the consistent visible boundary."
+    },
+    "S10-19": {
+      "choice": "adaptive",
+      "notes": "No complete valid pair; the adaptive partial right boundary near x=1295.5 is the consistent visible boundary."
+    },
+    "S10-20": {
+      "choice": "override",
+      "valid_pair": false,
+      "click_classification": "white_region",
+      "clicked_center_x": null,
+      "left_center_x": null,
+      "right_center_x": null,
+      "expected_partial_left_center_x": 1097.0,
+      "notes": "No complete valid pair. Adaptive selected x=1075, one stripe left of the consistent visible boundary around x=1093-1099."
+    }
+  }
+}

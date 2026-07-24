@@ -67,6 +67,10 @@ class ProcessingConfig:
     max_width_deviation_ratio: float = 0.75
     min_width_tolerance_px: int = 3
     min_stripe_support_ratio: float = 0.5
+    min_clicked_track_support_ratio: float = 0.05
+    clicked_track_min_local_contrast: float = 20.0
+    clicked_track_contrast_half_width_px: int = 6
+    clicked_track_contrast_half_height_px: int = 5
     reject_border_touching_runs: bool = True
 
     reference_line_color_bgr: tuple[int, int, int] = (0, 0, 255)
@@ -135,10 +139,46 @@ class InteractiveConfig:
 
     output_root_dir: Path = PROJECT_ROOT / "outputs" / "interactive"
     roi_half_width_px: int = 250
-    roi_half_height_px: int = 250
+    roi_half_height_px: int = 100
+    selection_zoom_half_width_px: int = 120
+    selection_zoom_half_height_px: int = 100
+    selection_zoom_scale: float = 3.0
+    magnifier_source_width_px: int = 80
+    magnifier_source_height_px: int = 60
+    magnifier_scale: float = 4.0
+    magnifier_offset_px: int = 18
+    magnifier_refresh_ms: int = 16
+    desktop_full_image_max_width_px: int = 620
+    desktop_full_image_max_height_px: int = 560
+    desktop_zoom_max_width_px: int = 480
+    desktop_zoom_max_height_px: int = 460
+    desktop_result_full_max_width_px: int = 540
+    desktop_result_full_max_height_px: int = 500
+    desktop_result_roi_max_width_px: int = 500
+    desktop_result_roi_max_height_px: int = 260
     rotation_min_angle_deg: float = -10.0
     rotation_max_angle_deg: float = 10.0
     rotation_angle_step_deg: float = 0.25
+    rotation_apply_enabled: bool = True
+    rotation_min_abs_angle_deg: float = 0.5
+    rotation_min_relative_score_gain: float = 0.10
+    rotation_min_peak_separation: float = 0.01
+    adaptive_threshold_enabled: bool = True
+    adaptive_threshold_block_size: int = 31
+    adaptive_threshold_c: float = 5.0
+    neighbor_max_span_pitch_ratio: float = 1.5
+    neighbor_min_pitch_track_count: int = 3
+    pitch_map_tile_width_px: int = 500
+    pitch_map_tile_height_px: int = 200
+    pitch_map_stride_x_px: int = 250
+    pitch_map_stride_y_px: int = 100
+    pitch_map_row_step_px: int = 4
+    pitch_map_gap_cluster_tolerance_ratio: float = 0.20
+    pitch_map_min_gap_count: int = 3
+    pitch_map_min_cluster_support_ratio: float = 0.60
+    pitch_map_max_neighbor_disagreement_ratio: float = 0.25
+    pitch_guard_min_interval_ratio: float = 0.67
+    pitch_guard_max_interval_ratio: float = 1.5
     display_max_width_px: int = 1100
 
 

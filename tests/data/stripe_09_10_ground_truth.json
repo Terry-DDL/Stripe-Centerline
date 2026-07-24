@@ -1,0 +1,890 @@
+{
+  "schema_version": 1,
+  "review_status": "confirmed",
+  "center_tolerance_px": 3.0,
+  "case_count": 40,
+  "reviewer_note": "Confirmed by the user on 2026-07-24 from the 40 numbered review images.",
+  "cases": [
+    {
+      "id": "S09-01",
+      "stripe": 9,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 1509,
+        "y": 687
+      },
+      "review_image": "cases/S09-01.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1502.5,
+        "right_center_x": 1520.75,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-02",
+      "stripe": 9,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 1226,
+        "y": 801
+      },
+      "review_image": "cases/S09-02.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1213.25,
+        "right_center_x": 1233.0,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-03",
+      "stripe": 9,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 1415,
+        "y": 801
+      },
+      "review_image": "cases/S09-03.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1410.25,
+        "right_center_x": 1430.75,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-04",
+      "stripe": 9,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 1604,
+        "y": 801
+      },
+      "review_image": "cases/S09-04.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1593.0,
+        "right_center_x": 1612.0,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-05",
+      "stripe": 9,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 1698,
+        "y": 801
+      },
+      "review_image": "cases/S09-05.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1684.25,
+        "right_center_x": 1703.25,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-06",
+      "stripe": 9,
+      "category": "method_disagreement",
+      "screenshot_point": true,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 1357,
+        "y": 706
+      },
+      "review_image": "cases/S09-06.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 1356.0,
+        "left_center_x": 1340.0,
+        "right_center_x": 1376.0,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-07",
+      "stripe": 9,
+      "category": "method_disagreement",
+      "screenshot_point": true,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 1377,
+        "y": 754
+      },
+      "review_image": "cases/S09-07.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 1376.0,
+        "left_center_x": 1355.0,
+        "right_center_x": 1394.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-08",
+      "stripe": 9,
+      "category": "method_disagreement",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 280,
+        "y": 687
+      },
+      "review_image": "cases/S09-08.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 272.5,
+        "right_center_x": 291.0,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-09",
+      "stripe": 9,
+      "category": "method_disagreement",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 375,
+        "y": 687
+      },
+      "review_image": "cases/S09-09.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 363.0,
+        "right_center_x": 381.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-10",
+      "stripe": 9,
+      "category": "method_disagreement",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 469,
+        "y": 687
+      },
+      "review_image": "cases/S09-10.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 453.5,
+        "right_center_x": 472.0,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-11",
+      "stripe": 9,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 280,
+        "y": 801
+      },
+      "review_image": "cases/S09-11.png",
+      "reviewed_choice": "override",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 272.5,
+        "right_center_x": 291.0,
+        "notes": "Both methods skipped a faint but closer right stripe and incorrectly selected the stripe near x=306."
+      }
+    },
+    {
+      "id": "S09-12",
+      "stripe": 9,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 564,
+        "y": 801
+      },
+      "review_image": "cases/S09-12.png",
+      "reviewed_choice": "override",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 564.0,
+        "left_center_x": 545.0,
+        "right_center_x": 578.25,
+        "notes": "The pair is numerically correct, but both methods called the clicked faint black stripe a white region."
+      }
+    },
+    {
+      "id": "S09-13",
+      "stripe": 9,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 753,
+        "y": 801
+      },
+      "review_image": "cases/S09-13.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 741.75,
+        "right_center_x": 762.0,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-14",
+      "stripe": 9,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 942,
+        "y": 801
+      },
+      "review_image": "cases/S09-14.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 943.0,
+        "left_center_x": 923.5,
+        "right_center_x": 958.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-15",
+      "stripe": 9,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 753,
+        "y": 914
+      },
+      "review_image": "cases/S09-15.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 741.5,
+        "right_center_x": 762.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-16",
+      "stripe": 9,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 280,
+        "y": 120
+      },
+      "review_image": "cases/S09-16.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": null,
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-17",
+      "stripe": 9,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 375,
+        "y": 120
+      },
+      "review_image": "cases/S09-17.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": null,
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-18",
+      "stripe": 9,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 469,
+        "y": 120
+      },
+      "review_image": "cases/S09-18.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": null,
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-19",
+      "stripe": 9,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 564,
+        "y": 120
+      },
+      "review_image": "cases/S09-19.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": null,
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S09-20",
+      "stripe": 9,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "click": {
+        "x": 658,
+        "y": 120
+      },
+      "review_image": "cases/S09-20.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": null,
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-01",
+      "stripe": 10,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 375,
+        "y": 120
+      },
+      "review_image": "cases/S10-01.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 372.5,
+        "left_center_x": 358.5,
+        "right_center_x": 386.25,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-02",
+      "stripe": 10,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 469,
+        "y": 120
+      },
+      "review_image": "cases/S10-02.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 459.875,
+        "right_center_x": 474.25,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-03",
+      "stripe": 10,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 942,
+        "y": 120
+      },
+      "review_image": "cases/S10-03.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 936.0,
+        "right_center_x": 952.25,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-04",
+      "stripe": 10,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1509,
+        "y": 120
+      },
+      "review_image": "cases/S10-04.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1501.75,
+        "right_center_x": 1517.375,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-05",
+      "stripe": 10,
+      "category": "agree_normal",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1604,
+        "y": 120
+      },
+      "review_image": "cases/S10-05.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 1602.25,
+        "left_center_x": 1588.75,
+        "right_center_x": 1617.75,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-06",
+      "stripe": 10,
+      "category": "method_disagreement",
+      "screenshot_point": true,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1250,
+        "y": 217
+      },
+      "review_image": "cases/S10-06.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 1253.0,
+        "left_center_x": 1240.5,
+        "right_center_x": 1270.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-07",
+      "stripe": 10,
+      "category": "method_disagreement",
+      "screenshot_point": true,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1557,
+        "y": 324
+      },
+      "review_image": "cases/S10-07.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 1556.0,
+        "left_center_x": 1543.5,
+        "right_center_x": 1570.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-08",
+      "stripe": 10,
+      "category": "method_disagreement",
+      "screenshot_point": true,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1759,
+        "y": 439
+      },
+      "review_image": "cases/S10-08.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 1757.5,
+        "left_center_x": 1744.5,
+        "right_center_x": 1772.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-09",
+      "stripe": 10,
+      "category": "method_disagreement",
+      "screenshot_point": true,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 714,
+        "y": 512
+      },
+      "review_image": "cases/S10-09.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 715.5,
+        "left_center_x": 702.5,
+        "right_center_x": 730.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-10",
+      "stripe": 10,
+      "category": "method_disagreement",
+      "screenshot_point": true,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1916,
+        "y": 897
+      },
+      "review_image": "cases/S10-10.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 1913.5,
+        "left_center_x": 1895.5,
+        "right_center_x": 1925.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-11",
+      "stripe": 10,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 564,
+        "y": 120
+      },
+      "review_image": "cases/S10-11.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 567.25,
+        "left_center_x": 547.75,
+        "right_center_x": 591.75,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-12",
+      "stripe": 10,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 564,
+        "y": 233
+      },
+      "review_image": "cases/S10-12.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 566.375,
+        "left_center_x": 546.75,
+        "right_center_x": 590.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-13",
+      "stripe": 10,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1131,
+        "y": 233
+      },
+      "review_image": "cases/S10-13.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1112.75,
+        "right_center_x": 1145.75,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-14",
+      "stripe": 10,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 564,
+        "y": 347
+      },
+      "review_image": "cases/S10-14.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "black_stripe",
+        "clicked_center_x": 565.25,
+        "left_center_x": 545.25,
+        "right_center_x": 589.25,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-15",
+      "stripe": 10,
+      "category": "suspicious_or_defect",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1131,
+        "y": 347
+      },
+      "review_image": "cases/S10-15.png",
+      "reviewed_choice": "both",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": true,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": 1111.375,
+        "right_center_x": 1144.5,
+        "notes": ""
+      }
+    },
+    {
+      "id": "S10-16",
+      "stripe": 10,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1131,
+        "y": 1368
+      },
+      "review_image": "cases/S10-16.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": "No complete valid pair; the adaptive partial left boundary near x=1093.5 is the consistent visible boundary."
+      }
+    },
+    {
+      "id": "S10-17",
+      "stripe": 10,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1226,
+        "y": 1368
+      },
+      "review_image": "cases/S10-17.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": "No complete valid pair; the adaptive partial right boundary near x=1297.5 is the consistent visible boundary."
+      }
+    },
+    {
+      "id": "S10-18",
+      "stripe": 10,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1131,
+        "y": 1481
+      },
+      "review_image": "cases/S10-18.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": "No complete valid pair; the adaptive partial left boundary near x=1092.5 is the consistent visible boundary."
+      }
+    },
+    {
+      "id": "S10-19",
+      "stripe": 10,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1226,
+        "y": 1481
+      },
+      "review_image": "cases/S10-19.png",
+      "reviewed_choice": "adaptive",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": "No complete valid pair; the adaptive partial right boundary near x=1295.5 is the consistent visible boundary."
+      }
+    },
+    {
+      "id": "S10-20",
+      "stripe": 10,
+      "category": "negative_candidate",
+      "screenshot_point": false,
+      "image_path": "images/Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "click": {
+        "x": 1131,
+        "y": 1595
+      },
+      "review_image": "cases/S10-20.png",
+      "reviewed_choice": "override",
+      "ground_truth": {
+        "review_status": "confirmed",
+        "valid_pair": false,
+        "click_classification": "white_region",
+        "clicked_center_x": null,
+        "left_center_x": null,
+        "right_center_x": null,
+        "notes": "No complete valid pair. Adaptive selected x=1075, one stripe left of the consistent visible boundary around x=1093-1099.",
+        "expected_partial_left_center_x": 1097.0
+      }
+    }
+  ]
+}

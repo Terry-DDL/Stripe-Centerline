@@ -24,6 +24,12 @@ from interactive_pipeline import run_interactive_case  # noqa: E402
 
 
 SUPPORTED_SUFFIXES = {".bmp", ".png", ".jpg", ".jpeg"}
+ACTIVE_IMAGE_STATE_KEY = "active_image_identity"
+ZOOM_CENTER_STATE_KEY = "selection_zoom_center"
+CLICK_POINT_STATE_KEY = "selection_click_point"
+RESULT_STATE_KEY = "selection_result"
+FULL_IMAGE_REVISION_KEY = "full_image_widget_revision"
+ZOOM_IMAGE_REVISION_KEY = "zoom_image_widget_revision"
 
 
 def project_image_paths() -> list[Path]:
@@ -60,6 +66,30 @@ def safe_stem(filename: str) -> str:
     return safe or "image"
 
 
+def next_widget_revision(state, key: str) -> int:
+    """Advance one component revision so an old click cannot be reused."""
+
+    revision = int(state.get(key, 0)) + 1
+    state[key] = revision
+    return revision
+
+
+def prepare_image_state(state, image_identity: str) -> bool:
+    """Clear interaction state when the selected image really changes."""
+
+    state.setdefault(FULL_IMAGE_REVISION_KEY, 0)
+    state.setdefault(ZOOM_IMAGE_REVISION_KEY, 0)
+    if state.get(ACTIVE_IMAGE_STATE_KEY) == image_identity:
+        return False
+    state[ACTIVE_IMAGE_STATE_KEY] = image_identity
+    state.pop(ZOOM_CENTER_STATE_KEY, None)
+    state.pop(CLICK_POINT_STATE_KEY, None)
+    state.pop(RESULT_STATE_KEY, None)
+    next_widget_revision(state, FULL_IMAGE_REVISION_KEY)
+    next_widget_revision(state, ZOOM_IMAGE_REVISION_KEY)
+    return True
+
+
 def display_image_and_scale(image_gray):
     """Resize the browser copy and return exact display-to-source scales."""
 
@@ -82,10 +112,105 @@ def display_image_and_scale(image_gray):
     )
 
 
-def draw_click_preview(image_gray, click_point: tuple[int, int] | None):
-    """Draw the stored click and ROI on the browser display copy."""
+def zoom_bounds(
+    image_shape: tuple[int, ...],
+    center_point: tuple[int, int],
+) -> tuple[int, int, int, int]:
+    """Return a clipped source-image rectangle for precise point selection."""
+
+    height, width = image_shape[:2]
+    center_x, center_y = center_point
+    return (
+        max(0, center_x - INTERACTIVE_CONFIG.selection_zoom_half_width_px),
+        max(0, center_y - INTERACTIVE_CONFIG.selection_zoom_half_height_px),
+        min(width, center_x + INTERACTIVE_CONFIG.selection_zoom_half_width_px),
+        min(height, center_y + INTERACTIVE_CONFIG.selection_zoom_half_height_px),
+    )
+
+
+def map_display_point_to_source(
+    x_display: float,
+    y_display: float,
+    scale_x_to_source: float,
+    scale_y_to_source: float,
+    image_shape: tuple[int, ...],
+    x0_source: int = 0,
+    y0_source: int = 0,
+) -> tuple[int, int]:
+    """Map one browser-image click back to a clipped source coordinate."""
+
+    height, width = image_shape[:2]
+    x_source = x0_source + round(x_display * scale_x_to_source)
+    y_source = y0_source + round(y_display * scale_y_to_source)
+    return (
+        min(width - 1, max(0, x_source)),
+        min(height - 1, max(0, y_source)),
+    )
+
+
+def create_zoom_display(
+    image_gray,
+    center_point: tuple[int, int],
+    click_point: tuple[int, int] | None,
+):
+    """Create an enlarged local image and its display-to-source mapping."""
+
+    x0, y0, x1, y1 = zoom_bounds(image_gray.shape, center_point)
+    zoom_rgb = cv2.cvtColor(image_gray[y0:y1, x0:x1], cv2.COLOR_GRAY2RGB)
+    if click_point is not None:
+        click_x, click_y = click_point
+        if x0 <= click_x < x1 and y0 <= click_y < y1:
+            cv2.drawMarker(
+                zoom_rgb,
+                (click_x - x0, click_y - y0),
+                (255, 0, 0),
+                cv2.MARKER_CROSS,
+                11,
+                1,
+            )
+    source_height, source_width = zoom_rgb.shape[:2]
+    display_width = max(
+        1,
+        round(source_width * INTERACTIVE_CONFIG.selection_zoom_scale),
+    )
+    display_height = max(
+        1,
+        round(source_height * INTERACTIVE_CONFIG.selection_zoom_scale),
+    )
+    enlarged = cv2.resize(
+        zoom_rgb,
+        (display_width, display_height),
+        interpolation=cv2.INTER_NEAREST,
+    )
+    return (
+        enlarged,
+        x0,
+        y0,
+        source_width / display_width,
+        source_height / display_height,
+    )
+
+
+def draw_click_preview(
+    image_gray,
+    click_point: tuple[int, int] | None,
+    zoom_center: tuple[int, int] | None = None,
+):
+    """Draw the zoom area, stored click, and ROI on the display copy."""
 
     preview = cv2.cvtColor(image_gray, cv2.COLOR_GRAY2RGB)
+    if zoom_center is not None:
+        zoom_x0, zoom_y0, zoom_x1, zoom_y1 = zoom_bounds(
+            image_gray.shape,
+            zoom_center,
+        )
+        cv2.rectangle(
+            preview,
+            (zoom_x0, zoom_y0),
+            (zoom_x1 - 1, zoom_y1 - 1),
+            (255, 180, 0),
+            2,
+        )
     if click_point is None:
         return preview
     click_x, click_y = click_point
@@ -195,7 +320,7 @@ def show_analysis_result(result) -> None:
         else "unavailable",
     )
     st.write(f"click classification: `{click['classification']}`")
-    st.write(f"clicked/excluded track: `{interactive_result['clicked_track_id']}`")
+    st.write(f"clicked track: `{interactive_result['clicked_track_id']}`")
     warning_flags = interactive_result["warning_flags"]
     if warning_flags:
         st.warning("warning_flags: " + " | ".join(warning_flags))
@@ -225,11 +350,26 @@ def show_analysis_result(result) -> None:
             width="stretch",
         )
 
-    st.subheader("Rotation shadow (not applied to detection)")
-    angle_column, score_column, separation_column = st.columns(3)
-    angle_column.metric("Estimated correction", f"{rotation['best_angle_deg']}°")
-    score_column.metric("Best score", rotation["best_score"])
-    separation_column.metric("Peak separation", rotation["peak_separation"])
+    st.subheader("Guarded rotation detection")
+    applied_column, angle_column, space_column = st.columns(3)
+    applied_column.metric(
+        "Applied to detection",
+        str(rotation["applied_to_detection"]),
+    )
+    angle_column.metric(
+        "Estimated / applied angle",
+        f"{rotation['best_angle_deg']}° / {rotation['applied_angle_deg']}°",
+    )
+    space_column.metric("Detection space", rotation["detection_space"])
+    st.write(
+        "rotation score gain: "
+        f"`{rotation['relative_score_gain']}`; "
+        f"peak separation: `{rotation['peak_separation']}`"
+    )
+    if rotation["guard_reasons"]:
+        st.caption("Not applied: " + " | ".join(rotation["guard_reasons"]))
+    if rotation["fallback_reason"] is not None:
+        st.warning(rotation["fallback_reason"])
     rotation_chart, rotation_preview = st.columns(2)
     with rotation_chart:
         st.image(
@@ -239,7 +379,7 @@ def show_analysis_result(result) -> None:
     with rotation_preview:
         st.image(
             result.debug_images["rotation_preview.png"],
-            caption="Best-angle preview only",
+            caption="Best-angle binary preview",
             width="stretch",
         )
     st.caption(f"Debug output: {result.output_dir}")
@@ -264,17 +404,24 @@ def main() -> None:
         return
     image_name, image_bytes = selected
     image_hash = hashlib.sha256(image_bytes).hexdigest()[:8]
+    image_identity = f"{image_name}:{image_hash}"
+    prepare_image_state(st.session_state, image_identity)
     try:
         image_gray = decode_grayscale_image(image_bytes)
     except ValueError as error:
         st.error(str(error))
         return
 
-    click_state_key = f"click_{image_hash}"
-    click_event_key = f"click_event_{image_hash}"
-    result_state_key = f"result_{image_hash}"
-    click_point = st.session_state.get(click_state_key)
-    preview_original = draw_click_preview(image_gray, click_point)
+    image_height, image_width = image_gray.shape[:2]
+    st.caption(f"Loaded: {image_name} ({image_width} × {image_height} px)")
+
+    click_point = st.session_state.get(CLICK_POINT_STATE_KEY)
+    zoom_center = st.session_state.get(ZOOM_CENTER_STATE_KEY)
+    preview_original = draw_click_preview(
+        image_gray,
+        click_point,
+        zoom_center,
+    )
     preview_gray = cv2.cvtColor(preview_original, cv2.COLOR_RGB2GRAY)
     display_image, scale_x_to_source, scale_y_to_source = (
         display_image_and_scale(preview_gray)
@@ -286,37 +433,75 @@ def main() -> None:
             interpolation=cv2.INTER_AREA,
         )
 
-    st.subheader("Click a reference point")
+    st.subheader("1. Choose a local area")
+    st.caption("Click the full image once to open a magnified local view.")
     click_value = streamlit_image_coordinates(
         display_image,
         width=display_image.shape[1],
-        key=f"image_coordinates_{image_hash}",
+        key=(
+            f"image_coordinates_{image_hash}_"
+            f"{st.session_state[FULL_IMAGE_REVISION_KEY]}"
+        ),
+        png_compression_level=6,
         cursor="crosshair",
     )
     if click_value is not None:
-        event_token = (
-            click_value.get("x"),
-            click_value.get("y"),
-            click_value.get("unix_time"),
+        coarse_point = map_display_point_to_source(
+            click_value["x"],
+            click_value["y"],
+            scale_x_to_source,
+            scale_y_to_source,
+            image_gray.shape,
         )
-        if event_token != st.session_state.get(click_event_key):
-            x_global = min(
-                image_gray.shape[1] - 1,
-                max(0, round(click_value["x"] * scale_x_to_source)),
+        st.session_state[ZOOM_CENTER_STATE_KEY] = coarse_point
+        st.session_state.pop(CLICK_POINT_STATE_KEY, None)
+        st.session_state.pop(RESULT_STATE_KEY, None)
+        next_widget_revision(st.session_state, FULL_IMAGE_REVISION_KEY)
+        next_widget_revision(st.session_state, ZOOM_IMAGE_REVISION_KEY)
+        st.rerun()
+
+    zoom_center = st.session_state.get(ZOOM_CENTER_STATE_KEY)
+    click_point = st.session_state.get(CLICK_POINT_STATE_KEY)
+    if zoom_center is None:
+        st.info("Choose an area in the full image first.")
+    else:
+        st.subheader("2. Click the precise reference point")
+        st.caption(
+            "The local image is enlarged 3×. Click it to set the final point."
+        )
+        (
+            zoom_display,
+            zoom_x0,
+            zoom_y0,
+            zoom_scale_x,
+            zoom_scale_y,
+        ) = create_zoom_display(image_gray, zoom_center, click_point)
+        zoom_value = streamlit_image_coordinates(
+            zoom_display,
+            width=zoom_display.shape[1],
+            key=(
+                f"zoom_coordinates_{image_hash}_"
+                f"{st.session_state[ZOOM_IMAGE_REVISION_KEY]}"
+            ),
+            png_compression_level=6,
+            cursor="crosshair",
+        )
+        if zoom_value is not None:
+            precise_point = map_display_point_to_source(
+                zoom_value["x"],
+                zoom_value["y"],
+                zoom_scale_x,
+                zoom_scale_y,
+                image_gray.shape,
+                zoom_x0,
+                zoom_y0,
             )
-            y_global = min(
-                image_gray.shape[0] - 1,
-                max(0, round(click_value["y"] * scale_y_to_source)),
-            )
-            st.session_state[click_state_key] = (x_global, y_global)
-            st.session_state[click_event_key] = event_token
-            st.session_state.pop(result_state_key, None)
+            st.session_state[CLICK_POINT_STATE_KEY] = precise_point
+            st.session_state.pop(RESULT_STATE_KEY, None)
+            next_widget_revision(st.session_state, ZOOM_IMAGE_REVISION_KEY)
             st.rerun()
 
-    click_point = st.session_state.get(click_state_key)
-    if click_point is None:
-        st.info("Click the image to choose a reference point.")
-    else:
+    if click_point is not None:
         st.write(f"Selected reference point: `{click_point}`")
 
     if st.button(
@@ -332,7 +517,7 @@ def main() -> None:
         )
         try:
             with st.spinner("Analyzing ROI..."):
-                st.session_state[result_state_key] = run_interactive_case(
+                st.session_state[RESULT_STATE_KEY] = run_interactive_case(
                     image_gray,
                     click_x,
                     click_y,
@@ -344,7 +529,7 @@ def main() -> None:
         except (OSError, ValueError, cv2.error) as error:
             st.error(f"Analysis failed: {error}")
 
-    result = st.session_state.get(result_state_key)
+    result = st.session_state.get(RESULT_STATE_KEY)
     if result is not None:
         show_analysis_result(result)
 

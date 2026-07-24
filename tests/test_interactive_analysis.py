@@ -47,7 +47,7 @@ class InteractiveSelectionTests(unittest.TestCase):
         self.assertEqual(selection.right_track.center_x_roi, 220.0)
         self.assertTrue(selection.success)
 
-    def test_black_click_excludes_clicked_stripe_when_click_is_offset(self):
+    def test_black_click_uses_neighbors_when_click_is_offset(self):
         mask = self.make_mask()
         analysis = self.analyze(mask, 153)
 
@@ -98,10 +98,10 @@ class InteractiveSelectionTests(unittest.TestCase):
 
     def test_missing_outer_neighbor_is_an_explicit_failure(self):
         mask = self.make_mask(stripe_centers=(150, 220))
-        analysis = self.analyze(mask, 150)
+        analysis = self.analyze(mask, 147)
 
         selection = select_interactive_tracks(
-            mask, 150, 50, analysis, self.config
+            mask, 147, 50, analysis, self.config
         )
 
         self.assertFalse(selection.success)
