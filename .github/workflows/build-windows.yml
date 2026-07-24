@@ -1,0 +1,85 @@
+name: Build Windows desktop app
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - project-review-checkpoint
+    paths:
+      - "src/**"
+      - "tools/desktop_app.py"
+      - "requirements.txt"
+      - "images/Sample 1.bmp"
+      - "images/Sample 2.bmp"
+      - ".github/workflows/build-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Check application imports
+        run: |
+          python -c "import sys; sys.path.insert(0, 'src'); import config, interactive_pipeline, pitch_reference; print('Application imports succeeded')"
+
+      - name: Build Windows application
+        run: >
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --windowed
+          --onedir
+          --name StripeCenterline
+          --paths src
+          tools/desktop_app.py
+
+      - name: Add sample images and instructions
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "dist/StripeCenterline/images" | Out-Null
+
+          Copy-Item "images/Sample 1.bmp" "dist/StripeCenterline/images/Sample 1.bmp"
+          Copy-Item "images/Sample 2.bmp" "dist/StripeCenterline/images/Sample 2.bmp"
+
+          @"
+          Stripe Centerline Windows 版
+
+          使用方法：
+          1. 请先完整解压压缩包。
+          2. 不要删除或移动 _internal 文件夹。
+          3. 双击 StripeCenterline.exe 启动。
+          4. 可以选择内置测试图片，也可以点击 Open image... 打开其他图片。
+          5. 在图片上选择参考点，然后点击 Analyze selected point。
+          6. 分析结果会显示左右相邻条纹中心线及像素距离。
+
+          注意：
+          Windows 第一次启动时可能显示“未知发布者”提示，这是因为程序没有购买数字签名。
+          "@ | Set-Content -Encoding UTF8 "dist/StripeCenterline/使用说明.txt"
+
+      - name: Show packaged files
+        shell: pwsh
+        run: Get-ChildItem -Recurse "dist/StripeCenterline"
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: StripeCenterline-Windows
+          path: dist/StripeCenterline/
+          if-no-files-found: error
