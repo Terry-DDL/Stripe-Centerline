@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "reviewer_note": "Confirmed by the user on 2026-07-27 from the 28 topology shadow review cards. The user's digit 0 is recorded as O for Otsu.",
+  "decisions": {
+    "T01": {"choice": "both"},
+    "T02": {"choice": "otsu"},
+    "T03": {"choice": "otsu"},
+    "T04": {"choice": "both"},
+    "T05": {"choice": "otsu"},
+    "T06": {"choice": "otsu"},
+    "T07": {"choice": "both"},
+    "T08": {"choice": "otsu"},
+    "T09": {"choice": "otsu"},
+    "T10": {"choice": "both"},
+    "T11": {"choice": "adaptive"},
+    "T12": {"choice": "otsu"},
+    "T13": {"choice": "both"},
+    "T14": {"choice": "otsu"},
+    "T15": {"choice": "otsu"},
+    "T16": {"choice": "otsu"},
+    "T17": {"choice": "otsu"},
+    "T18": {"choice": "otsu"},
+    "T19": {"choice": "both"},
+    "T20": {"choice": "otsu"},
+    "T21": {"choice": "otsu"},
+    "T22": {"choice": "otsu"},
+    "T23": {"choice": "otsu"},
+    "T24": {
+      "choice": "neither",
+      "notes": "Adaptive is wrong; Otsu failed to recognize the closer left stripe."
+    },
+    "T25": {"choice": "both"},
+    "T26": {"choice": "adaptive"},
+    "T27": {"choice": "both"},
+    "T28": {"choice": "otsu"},
+    "sample2_split_01": {"choice": "otsu"},
+    "sample2_split_02": {
+      "choice": "neither",
+      "notes": "Adaptive is wrong; Otsu failed to recognize the closer left stripe."
+    }
+  }
+}

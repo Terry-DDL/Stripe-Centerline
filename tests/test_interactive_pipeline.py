@@ -16,6 +16,7 @@ from config import InteractiveConfig, ProcessingConfig  # noqa: E402
 from interactive_pipeline import (  # noqa: E402
     _apply_neighbor_consistency_guard,
     _effective_adaptive_block_size,
+    _recover_weak_neighbors,
     calculate_interactive_roi_bounds,
     estimate_rotation_shadow,
     run_interactive_case,
@@ -26,6 +27,36 @@ from stripe_analysis import analyze_adjacent_stripes  # noqa: E402
 
 
 class InteractivePipelineTests(unittest.TestCase):
+    def weak_neighbor_case(self, weak_center_x: int, continuous_dark=False):
+        height, width = 120, 300
+        mask = np.zeros((height, width), dtype=np.uint8)
+        image = np.full((height, width), 220, dtype=np.uint8)
+        for center_x in (60, 140, 180):
+            mask[:, center_x - 5 : center_x + 6] = 255
+            image[:, center_x - 5 : center_x + 6] = 20
+        for y0, y1 in ((15, 30), (85, 100)):
+            mask[y0:y1, weak_center_x - 5 : weak_center_x + 6] = 255
+        image[:, weak_center_x - 5 : weak_center_x + 6] = 20
+        if continuous_dark:
+            image[:, weak_center_x - 5 : 146] = 20
+        processing = ProcessingConfig(stripe_search_radius_px=120)
+        analysis = analyze_adjacent_stripes(
+            mask,
+            140,
+            140,
+            0,
+            processing,
+        )
+        selection = select_interactive_tracks(
+            mask,
+            140,
+            60,
+            analysis,
+            processing,
+            image_gray_roi=image,
+        )
+        return image, analysis, selection
+
     def test_adaptive_block_size_must_be_odd_and_at_least_three(self):
         for invalid_block_size in (1, 2, 30):
             with self.subTest(block_size=invalid_block_size):
@@ -58,6 +89,107 @@ class InteractivePipelineTests(unittest.TestCase):
 
         self.assertIsNone(block_size)
         self.assertIn("adaptive_disabled_roi_too_small", warnings)
+
+    def test_shadow_topology_ratios_must_be_between_zero_and_one(self):
+        for invalid_ratio in (-0.1, 1.1):
+            with self.subTest(ratio=invalid_ratio):
+                with self.assertRaises(ValueError):
+                    validate_interactive_config(
+                        InteractiveConfig(
+                            topology_shadow_strong_same_basin_support_ratio=(
+                                invalid_ratio
+                            )
+                        )
+                    )
+
+    def test_neighbor_recovery_ratios_must_be_between_zero_and_one(self):
+        for field_name in (
+            "neighbor_recovery_min_support_ratio",
+            "neighbor_recovery_max_pitch_error_ratio",
+        ):
+            for invalid_ratio in (-0.1, 1.1):
+                with self.subTest(
+                    field=field_name,
+                    ratio=invalid_ratio,
+                ):
+                    with self.assertRaises(ValueError):
+                        validate_interactive_config(
+                            InteractiveConfig(
+                                **{field_name: invalid_ratio}
+                            )
+                        )
+
+    def test_pitch_and_grayscale_can_recover_a_weak_neighbor(self):
+        image, analysis, selection = self.weak_neighbor_case(100)
+
+        recovered, report = _recover_weak_neighbors(
+            selection,
+            analysis,
+            image,
+            np.array(
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                dtype=np.float64,
+            ),
+            {"baseline_pitch_px": 40.0},
+            InteractiveConfig(),
+        )
+
+        self.assertTrue(report["applied"])
+        self.assertEqual(recovered.left_track.center_x_roi, 100.0)
+        self.assertIn(
+            "weak_neighbor_recovered",
+            recovered.warning_flags,
+        )
+
+    def test_half_pitch_or_same_basin_weak_track_is_not_recovered(self):
+        for weak_center_x, continuous_dark in (
+            (120, False),
+            (100, True),
+        ):
+            with self.subTest(
+                weak_center_x=weak_center_x,
+                continuous_dark=continuous_dark,
+            ):
+                image, analysis, selection = self.weak_neighbor_case(
+                    weak_center_x,
+                    continuous_dark,
+                )
+                recovered, report = _recover_weak_neighbors(
+                    selection,
+                    analysis,
+                    image,
+                    np.array(
+                        [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                        dtype=np.float64,
+                    ),
+                    {"baseline_pitch_px": 40.0},
+                    InteractiveConfig(),
+                )
+
+                self.assertFalse(report["applied"])
+                self.assertEqual(
+                    recovered.left_track.center_x_roi,
+                    60.0,
+                )
+
+    def test_weak_neighbor_is_not_recovered_without_pitch(self):
+        image, analysis, selection = self.weak_neighbor_case(100)
+
+        recovered, report = _recover_weak_neighbors(
+            selection,
+            analysis,
+            image,
+            np.array(
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                dtype=np.float64,
+            ),
+            {"baseline_pitch_px": None},
+            InteractiveConfig(),
+        )
+
+        self.assertFalse(report["applied"])
+        self.assertEqual(report["reason"], "no_reliable_pitch_baseline")
+        self.assertEqual(recovered.left_track.center_x_roi, 60.0)
 
     def test_neighbor_guard_warns_without_clearing_skipped_stripes(self):
         mask = np.zeros((100, 300), dtype=np.uint8)
@@ -253,6 +385,17 @@ class InteractivePipelineTests(unittest.TestCase):
             self.assertIn(
                 "rotation_candidate_black_mask.png",
                 result.debug_images,
+            )
+            self.assertIn(
+                "original_otsu_grayscale_topology.png",
+                result.debug_images,
+            )
+            self.assertTrue(
+                result.report["shadow_arbitration"]["enforced"]
+            )
+            self.assertEqual(
+                result.report["shadow_arbitration"]["mode"],
+                "enforced",
             )
 
     def test_tilted_pipeline_rotates_before_detection(self):

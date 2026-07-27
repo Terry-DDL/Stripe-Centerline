@@ -168,6 +168,17 @@ class InteractiveConfig:
     adaptive_threshold_c: float = 5.0
     neighbor_max_span_pitch_ratio: float = 1.5
     neighbor_min_pitch_track_count: int = 3
+    enable_grayscale_topology_rejection: bool = True
+    neighbor_recovery_min_support_ratio: float = 0.25
+    neighbor_recovery_max_pitch_error_ratio: float = 0.20
+    topology_shadow_min_informative_rows: int = 12
+    topology_shadow_min_separator_support_ratio: float = 0.60
+    topology_shadow_strong_same_basin_support_ratio: float = 0.80
+    topology_shadow_min_vertical_span_ratio: float = 0.60
+    topology_shadow_min_dynamic_range: float = 6.0
+    topology_shadow_separator_prominence_ratio: float = 0.12
+    topology_shadow_same_basin_prominence_ratio: float = 0.05
+    topology_shadow_noise_mad_multiplier: float = 3.0
     pitch_map_tile_width_px: int = 500
     pitch_map_tile_height_px: int = 200
     pitch_map_stride_x_px: int = 250

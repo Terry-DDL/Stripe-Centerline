@@ -1,6 +1,6 @@
 """Interactive point-centered pipeline built around the legacy detector."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 import math
 from pathlib import Path
@@ -14,6 +14,7 @@ from candidate_quality import (
     quality_difference_reason,
 )
 from config import InteractiveConfig, ProcessingConfig
+from grayscale_topology import evaluate_grayscale_topology
 from image_processing import (
     RoiBoundsGlobal,
     apply_vertical_close_roi,
@@ -87,6 +88,9 @@ class DetectionCandidate:
     selection: InteractiveStripeSelection
     neighbor_consistency: dict
     pitch_guard: dict
+    neighbor_recovery: dict
+    grayscale_topology: dict
+    grayscale_topology_debug: np.ndarray
     quality: dict
     rotation_matrix: np.ndarray
     inverse_rotation_matrix: np.ndarray
@@ -175,6 +179,42 @@ def validate_interactive_config(config: InteractiveConfig) -> None:
     if config.neighbor_min_pitch_track_count < 3:
         raise ValueError(
             "neighbor_min_pitch_track_count must be at least 3"
+        )
+    if not isinstance(
+        config.enable_grayscale_topology_rejection,
+        bool,
+    ):
+        raise ValueError(
+            "enable_grayscale_topology_rejection must be boolean"
+        )
+    for field_name in (
+        "neighbor_recovery_min_support_ratio",
+        "neighbor_recovery_max_pitch_error_ratio",
+    ):
+        value = getattr(config, field_name)
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"{field_name} must be between 0 and 1")
+    if config.topology_shadow_min_informative_rows < 1:
+        raise ValueError(
+            "topology_shadow_min_informative_rows must be at least 1"
+        )
+    for field_name in (
+        "topology_shadow_min_separator_support_ratio",
+        "topology_shadow_strong_same_basin_support_ratio",
+        "topology_shadow_min_vertical_span_ratio",
+        "topology_shadow_separator_prominence_ratio",
+        "topology_shadow_same_basin_prominence_ratio",
+    ):
+        value = getattr(config, field_name)
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"{field_name} must be between 0 and 1")
+    if config.topology_shadow_min_dynamic_range <= 0.0:
+        raise ValueError(
+            "topology_shadow_min_dynamic_range must be greater than 0"
+        )
+    if config.topology_shadow_noise_mad_multiplier <= 0.0:
+        raise ValueError(
+            "topology_shadow_noise_mad_multiplier must be greater than 0"
         )
     if config.display_max_width_px <= 0:
         raise ValueError("display_max_width_px must be greater than 0")
@@ -652,6 +692,180 @@ def _apply_neighbor_consistency_guard(
     )
 
 
+def _recover_weak_neighbors(
+    selection: InteractiveStripeSelection,
+    analysis: AdjacentStripeAnalysis,
+    image_gray_original_roi,
+    inverse_rotation_matrix: np.ndarray,
+    pitch_guard: dict,
+    interactive_config: InteractiveConfig,
+) -> tuple[InteractiveStripeSelection, dict]:
+    """Recover a pitch-matching neighbor rejected only for low support."""
+
+    report = {
+        "applied": False,
+        "recoveries": [],
+        "reason": "no_qualifying_weak_neighbor",
+    }
+    if (
+        not selection.success
+        or selection.click_classification != "black_stripe"
+        or selection.clicked_track is None
+    ):
+        report["reason"] = "not_applicable_to_selection"
+        return selection, report
+
+    baseline_pitch = pitch_guard.get("baseline_pitch_px")
+    if baseline_pitch is None or baseline_pitch <= 0.0:
+        report["reason"] = "no_reliable_pitch_baseline"
+        return selection, report
+
+    recovered = selection
+    for side, interval_label in (
+        ("left", "left_to_clicked"),
+        ("right", "clicked_to_right"),
+    ):
+        current_neighbor = getattr(recovered, f"{side}_track")
+        clicked_track = recovered.clicked_track
+        if current_neighbor is None or clicked_track is None:
+            continue
+
+        x_min, x_max = sorted(
+            (
+                current_neighbor.center_x_roi,
+                clicked_track.center_x_roi,
+            )
+        )
+        current_pitch_error = abs(
+            abs(
+                current_neighbor.center_x_roi
+                - clicked_track.center_x_roi
+            )
+            / baseline_pitch
+            - 1.0
+        )
+        qualifying = []
+        for track in analysis.tracks:
+            if not x_min < track.center_x_roi < x_max:
+                continue
+            if track.rejection_reasons != ["insufficient_row_support"]:
+                continue
+            if (
+                track.valid_row_ratio
+                < interactive_config.neighbor_recovery_min_support_ratio
+            ):
+                continue
+
+            interval_pitch_ratio = (
+                abs(track.center_x_roi - clicked_track.center_x_roi)
+                / baseline_pitch
+            )
+            pitch_error = abs(interval_pitch_ratio - 1.0)
+            if (
+                pitch_error
+                > interactive_config.neighbor_recovery_max_pitch_error_ratio
+                or pitch_error >= current_pitch_error
+            ):
+                continue
+
+            tentative = replace(
+                recovered,
+                **{f"{side}_track": track},
+            )
+            topology = evaluate_grayscale_topology(
+                image_gray_original_roi,
+                tentative,
+                inverse_rotation_matrix,
+                interactive_config,
+            ).report
+            interval = next(
+                (
+                    item
+                    for item in topology["evaluated_intervals"]
+                    if item["label"] == interval_label
+                ),
+                None,
+            )
+            if interval is None:
+                continue
+            vertical_coverage = interval["vertical_band_coverage"]
+            separator_support = interval["separator_support_ratio"]
+            if (
+                interval["strong_same_basin_conflict"]
+                or interval["informative_row_count"]
+                < interactive_config.topology_shadow_min_informative_rows
+                or separator_support is None
+                or separator_support
+                < interactive_config.topology_shadow_min_separator_support_ratio
+                or vertical_coverage["covered_band_count"] < 2
+            ):
+                continue
+            qualifying.append(
+                (
+                    (
+                        pitch_error,
+                        -track.valid_row_ratio,
+                        abs(
+                            track.center_x_roi
+                            - clicked_track.center_x_roi
+                        ),
+                    ),
+                    track,
+                    interval_pitch_ratio,
+                    interval,
+                )
+            )
+
+        if not qualifying:
+            continue
+        _key, track, interval_pitch_ratio, interval = min(
+            qualifying,
+            key=lambda item: item[0],
+        )
+        recovered = replace(
+            recovered,
+            **{f"{side}_track": track},
+        )
+        report["recoveries"].append(
+            {
+                "side": side,
+                "original_center_x_roi": round(
+                    current_neighbor.center_x_roi,
+                    3,
+                ),
+                "recovered_center_x_roi": round(
+                    track.center_x_roi,
+                    3,
+                ),
+                "valid_row_ratio": round(
+                    track.valid_row_ratio,
+                    6,
+                ),
+                "interval_pitch_ratio": round(
+                    interval_pitch_ratio,
+                    6,
+                ),
+                "informative_row_count": interval[
+                    "informative_row_count"
+                ],
+                "separator_support_ratio": separator_support,
+                "vertical_band_count": interval[
+                    "vertical_band_coverage"
+                ]["covered_band_count"],
+            }
+        )
+
+    if not report["recoveries"]:
+        return selection, report
+    warning_flags = recovered.warning_flags
+    if "weak_neighbor_recovered" not in warning_flags:
+        warning_flags += ("weak_neighbor_recovered",)
+    recovered = replace(recovered, warning_flags=warning_flags)
+    report["applied"] = True
+    report["reason"] = "pitch_and_grayscale_supported"
+    return recovered, report
+
+
 def _rotation_matrix_for_detection(
     click_x_roi: int,
     click_y_roi: int,
@@ -705,6 +919,7 @@ def _candidate_threshold_methods(
 
 def _build_detection_candidate(
     image_gray_detection,
+    image_gray_original_roi,
     geometry: str,
     threshold_method: str,
     click_x_roi: int,
@@ -731,7 +946,7 @@ def _build_detection_candidate(
         bounds.x0_global,
         processing_config,
     )
-    selection = select_interactive_tracks(
+    raw_selection = select_interactive_tracks(
         stages.black_mask,
         click_x_roi,
         click_y_roi,
@@ -739,8 +954,31 @@ def _build_detection_candidate(
         processing_config,
         image_gray_roi=stages.image_gray,
     )
+    initial_selection, _initial_neighbor_consistency = (
+        _apply_neighbor_consistency_guard(
+            raw_selection,
+            analysis,
+            processing_config,
+            interactive_config,
+        )
+    )
+    initial_pitch_guard = evaluate_pitch_guard(
+        initial_selection,
+        click_x_global,
+        click_y_global,
+        pitch_reference_map,
+        interactive_config,
+    )
+    recovered_selection, neighbor_recovery = _recover_weak_neighbors(
+        raw_selection,
+        analysis,
+        image_gray_original_roi,
+        inverse_rotation_matrix,
+        initial_pitch_guard,
+        interactive_config,
+    )
     selection, neighbor_consistency = _apply_neighbor_consistency_guard(
-        selection,
+        recovered_selection,
         analysis,
         processing_config,
         interactive_config,
@@ -750,6 +988,12 @@ def _build_detection_candidate(
         click_x_global,
         click_y_global,
         pitch_reference_map,
+        interactive_config,
+    )
+    topology = evaluate_grayscale_topology(
+        image_gray_original_roi,
+        selection,
+        inverse_rotation_matrix,
         interactive_config,
     )
     quality = build_candidate_quality(
@@ -768,6 +1012,9 @@ def _build_detection_candidate(
         selection=selection,
         neighbor_consistency=neighbor_consistency,
         pitch_guard=pitch_guard,
+        neighbor_recovery=neighbor_recovery,
+        grayscale_topology=topology.report,
+        grayscale_topology_debug=topology.debug_image,
         quality=quality,
         rotation_matrix=rotation_matrix,
         inverse_rotation_matrix=inverse_rotation_matrix,
@@ -776,6 +1023,7 @@ def _build_detection_candidate(
 
 def _build_geometry_candidates(
     image_gray_detection,
+    image_gray_original_roi,
     geometry: str,
     click_x_roi: int,
     click_y_roi: int,
@@ -791,6 +1039,7 @@ def _build_geometry_candidates(
     return [
         _build_detection_candidate(
             image_gray_detection,
+            image_gray_original_roi,
             geometry,
             threshold_method,
             click_x_roi,
@@ -853,6 +1102,167 @@ def _select_geometry_candidate(
     )
 
 
+def _candidate_identity(candidate: DetectionCandidate | None) -> dict | None:
+    if candidate is None:
+        return None
+    return {
+        "geometry": candidate.geometry,
+        "threshold_method": candidate.threshold_method,
+    }
+
+
+def _shadow_threshold_winner(
+    candidates: list[DetectionCandidate],
+) -> tuple[DetectionCandidate | None, str, list[str]]:
+    """Select the best candidate after removing strong topology conflicts."""
+
+    rejected = [
+        candidate.threshold_method
+        for candidate in candidates
+        if candidate.grayscale_topology[
+            "strong_same_basin_conflict"
+        ]
+    ]
+    remaining = [
+        candidate
+        for candidate in candidates
+        if not candidate.grayscale_topology[
+            "strong_same_basin_conflict"
+        ]
+    ]
+    if not remaining:
+        return None, "all_candidates_would_be_rejected", rejected
+    winner, reason = _select_threshold_candidate(remaining)
+    return winner, reason, rejected
+
+
+def _safe_topology_replacement(
+    candidate: DetectionCandidate | None,
+) -> bool:
+    """Return whether a rejected winner has a safe formal replacement."""
+
+    if candidate is None or not candidate.quality["success"]:
+        return False
+    if candidate.grayscale_topology["strong_same_basin_conflict"]:
+        return False
+    if candidate.quality["combined_pitch_status"] == "Suspicious":
+        return False
+    return (
+        candidate.grayscale_topology["status"] == "Consistent"
+        or candidate.neighbor_recovery["applied"]
+    )
+
+
+def _build_shadow_arbitration(
+    original_candidates: list[DetectionCandidate],
+    rotated_candidates: list[DetectionCandidate],
+    current_winner: DetectionCandidate,
+    enforce_rejection: bool,
+) -> tuple[dict, DetectionCandidate | None, DetectionCandidate]:
+    """Build the compatible report and return the formal/debug winners."""
+
+    original, original_reason, original_rejected = (
+        _shadow_threshold_winner(original_candidates)
+    )
+    rotated, rotated_reason, rotated_rejected = (
+        _shadow_threshold_winner(rotated_candidates)
+        if rotated_candidates
+        else (None, "rotation_not_evaluated", [])
+    )
+    geometry_reason = None
+    if original is None and rotated is None:
+        hypothetical_winner = None
+        geometry_reason = "no_candidate_after_shadow_rejection"
+    elif original is None:
+        hypothetical_winner = rotated
+        geometry_reason = "original_candidates_would_be_rejected"
+    elif rotated is None:
+        hypothetical_winner = original
+        geometry_reason = "rotated_candidate_unavailable"
+    else:
+        hypothetical_winner, geometry_reason = (
+            _select_geometry_candidate(original, rotated)
+        )
+
+    hypothetical_selection = (
+        None
+        if hypothetical_winner is None
+        else _selection_for_output(hypothetical_winner)
+    )
+    current_has_conflict = current_winner.grayscale_topology[
+        "strong_same_basin_conflict"
+    ]
+    formal_winner = current_winner
+    debug_winner = current_winner
+    formal_failure_reason = None
+    if enforce_rejection and current_has_conflict:
+        if _safe_topology_replacement(hypothetical_winner):
+            formal_winner = hypothetical_winner
+            debug_winner = hypothetical_winner
+        else:
+            formal_winner = None
+            debug_winner = hypothetical_winner or current_winner
+            formal_failure_reason = (
+                "strong_same_basin_conflict_no_safe_alternative"
+            )
+
+    would_change = (
+        formal_winner is None or formal_winner is not current_winner
+        if enforce_rejection
+        else (
+            hypothetical_winner is None
+            or hypothetical_winner is not current_winner
+        )
+    )
+    report = {
+        "mode": "enforced" if enforce_rejection else "shadow",
+        "enforced": enforce_rejection,
+        "current_winner": _candidate_identity(current_winner),
+        "rejected_candidates_if_enabled": [
+            f"original_{method}" for method in original_rejected
+        ]
+        + [f"rotated_{method}" for method in rotated_rejected],
+        "threshold_selection_reasons": {
+            "original": original_reason,
+            "rotated": rotated_reason,
+        },
+        "geometry_selection_reason": geometry_reason,
+        "hypothetical_winner": _candidate_identity(
+            hypothetical_winner
+        ),
+        "hypothetical_success": (
+            False
+            if hypothetical_selection is None
+            else hypothetical_selection.success
+        ),
+        "rejection_applied": (
+            enforce_rejection and current_has_conflict
+        ),
+        "final_winner": _candidate_identity(formal_winner),
+        "formal_failure_reason": formal_failure_reason,
+        "would_change_formal_result": would_change,
+    }
+    return report, formal_winner, debug_winner
+
+
+def _topology_rejection_failure(
+    candidate: DetectionCandidate,
+    reason: str,
+) -> InteractiveStripeSelection:
+    """Return an explicit failure while retaining the candidate for debug."""
+
+    selection = candidate.selection
+    return InteractiveStripeSelection(
+        click_classification=selection.click_classification,
+        clicked_track=None,
+        left_track=None,
+        right_track=None,
+        success=False,
+        failure_reasons=selection.failure_reasons + (reason,),
+        warning_flags=selection.warning_flags + (reason,),
+    )
+
+
 def _selection_for_output(
     candidate: DetectionCandidate,
 ) -> InteractiveStripeSelection:
@@ -902,6 +1312,8 @@ def _candidate_summary(candidate: DetectionCandidate) -> dict:
         },
         "neighbor_consistency": candidate.neighbor_consistency,
         "pitch_guard": candidate.pitch_guard,
+        "neighbor_recovery": candidate.neighbor_recovery,
+        "grayscale_topology": candidate.grayscale_topology,
         "quality": candidate.quality,
         "threshold_warning_flags": list(
             candidate.stages.threshold_warning_flags
@@ -1280,7 +1692,9 @@ def _build_report(
     candidate_summaries: dict,
     threshold_selection_reasons: dict,
     geometry_selection_reason: str,
+    shadow_arbitration: dict,
 ) -> dict:
+    final_candidate_identity = shadow_arbitration["final_winner"]
     left = _track_report(
         selection.left_track,
         bounds,
@@ -1377,11 +1791,21 @@ def _build_report(
             "success": selection.success,
             "failure_reasons": list(selection.failure_reasons),
             "warning_flags": warning_flags,
-            "threshold_method": selected_candidate.threshold_method,
-            "geometry": selected_candidate.geometry,
-            "combined_pitch_status": selected_candidate.quality[
-                "combined_pitch_status"
-            ],
+            "threshold_method": (
+                None
+                if final_candidate_identity is None
+                else final_candidate_identity["threshold_method"]
+            ),
+            "geometry": (
+                None
+                if final_candidate_identity is None
+                else final_candidate_identity["geometry"]
+            ),
+            "combined_pitch_status": (
+                "Not applicable"
+                if final_candidate_identity is None
+                else selected_candidate.quality["combined_pitch_status"]
+            ),
             "clicked_track_id": (
                 None
                 if selection.clicked_track is None
@@ -1399,9 +1823,18 @@ def _build_report(
             "candidates": candidate_summaries,
             "threshold_selection_reasons": threshold_selection_reasons,
             "geometry_selection_reason": geometry_selection_reason,
-            "final_threshold_method": selected_candidate.threshold_method,
-            "final_geometry": selected_candidate.geometry,
+            "final_threshold_method": (
+                None
+                if final_candidate_identity is None
+                else final_candidate_identity["threshold_method"]
+            ),
+            "final_geometry": (
+                None
+                if final_candidate_identity is None
+                else final_candidate_identity["geometry"]
+            ),
         },
+        "shadow_arbitration": shadow_arbitration,
         "pitch_reference": {
             "tile_count": len(pitch_reference_map.tiles),
             "valid_tile_count": pitch_reference_map.valid_tile_count,
@@ -1461,6 +1894,7 @@ def run_interactive_case(
     click_y_roi = click_y_global - bounds.y0_global
     identity_matrix = _identity_affine_matrix()
     original_candidates = _build_geometry_candidates(
+        image_gray_roi,
         image_gray_roi,
         "original",
         click_x_roi,
@@ -1525,6 +1959,7 @@ def run_interactive_case(
         )
         rotated_candidates = _build_geometry_candidates(
             rotated_gray_roi,
+            image_gray_roi,
             "rotated",
             click_x_roi,
             click_y_roi,
@@ -1544,9 +1979,33 @@ def run_interactive_case(
         rotated_analysis = rotated_best.analysis
         rotated_neighbor_consistency = rotated_best.neighbor_consistency
 
-    selected_candidate, geometry_selection_reason = (
+    current_candidate, current_geometry_selection_reason = (
         _select_geometry_candidate(original_best, rotated_best)
     )
+    (
+        shadow_arbitration,
+        formal_candidate,
+        selected_candidate,
+    ) = _build_shadow_arbitration(
+        original_candidates,
+        rotated_candidates,
+        current_candidate,
+        interactive_config.enable_grayscale_topology_rejection,
+    )
+    if shadow_arbitration["rejection_applied"]:
+        threshold_selection_reasons = shadow_arbitration[
+            "threshold_selection_reasons"
+        ]
+        geometry_selection_reason = shadow_arbitration[
+            "geometry_selection_reason"
+        ]
+    else:
+        threshold_selection_reasons = {
+            "original": original_threshold_reason,
+            "rotated": rotated_threshold_reason,
+        }
+        geometry_selection_reason = current_geometry_selection_reason
+
     rotation_applied = selected_candidate.geometry == "rotated"
     if rotated_best is not None and not rotation_applied:
         rotation_fallback_reason = (
@@ -1554,7 +2013,13 @@ def run_interactive_case(
         )
     active_stages = selected_candidate.stages
     active_analysis = selected_candidate.analysis
-    selection = _selection_for_output(selected_candidate)
+    if formal_candidate is None:
+        selection = _topology_rejection_failure(
+            selected_candidate,
+            shadow_arbitration["formal_failure_reason"],
+        )
+    else:
+        selection = _selection_for_output(selected_candidate)
     neighbor_consistency = selected_candidate.neighbor_consistency
     rotation_matrix = selected_candidate.rotation_matrix
     inverse_rotation_matrix = selected_candidate.inverse_rotation_matrix
@@ -1591,11 +2056,6 @@ def run_interactive_case(
                 }
             else:
                 candidate_summaries[key] = _candidate_summary(candidate)
-    threshold_selection_reasons = {
-        "original": original_threshold_reason,
-        "rotated": rotated_threshold_reason,
-    }
-
     original_overlay = _create_original_overlay(
         image_gray,
         bounds,
@@ -1653,6 +2113,7 @@ def run_interactive_case(
         candidate_summaries,
         threshold_selection_reasons,
         geometry_selection_reason,
+        shadow_arbitration,
     )
     debug_images = {
         "original_interactive_result.png": original_overlay,
@@ -1686,6 +2147,9 @@ def run_interactive_case(
         )
         debug_images[f"{prefix}_black_mask.png"] = (
             candidate.stages.black_mask
+        )
+        debug_images[f"{prefix}_grayscale_topology.png"] = (
+            candidate.grayscale_topology_debug
         )
     output_dir.mkdir(parents=True, exist_ok=True)
     for filename, image in debug_images.items():

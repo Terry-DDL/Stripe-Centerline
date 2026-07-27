@@ -1,5 +1,6 @@
 """Small real-image regressions for threshold fallback and brightness."""
 
+from dataclasses import replace
 from pathlib import Path
 import sys
 import tempfile
@@ -51,6 +52,214 @@ class RealThresholdRegressionTests(unittest.TestCase):
             ]["original"],
             "better_combined_pitch_status",
         )
+
+    def test_sample2_known_split_errors_use_safe_otsu_results(self):
+        image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
+        expected_formal = {
+            (1613, 1745): (1573.0, 1612.0, 1648.0),
+            (661, 1157): (623.5, 661.0, 701.0),
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            for index, (click, expected_centers) in enumerate(
+                expected_formal.items()
+            ):
+                with self.subTest(click=click):
+                    result = self.run_case(
+                        image_path,
+                        click,
+                        Path(temporary_directory) / str(index),
+                    )
+                    report = result.report
+                    interactive = report["interactive_result"]
+                    adaptive = report["candidate_arbitration"][
+                        "candidates"
+                    ]["original_adaptive"]
+                    otsu = report["candidate_arbitration"][
+                        "candidates"
+                    ]["original_otsu"]
+                    shadow = report["shadow_arbitration"]
+
+                    self.assertEqual(
+                        interactive["threshold_method"],
+                        "otsu",
+                    )
+                    self.assertEqual(
+                        interactive["left"]["center_x_global"],
+                        expected_centers[0],
+                    )
+                    self.assertEqual(
+                        interactive["clicked"]["center_x_global"],
+                        expected_centers[1],
+                    )
+                    self.assertEqual(
+                        interactive["right"]["center_x_global"],
+                        expected_centers[2],
+                    )
+                    self.assertEqual(
+                        adaptive["grayscale_topology"]["status"],
+                        "Contradictory",
+                    )
+                    self.assertTrue(
+                        adaptive["grayscale_topology"][
+                            "strong_same_basin_conflict"
+                        ]
+                    )
+                    self.assertFalse(
+                        otsu["grayscale_topology"][
+                            "strong_same_basin_conflict"
+                        ]
+                    )
+                    self.assertTrue(shadow["enforced"])
+                    self.assertTrue(shadow["rejection_applied"])
+                    self.assertTrue(
+                        shadow["would_change_formal_result"]
+                    )
+                    self.assertEqual(
+                        shadow["hypothetical_winner"],
+                        {
+                            "geometry": "original",
+                            "threshold_method": "otsu",
+                        },
+                    )
+                    self.assertEqual(
+                        shadow["final_winner"],
+                        {
+                            "geometry": "original",
+                            "threshold_method": "otsu",
+                        },
+                    )
+
+    def test_sample2_new_split_and_weak_neighbor_points(self):
+        image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
+        cases = {
+            (1684, 1615): {
+                "centers": (1648.0, 1685.0, 1722.5),
+                "rejection_applied": True,
+                "recovery_applied": False,
+            },
+            (396, 1506): {
+                "centers": (356.0, 396.5, 437.75),
+                "rejection_applied": False,
+                "recovery_applied": True,
+            },
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            for index, (click, expected) in enumerate(cases.items()):
+                with self.subTest(click=click):
+                    result = self.run_case(
+                        image_path,
+                        click,
+                        Path(temporary_directory) / str(index),
+                    )
+                    interactive = result.report["interactive_result"]
+                    arbitration = result.report["shadow_arbitration"]
+                    otsu = result.report["candidate_arbitration"][
+                        "candidates"
+                    ]["original_otsu"]
+
+                    self.assertTrue(interactive["success"])
+                    self.assertEqual(
+                        interactive["threshold_method"],
+                        "otsu",
+                    )
+                    for key, expected_center in zip(
+                        ("left", "clicked", "right"),
+                        expected["centers"],
+                    ):
+                        self.assertAlmostEqual(
+                            interactive[key]["center_x_global"],
+                            expected_center,
+                            delta=1.0,
+                        )
+                    self.assertEqual(
+                        arbitration["rejection_applied"],
+                        expected["rejection_applied"],
+                    )
+                    self.assertEqual(
+                        otsu["neighbor_recovery"]["applied"],
+                        expected["recovery_applied"],
+                    )
+
+    def test_topology_rejection_fails_without_safe_alternative(self):
+        image_path = (
+            PROJECT_ROOT
+            / "images"
+            / "Stripe_08_e0_t160911003_v13p2083_do.bmp"
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = self.run_case(
+                image_path,
+                (1000, 550),
+                Path(temporary_directory),
+            )
+
+        interactive = result.report["interactive_result"]
+        arbitration = result.report["shadow_arbitration"]
+        self.assertFalse(interactive["success"])
+        self.assertIsNone(interactive["left"])
+        self.assertIsNone(interactive["right"])
+        self.assertEqual(
+            interactive["failure_reasons"],
+            ["strong_same_basin_conflict_no_safe_alternative"],
+        )
+        self.assertIsNone(arbitration["final_winner"])
+
+    def test_topology_rejection_keeps_consistent_unverifiable_otsu(self):
+        image_path = (
+            PROJECT_ROOT
+            / "images"
+            / "Stripe_01_date20250601_t113239765.bmp"
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = self.run_case(
+                image_path,
+                (2201, 1491),
+                Path(temporary_directory),
+            )
+
+        interactive = result.report["interactive_result"]
+        self.assertTrue(interactive["success"])
+        self.assertEqual(interactive["threshold_method"], "otsu")
+        self.assertEqual(
+            interactive["combined_pitch_status"],
+            "Unable to verify",
+        )
+        for key, expected_center in (
+            ("left", 2175.0),
+            ("clicked", 2209.5),
+            ("right", 2269.0),
+        ):
+            self.assertAlmostEqual(
+                interactive[key]["center_x_global"],
+                expected_center,
+                delta=1.0,
+            )
+
+    def test_topology_rejection_can_be_disabled_for_comparison(self):
+        image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
+        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        self.assertIsNotNone(image)
+        config = replace(
+            INTERACTIVE_CONFIG,
+            enable_grayscale_topology_rejection=False,
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = run_interactive_case(
+                image,
+                1684,
+                1615,
+                Path(temporary_directory),
+                CONFIG,
+                config,
+                image_name=image_path.name,
+            )
+
+        interactive = result.report["interactive_result"]
+        arbitration = result.report["shadow_arbitration"]
+        self.assertTrue(interactive["success"])
+        self.assertEqual(interactive["threshold_method"], "adaptive")
+        self.assertFalse(arbitration["enforced"])
+        self.assertEqual(arbitration["mode"], "shadow")
 
     def test_stripe7_uses_otsu_when_adaptive_has_no_valid_pair(self):
         image_path = (
