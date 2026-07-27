@@ -201,6 +201,7 @@ def validate_interactive_config(config: InteractiveConfig) -> None:
     for field_name in (
         "topology_shadow_min_separator_support_ratio",
         "topology_shadow_strong_same_basin_support_ratio",
+        "topology_shadow_strong_merged_basin_support_ratio",
         "topology_shadow_min_vertical_span_ratio",
         "topology_shadow_separator_prominence_ratio",
         "topology_shadow_same_basin_prominence_ratio",
@@ -1111,6 +1112,17 @@ def _candidate_identity(candidate: DetectionCandidate | None) -> dict | None:
     }
 
 
+def _strong_topology_conflict_reason(
+    candidate: DetectionCandidate,
+) -> str | None:
+    topology = candidate.grayscale_topology
+    if topology["strong_same_basin_conflict"]:
+        return "same_dark_basin_split"
+    if topology.get("strong_merged_basin_conflict", False):
+        return "merged_dark_basins"
+    return None
+
+
 def _shadow_threshold_winner(
     candidates: list[DetectionCandidate],
 ) -> tuple[DetectionCandidate | None, str, list[str]]:
@@ -1119,16 +1131,12 @@ def _shadow_threshold_winner(
     rejected = [
         candidate.threshold_method
         for candidate in candidates
-        if candidate.grayscale_topology[
-            "strong_same_basin_conflict"
-        ]
+        if _strong_topology_conflict_reason(candidate) is not None
     ]
     remaining = [
         candidate
         for candidate in candidates
-        if not candidate.grayscale_topology[
-            "strong_same_basin_conflict"
-        ]
+        if _strong_topology_conflict_reason(candidate) is None
     ]
     if not remaining:
         return None, "all_candidates_would_be_rejected", rejected
@@ -1143,7 +1151,7 @@ def _safe_topology_replacement(
 
     if candidate is None or not candidate.quality["success"]:
         return False
-    if candidate.grayscale_topology["strong_same_basin_conflict"]:
+    if _strong_topology_conflict_reason(candidate) is not None:
         return False
     if candidate.quality["combined_pitch_status"] == "Suspicious":
         return False
@@ -1153,11 +1161,191 @@ def _safe_topology_replacement(
     )
 
 
+def _selection_track_by_label(
+    selection: InteractiveStripeSelection,
+    label: str,
+) -> StripeTrack | None:
+    if label == "left":
+        return selection.left_track
+    if label == "clicked":
+        return selection.clicked_track
+    if label == "right":
+        return selection.right_track
+    raise ValueError(f"unknown selection track label: {label}")
+
+
+def _replacement_track_is_contained(
+    merged_track: StripeTrack,
+    replacement_track: StripeTrack,
+    roi_height: int,
+    interactive_config: InteractiveConfig,
+) -> bool:
+    merged_runs = {
+        run.y_roi: run for run in merged_track.valid_runs
+    }
+    replacement_runs = {
+        run.y_roi: run for run in replacement_track.valid_runs
+    }
+    common_rows = sorted(set(merged_runs) & set(replacement_runs))
+    if (
+        len(common_rows)
+        < interactive_config.topology_shadow_min_informative_rows
+    ):
+        return False
+    contained_rows = [
+        y_roi
+        for y_roi in common_rows
+        if (
+            merged_runs[y_roi].x0_roi
+            <= replacement_runs[y_roi].center_x_roi
+            < merged_runs[y_roi].x1_roi
+        )
+    ]
+    if (
+        len(contained_rows) / len(common_rows)
+        < interactive_config.topology_shadow_strong_merged_basin_support_ratio
+    ):
+        return False
+    bands = {
+        min(2, int((y_roi / max(roi_height, 1)) * 3))
+        for y_roi in contained_rows
+    }
+    span_ratio = (
+        (max(contained_rows) - min(contained_rows))
+        / max(roi_height - 1, 1)
+    )
+    return (
+        len(bands) == 3
+        and span_ratio
+        >= interactive_config.topology_shadow_min_vertical_span_ratio
+    )
+
+
+def _safe_merged_basin_replacement(
+    current: DetectionCandidate,
+    candidate: DetectionCandidate | None,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+) -> bool:
+    """Require a tightly matched, one-pitch replacement for a merged run."""
+
+    if candidate is None or not candidate.quality["success"]:
+        return False
+    if candidate.geometry != current.geometry:
+        return False
+    if (
+        candidate.selection.click_classification
+        != current.selection.click_classification
+    ):
+        return False
+    if current.selection.click_classification != "black_stripe":
+        return False
+    if _strong_topology_conflict_reason(candidate) is not None:
+        return False
+    if candidate.quality["combined_pitch_status"] != "Normal":
+        return False
+    if candidate.grayscale_topology["status"] != "Consistent":
+        return False
+
+    candidate_ratios = candidate.pitch_guard.get(
+        "interval_pitch_ratios",
+        [],
+    )
+    current_ratios = current.pitch_guard.get(
+        "interval_pitch_ratios",
+        [],
+    )
+    if not candidate_ratios or not current_ratios:
+        return False
+    maximum_pitch_error = (
+        interactive_config.neighbor_recovery_max_pitch_error_ratio
+    )
+    candidate_error = max(abs(ratio - 1.0) for ratio in candidate_ratios)
+    current_error = max(abs(ratio - 1.0) for ratio in current_ratios)
+    if candidate_error > maximum_pitch_error:
+        return False
+    if candidate_error >= current_error:
+        return False
+
+    merged_labels = {
+        track_report["label"]
+        for track_report in current.grayscale_topology.get(
+            "evaluated_tracks",
+            [],
+        )
+        if track_report.get("strong_merged_basin_conflict")
+    }
+    if not merged_labels:
+        return False
+    baseline_pitch = candidate.pitch_guard.get("baseline_pitch_px")
+    if baseline_pitch is None or baseline_pitch <= 0.0:
+        return False
+    alignment_tolerance = min(
+        processing_config.center_cluster_tolerance_px,
+        baseline_pitch * maximum_pitch_error,
+    )
+    current_clicked = current.selection.clicked_track
+    candidate_clicked = candidate.selection.clicked_track
+    if current_clicked is None or candidate_clicked is None:
+        return False
+    for label in ("left", "clicked", "right"):
+        current_track = _selection_track_by_label(
+            current.selection,
+            label,
+        )
+        candidate_track = _selection_track_by_label(
+            candidate.selection,
+            label,
+        )
+        if current_track is None and candidate_track is None:
+            continue
+        if current_track is None or candidate_track is None:
+            return False
+        center_difference = abs(
+            candidate_track.center_x_roi - current_track.center_x_roi
+        )
+        if label in merged_labels:
+            if not _replacement_track_is_contained(
+                current_track,
+                candidate_track,
+                current.analysis.roi_shape[0],
+                interactive_config,
+            ):
+                return False
+            current_distance = abs(
+                current_track.center_x_roi
+                - current_clicked.center_x_roi
+            )
+            candidate_distance = abs(
+                candidate_track.center_x_roi
+                - candidate_clicked.center_x_roi
+            )
+            if candidate_distance >= current_distance:
+                return False
+            if label == "left" and not (
+                current_track.center_x_roi
+                < candidate_track.center_x_roi
+                < candidate_clicked.center_x_roi
+            ):
+                return False
+            if label == "right" and not (
+                candidate_clicked.center_x_roi
+                < candidate_track.center_x_roi
+                < current_track.center_x_roi
+            ):
+                return False
+        elif center_difference > alignment_tolerance:
+            return False
+    return True
+
+
 def _build_shadow_arbitration(
     original_candidates: list[DetectionCandidate],
     rotated_candidates: list[DetectionCandidate],
     current_winner: DetectionCandidate,
     enforce_rejection: bool,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
 ) -> tuple[dict, DetectionCandidate | None, DetectionCandidate]:
     """Build the compatible report and return the formal/debug winners."""
 
@@ -1189,22 +1377,54 @@ def _build_shadow_arbitration(
         if hypothetical_winner is None
         else _selection_for_output(hypothetical_winner)
     )
-    current_has_conflict = current_winner.grayscale_topology[
-        "strong_same_basin_conflict"
-    ]
+    current_conflict_reason = _strong_topology_conflict_reason(
+        current_winner
+    )
+    current_has_conflict = current_conflict_reason is not None
     formal_winner = current_winner
     debug_winner = current_winner
     formal_failure_reason = None
+    final_geometry_reason = geometry_reason
     if enforce_rejection and current_has_conflict:
-        if _safe_topology_replacement(hypothetical_winner):
-            formal_winner = hypothetical_winner
-            debug_winner = hypothetical_winner
+        if current_conflict_reason == "merged_dark_basins":
+            same_geometry_replacement = (
+                original
+                if current_winner.geometry == "original"
+                else rotated
+            )
+            safe_replacement = _safe_merged_basin_replacement(
+                current_winner,
+                same_geometry_replacement,
+                processing_config,
+                interactive_config,
+            )
+            replacement_candidate = same_geometry_replacement
+        else:
+            safe_replacement = _safe_topology_replacement(
+                hypothetical_winner
+            )
+            replacement_candidate = hypothetical_winner
+        if safe_replacement:
+            formal_winner = replacement_candidate
+            debug_winner = replacement_candidate
+            if current_conflict_reason == "merged_dark_basins":
+                final_geometry_reason = (
+                    "merged_conflict_safe_same_geometry_replacement"
+                )
         else:
             formal_winner = None
             debug_winner = hypothetical_winner or current_winner
-            formal_failure_reason = (
-                "strong_same_basin_conflict_no_safe_alternative"
-            )
+            if current_conflict_reason == "merged_dark_basins":
+                final_geometry_reason = (
+                    "merged_conflict_no_safe_same_geometry_replacement"
+                )
+                formal_failure_reason = (
+                    "strong_merged_basin_conflict_no_safe_alternative"
+                )
+            else:
+                formal_failure_reason = (
+                    "strong_same_basin_conflict_no_safe_alternative"
+                )
 
     would_change = (
         formal_winner is None or formal_winner is not current_winner
@@ -1218,6 +1438,7 @@ def _build_shadow_arbitration(
         "mode": "enforced" if enforce_rejection else "shadow",
         "enforced": enforce_rejection,
         "current_winner": _candidate_identity(current_winner),
+        "current_winner_conflict_reason": current_conflict_reason,
         "rejected_candidates_if_enabled": [
             f"original_{method}" for method in original_rejected
         ]
@@ -1226,7 +1447,8 @@ def _build_shadow_arbitration(
             "original": original_reason,
             "rotated": rotated_reason,
         },
-        "geometry_selection_reason": geometry_reason,
+        "geometry_selection_reason": final_geometry_reason,
+        "hypothetical_geometry_selection_reason": geometry_reason,
         "hypothetical_winner": _candidate_identity(
             hypothetical_winner
         ),
@@ -1991,6 +2213,8 @@ def run_interactive_case(
         rotated_candidates,
         current_candidate,
         interactive_config.enable_grayscale_topology_rejection,
+        processing_config,
+        interactive_config,
     )
     if shadow_arbitration["rejection_applied"]:
         threshold_selection_reasons = shadow_arbitration[

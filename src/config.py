@@ -174,6 +174,7 @@ class InteractiveConfig:
     topology_shadow_min_informative_rows: int = 12
     topology_shadow_min_separator_support_ratio: float = 0.60
     topology_shadow_strong_same_basin_support_ratio: float = 0.80
+    topology_shadow_strong_merged_basin_support_ratio: float = 0.80
     topology_shadow_min_vertical_span_ratio: float = 0.60
     topology_shadow_min_dynamic_range: float = 6.0
     topology_shadow_separator_prominence_ratio: float = 0.12

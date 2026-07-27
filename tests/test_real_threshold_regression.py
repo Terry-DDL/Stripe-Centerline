@@ -393,6 +393,91 @@ class RealThresholdRegressionTests(unittest.TestCase):
             delta=1.0,
         )
 
+    def test_stripe10_faint_separator_does_not_merge_two_dark_basins(self):
+        image_path = (
+            PROJECT_ROOT
+            / "images"
+            / "Stripe_10_e0_t221236602_v8p56736_retry.bmp"
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = self.run_case(
+                image_path,
+                (1025, 66),
+                Path(temporary_directory),
+            )
+
+        interactive = result.report["interactive_result"]
+        candidates = result.report["candidate_arbitration"]["candidates"]
+        arbitration = result.report["shadow_arbitration"]
+        self.assertTrue(interactive["success"])
+        self.assertEqual(interactive["threshold_method"], "adaptive")
+        for key, expected_center in (
+            ("left", 1010.0),
+            ("clicked", 1024.5),
+            ("right", 1039.0),
+        ):
+            self.assertAlmostEqual(
+                interactive[key]["center_x_global"],
+                expected_center,
+                delta=1.0,
+            )
+        self.assertAlmostEqual(
+            interactive["stripe_spacing_px"],
+            29.0,
+            delta=1.0,
+        )
+        self.assertTrue(
+            candidates["original_otsu"]["grayscale_topology"][
+                "strong_merged_basin_conflict"
+            ]
+        )
+        self.assertFalse(
+            candidates["original_adaptive"]["grayscale_topology"][
+                "strong_merged_basin_conflict"
+            ]
+        )
+        self.assertTrue(arbitration["rejection_applied"])
+        self.assertEqual(
+            arbitration["current_winner_conflict_reason"],
+            "merged_dark_basins",
+        )
+
+    def test_merged_basin_conflict_fails_without_safe_alternative(self):
+        image_path = (
+            PROJECT_ROOT
+            / "images"
+            / "Stripe_10_e0_t221236602_v8p56736_retry.bmp"
+        )
+        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        self.assertIsNotNone(image)
+        config = replace(
+            INTERACTIVE_CONFIG,
+            adaptive_threshold_enabled=False,
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = run_interactive_case(
+                image,
+                1025,
+                66,
+                Path(temporary_directory),
+                CONFIG,
+                config,
+                image_name=image_path.name,
+            )
+
+        interactive = result.report["interactive_result"]
+        arbitration = result.report["shadow_arbitration"]
+        self.assertFalse(interactive["success"])
+        self.assertIsNone(interactive["left"])
+        self.assertIsNone(interactive["right"])
+        self.assertEqual(
+            interactive["failure_reasons"],
+            [
+                "strong_merged_basin_conflict_no_safe_alternative"
+            ],
+        )
+        self.assertIsNone(arbitration["final_winner"])
+
 
 if __name__ == "__main__":
     unittest.main()

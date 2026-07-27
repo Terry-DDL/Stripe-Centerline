@@ -59,6 +59,10 @@ def _candidate_shadow_rows(
                 <= tolerance
             )
         topology = candidate["grayscale_topology"]
+        strong_merged_conflict = topology.get(
+            "strong_merged_basin_conflict",
+            False,
+        )
         rows.append(
             {
                 "case_id": case["id"],
@@ -69,6 +73,11 @@ def _candidate_shadow_rows(
                 "strong_same_basin_conflict": topology[
                     "strong_same_basin_conflict"
                 ],
+                "strong_merged_basin_conflict": strong_merged_conflict,
+                "strong_topology_conflict": (
+                    topology["strong_same_basin_conflict"]
+                    or strong_merged_conflict
+                ),
                 "left_center_x_global": left_global,
                 "right_center_x_global": right_global,
             }
@@ -81,7 +90,7 @@ def _shadow_summary(rows: list[dict], reports: list[dict]) -> dict:
     false_conflicts = [
         row
         for row in correct_rows
-        if row["strong_same_basin_conflict"]
+        if row["strong_topology_conflict"]
     ]
     statuses = {}
     for row in correct_rows:

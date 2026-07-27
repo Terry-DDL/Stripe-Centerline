@@ -3,7 +3,9 @@
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import cv2
 import numpy as np
@@ -15,6 +17,7 @@ sys.path.insert(0, str(SRC_DIR))
 from config import InteractiveConfig, ProcessingConfig  # noqa: E402
 from interactive_pipeline import (  # noqa: E402
     _apply_neighbor_consistency_guard,
+    _build_shadow_arbitration,
     _effective_adaptive_block_size,
     _recover_weak_neighbors,
     calculate_interactive_roi_bounds,
@@ -91,16 +94,90 @@ class InteractivePipelineTests(unittest.TestCase):
         self.assertIn("adaptive_disabled_roi_too_small", warnings)
 
     def test_shadow_topology_ratios_must_be_between_zero_and_one(self):
-        for invalid_ratio in (-0.1, 1.1):
-            with self.subTest(ratio=invalid_ratio):
-                with self.assertRaises(ValueError):
-                    validate_interactive_config(
-                        InteractiveConfig(
-                            topology_shadow_strong_same_basin_support_ratio=(
-                                invalid_ratio
+        for field_name in (
+            "topology_shadow_strong_same_basin_support_ratio",
+            "topology_shadow_strong_merged_basin_support_ratio",
+        ):
+            for invalid_ratio in (-0.1, 1.1):
+                with self.subTest(
+                    field=field_name,
+                    ratio=invalid_ratio,
+                ):
+                    with self.assertRaises(ValueError):
+                        validate_interactive_config(
+                            InteractiveConfig(
+                                **{field_name: invalid_ratio}
                             )
                         )
-                    )
+
+    def test_merged_conflict_uses_safe_same_geometry_replacement(self):
+        def candidate(geometry, method, merged=False):
+            return SimpleNamespace(
+                geometry=geometry,
+                threshold_method=method,
+                grayscale_topology={
+                    "strong_same_basin_conflict": False,
+                    "strong_merged_basin_conflict": merged,
+                },
+                quality={"success": True},
+                selection=SimpleNamespace(success=True),
+            )
+
+        current = candidate("original", "otsu", merged=True)
+        original_safe = candidate("original", "adaptive")
+        rotated_higher_quality = candidate("rotated", "adaptive")
+        original_candidates = [current, original_safe]
+        rotated_candidates = [rotated_higher_quality]
+
+        def threshold_winner(candidates):
+            if candidates is original_candidates:
+                return original_safe, "only_available_threshold_method", [
+                    "otsu"
+                ]
+            return (
+                rotated_higher_quality,
+                "only_available_threshold_method",
+                [],
+            )
+
+        with patch(
+            "interactive_pipeline._shadow_threshold_winner",
+            side_effect=threshold_winner,
+        ), patch(
+            "interactive_pipeline._select_geometry_candidate",
+            return_value=(
+                rotated_higher_quality,
+                "better_combined_pitch_status",
+            ),
+        ), patch(
+            "interactive_pipeline._safe_merged_basin_replacement",
+            side_effect=lambda _current, replacement, *_configs: (
+                replacement is original_safe
+            ),
+        ):
+            report, formal, debug = _build_shadow_arbitration(
+                original_candidates,
+                rotated_candidates,
+                current,
+                True,
+                ProcessingConfig(),
+                InteractiveConfig(),
+            )
+
+        self.assertIs(formal, original_safe)
+        self.assertIs(debug, original_safe)
+        self.assertEqual(
+            report["hypothetical_winner"],
+            {"geometry": "rotated", "threshold_method": "adaptive"},
+        )
+        self.assertEqual(
+            report["final_winner"],
+            {"geometry": "original", "threshold_method": "adaptive"},
+        )
+        self.assertEqual(
+            report["geometry_selection_reason"],
+            "merged_conflict_safe_same_geometry_replacement",
+        )
 
     def test_neighbor_recovery_ratios_must_be_between_zero_and_one(self):
         for field_name in (

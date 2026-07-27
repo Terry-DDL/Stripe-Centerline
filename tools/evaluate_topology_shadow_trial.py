@@ -82,7 +82,14 @@ def evaluate_trial(manifest: dict, decisions_document: dict) -> dict:
             if is_correct:
                 correct_candidate_count += 1
                 correct_status_counts[topology["status"]] += 1
-            if topology["strong_same_basin_conflict"]:
+            strong_topology_conflict = bool(
+                topology["strong_same_basin_conflict"]
+                or topology.get(
+                    "strong_merged_basin_conflict",
+                    False,
+                )
+            )
+            if strong_topology_conflict:
                 row = {
                     "case_id": case_id,
                     "method": method,
