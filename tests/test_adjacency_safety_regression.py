@@ -4,8 +4,11 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+
+import numpy as np
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -14,11 +17,76 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from tools.run_ground_truth_regression import run_regression  # noqa: E402
 from tools.run_adjacency_safety_scan import (  # noqa: E402
+    build_coordinate_plan,
     classify_formal_result,
+    clipped_pixel_ratio,
+    git_provenance,
 )
 
 
 class AdjacencySafetyRegressionTests(unittest.TestCase):
+    def test_scan_plan_counts_overlapping_coordinates_once(self):
+        coordinate_plan = build_coordinate_plan()
+
+        self.assertEqual(len(coordinate_plan), 605)
+        self.assertEqual(
+            sum(len(point["anchor_ids"]) for point in coordinate_plan),
+            765,
+        )
+        self.assertEqual(
+            sum(
+                len(point["anchor_ids"]) > 1
+                for point in coordinate_plan
+            ),
+            160,
+        )
+        overlap = next(
+            point
+            for point in coordinate_plan
+            if (point["x_global"], point["y_global"]) == (662, 1040)
+        )
+        self.assertEqual(
+            overlap["anchor_ids"],
+            ["sample2_662_1046", "sample2_662_1065"],
+        )
+
+    def test_scan_plan_rejects_conflicting_truth_for_same_coordinate(self):
+        anchors = (
+            {
+                "id": "first",
+                "click": (100, 100),
+                "left_center_x": 80.0,
+                "right_center_x": 120.0,
+            },
+            {
+                "id": "second",
+                "click": (100, 100),
+                "left_center_x": 81.0,
+                "right_center_x": 120.0,
+            },
+        )
+
+        with self.assertRaisesRegex(ValueError, "conflicting ground truth"):
+            build_coordinate_plan(anchors)
+
+    def test_clipped_pixel_ratio_counts_only_pixels_changed_by_clip(self):
+        image = np.array([[100, 110], [200, 255]], dtype=np.uint8)
+
+        self.assertEqual(clipped_pixel_ratio(image, 0), 0.0)
+        self.assertEqual(clipped_pixel_ratio(image, 150), 0.75)
+
+    @patch("tools.run_adjacency_safety_scan.subprocess.run")
+    def test_scan_provenance_records_commit_and_dirty_state(self, run):
+        run.side_effect = (
+            SimpleNamespace(stdout="abc123\n"),
+            SimpleNamespace(stdout=" M tools/scan.py\n"),
+        )
+
+        provenance = git_provenance(PROJECT_ROOT)
+
+        self.assertEqual(provenance["git_commit"], "abc123")
+        self.assertTrue(provenance["git_dirty"])
+
     def test_scan_classifier_distinguishes_safe_failure_from_wrong_success(self):
         safe_failure = {
             "success": False,

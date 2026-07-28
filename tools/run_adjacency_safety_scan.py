@@ -7,6 +7,7 @@ from collections import Counter
 import csv
 import json
 from pathlib import Path
+import subprocess
 import sys
 from unittest.mock import patch
 
@@ -88,17 +89,97 @@ def _brighten(image_gray: np.ndarray, shift: int) -> np.ndarray:
     ).astype(np.uint8)
 
 
+def clipped_pixel_ratio(image_gray: np.ndarray, shift: int) -> float:
+    """Return the fraction of source pixels clipped by a brightness shift."""
+
+    if shift < 0:
+        raise ValueError("brightness shift must not be negative")
+    clipped = image_gray.astype(np.int16) + shift > 255
+    return float(np.count_nonzero(clipped) / clipped.size)
+
+
+def git_provenance(project_root: Path = PROJECT_ROOT) -> dict:
+    """Return the exact Git revision and dirty state used for a scan."""
+
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=project_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=project_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    return {
+        "git_commit": commit,
+        "git_dirty": bool(status.strip()),
+    }
+
+
+def build_coordinate_plan(
+    anchors: tuple[dict, ...] = ANCHORS,
+    y_step: int = 1,
+) -> tuple[dict, ...]:
+    """Build one unique coordinate list and retain anchor membership."""
+
+    if y_step <= 0:
+        raise ValueError("y_step must be greater than zero")
+
+    coordinates = {}
+    for anchor in anchors:
+        click_x, click_y = anchor["click"]
+        expected_pair = (
+            float(anchor["left_center_x"]),
+            float(anchor["right_center_x"]),
+        )
+        for x_global in range(click_x - 2, click_x + 3):
+            for y_global in range(
+                click_y - 25,
+                click_y + 26,
+                y_step,
+            ):
+                coordinate = (x_global, y_global)
+                point = coordinates.get(coordinate)
+                if point is None:
+                    coordinates[coordinate] = {
+                        "x_global": x_global,
+                        "y_global": y_global,
+                        "anchor_ids": [anchor["id"]],
+                        "expected_left_center_x": expected_pair[0],
+                        "expected_right_center_x": expected_pair[1],
+                    }
+                    continue
+
+                existing_pair = (
+                    point["expected_left_center_x"],
+                    point["expected_right_center_x"],
+                )
+                if existing_pair != expected_pair:
+                    raise ValueError(
+                        "conflicting ground truth for coordinate "
+                        f"{coordinate}: {existing_pair} vs {expected_pair}"
+                    )
+                point["anchor_ids"].append(anchor["id"])
+    return tuple(coordinates.values())
+
+
 def _point_summary(
     result,
-    anchor: dict,
+    expected_left: float,
+    expected_right: float,
     tolerance: float,
 ) -> dict:
     report = result.report
     interactive = report["interactive_result"]
     classification = classify_formal_result(
         interactive,
-        anchor["left_center_x"],
-        anchor["right_center_x"],
+        expected_left,
+        expected_right,
         tolerance,
     )
     return {
@@ -128,85 +209,97 @@ def run_scan(
     if y_step <= 0:
         raise ValueError("y_step must be greater than zero")
 
+    coordinate_plan = build_coordinate_plan(y_step=y_step)
     brightness_results = []
     details = []
     revisions = set()
     for brightness_shift in BRIGHTNESS_SHIFTS:
         image_variant = _brighten(image_gray, brightness_shift)
+        clipping_ratio = clipped_pixel_ratio(
+            image_gray,
+            brightness_shift,
+        )
         pitch_map = build_pitch_reference_map(
             image_variant,
             CONFIG,
             INTERACTIVE_CONFIG,
         )
-        cached_points = {}
         aggregate = Counter()
         failure_reasons = Counter()
+        anchor_counts = {
+            anchor["id"]: Counter() for anchor in ANCHORS
+        }
+        anchor_reasons = {
+            anchor["id"]: Counter() for anchor in ANCHORS
+        }
+        for coordinate in coordinate_plan:
+            x_global = coordinate["x_global"]
+            y_global = coordinate["y_global"]
+            result = interactive_pipeline.run_interactive_case(
+                image_variant,
+                x_global,
+                y_global,
+                PROJECT_ROOT / "outputs" / "_scan_scratch",
+                CONFIG,
+                INTERACTIVE_CONFIG,
+                image_name="Sample 2.bmp",
+                pitch_reference_map=pitch_map,
+            )
+            point = _point_summary(
+                result,
+                coordinate["expected_left_center_x"],
+                coordinate["expected_right_center_x"],
+                tolerance,
+            )
+            classification = point["classification"]
+            aggregate[classification] += 1
+            revisions.add(point["algorithm_revision"])
+            reason = None
+            if classification == "safe_failure":
+                reason = (
+                    "|".join(point["failure_reasons"])
+                    or "unspecified_failure"
+                )
+                failure_reasons[reason] += 1
+            for anchor_id in coordinate["anchor_ids"]:
+                anchor_counts[anchor_id][classification] += 1
+                if reason is not None:
+                    anchor_reasons[anchor_id][reason] += 1
+            details.append(
+                {
+                    "brightness_offset": brightness_shift,
+                    "brightness_shift": brightness_shift,
+                    "clipped_pixel_ratio": clipping_ratio,
+                    **coordinate,
+                    **point,
+                }
+            )
+
         regions = {}
         for anchor in ANCHORS:
-            anchor_counts = Counter()
-            anchor_reasons = Counter()
-            click_x, click_y = anchor["click"]
-            for x_global in range(click_x - 2, click_x + 3):
-                for y_global in range(
-                    click_y - 25,
-                    click_y + 26,
-                    y_step,
-                ):
-                    cache_key = (x_global, y_global)
-                    point = cached_points.get(cache_key)
-                    if point is None:
-                        result = interactive_pipeline.run_interactive_case(
-                            image_variant,
-                            x_global,
-                            y_global,
-                            PROJECT_ROOT / "outputs" / "_scan_scratch",
-                            CONFIG,
-                            INTERACTIVE_CONFIG,
-                            image_name="Sample 2.bmp",
-                            pitch_reference_map=pitch_map,
-                        )
-                        point = _point_summary(
-                            result,
-                            anchor,
-                            tolerance,
-                        )
-                        cached_points[cache_key] = point
-                    classification = point["classification"]
-                    anchor_counts[classification] += 1
-                    aggregate[classification] += 1
-                    revisions.add(point["algorithm_revision"])
-                    if classification == "safe_failure":
-                        reason = (
-                            "|".join(point["failure_reasons"])
-                            or "unspecified_failure"
-                        )
-                        anchor_reasons[reason] += 1
-                        failure_reasons[reason] += 1
-                    details.append(
-                        {
-                            "brightness_shift": brightness_shift,
-                            "anchor_id": anchor["id"],
-                            "x_global": x_global,
-                            "y_global": y_global,
-                            **point,
-                        }
-                    )
+            counts = anchor_counts[anchor["id"]]
+            reasons = anchor_reasons[anchor["id"]]
             regions[anchor["id"]] = {
-                "point_count": sum(anchor_counts.values()),
-                "correct_success": anchor_counts["correct_success"],
-                "safe_failure": anchor_counts["safe_failure"],
-                "wrong_success": anchor_counts["wrong_success"],
-                "contract_violation": anchor_counts[
+                "point_count": sum(counts.values()),
+                "correct_success": counts["correct_success"],
+                "safe_failure": counts["safe_failure"],
+                "wrong_success": counts["wrong_success"],
+                "contract_violation": counts[
                     "contract_violation"
                 ],
-                "failure_reasons": dict(sorted(anchor_reasons.items())),
+                "failure_reasons": dict(sorted(reasons.items())),
             }
 
         brightness_results.append(
             {
+                "brightness_offset": brightness_shift,
                 "brightness_shift": brightness_shift,
                 "point_count": sum(aggregate.values()),
-                "unique_point_count": len(cached_points),
+                "unique_point_count": len(coordinate_plan),
+                "anchor_membership_count": sum(
+                    region["point_count"] for region in regions.values()
+                ),
+                "clipped_pixel_ratio": clipping_ratio,
                 "correct_success": aggregate["correct_success"],
                 "safe_failure": aggregate["safe_failure"],
                 "wrong_success": aggregate["wrong_success"],
@@ -216,7 +309,9 @@ def run_scan(
             }
         )
 
+    provenance = git_provenance()
     return {
+        **provenance,
         "algorithm_revisions": sorted(revisions),
         "image_name": "Sample 2.bmp",
         "center_tolerance_px": tolerance,
@@ -225,6 +320,11 @@ def run_scan(
         "y_offset_max": 25,
         "y_step": y_step,
         "anchors": ANCHORS,
+        "region_counts_are_non_additive": True,
+        "unique_coordinate_count_per_brightness": len(coordinate_plan),
+        "total_unique_evaluation_count": (
+            len(coordinate_plan) * len(BRIGHTNESS_SHIFTS)
+        ),
         "brightness_results": brightness_results,
         "details": details,
     }
@@ -242,9 +342,12 @@ def _write_outputs(report: dict, output_dir: Path) -> None:
         newline="",
     ) as output_file:
         fieldnames = (
+            "brightness_offset",
             "brightness_shift",
             "point_count",
             "unique_point_count",
+            "anchor_membership_count",
+            "clipped_pixel_ratio",
             "correct_success",
             "safe_failure",
             "wrong_success",
