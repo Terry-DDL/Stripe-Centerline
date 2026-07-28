@@ -21,6 +21,8 @@ from tools.run_adjacency_safety_scan import (  # noqa: E402
     classify_formal_result,
     clipped_pixel_ratio,
     git_provenance,
+    run_scan,
+    summarize_clicked_hypothesis_arbitration,
 )
 
 
@@ -120,6 +122,135 @@ class AdjacencySafetyRegressionTests(unittest.TestCase):
             ),
             "wrong_success",
         )
+
+    def test_clicked_hypothesis_decisions_have_stable_scan_outcomes(self):
+        decisions = (
+            ("trigger_not_met", False, "trigger_not_met"),
+            ("no_eligible_alternate", True, "no_verified"),
+            ("no_verified_alternate", True, "no_verified"),
+            ("unique_verified_adopted", True, "adopted"),
+            (
+                "ambiguous_verified_clicked_hypotheses",
+                True,
+                "ambiguous",
+            ),
+        )
+        for decision, attempted, expected_outcome in decisions:
+            with self.subTest(decision=decision):
+                report = {
+                    "candidate_arbitration": {
+                        "candidates": {
+                            "original_otsu": {
+                                "adjacency_verification": {
+                                    "clicked_hypothesis_arbitration": {
+                                        "attempted": attempted,
+                                        "decision": decision,
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                summary = summarize_clicked_hypothesis_arbitration(report)
+
+                self.assertEqual(summary["attempted"], attempted)
+                self.assertEqual(summary["decision"], decision)
+                self.assertEqual(summary["outcome"], expected_outcome)
+                self.assertFalse(summary["legacy_missing_field"])
+
+    def test_missing_clicked_hypothesis_field_is_legacy_safe(self):
+        summary = summarize_clicked_hypothesis_arbitration(
+            {"candidate_arbitration": {"candidates": {}}}
+        )
+
+        self.assertEqual(
+            summary,
+            {
+                "attempted": False,
+                "decision": "trigger_not_met",
+                "outcome": "trigger_not_met",
+                "legacy_missing_field": True,
+            },
+        )
+
+    def test_unknown_clicked_hypothesis_decision_fails_loudly(self):
+        report = {
+            "candidate_arbitration": {
+                "candidates": {
+                    "original_otsu": {
+                        "adjacency_verification": {
+                            "clicked_hypothesis_arbitration": {
+                                "attempted": True,
+                                "decision": "future_unknown_decision",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        with self.assertRaisesRegex(ValueError, "unknown clicked hypothesis"):
+            summarize_clicked_hypothesis_arbitration(report)
+
+    @patch(
+        "tools.run_adjacency_safety_scan.git_provenance",
+        return_value={"git_commit": "abc123", "git_dirty": False},
+    )
+    @patch(
+        "tools.run_adjacency_safety_scan.build_pitch_reference_map",
+        return_value=object(),
+    )
+    @patch("tools.run_adjacency_safety_scan.interactive_pipeline.run_interactive_case")
+    def test_scan_aggregates_one_hypothesis_outcome_per_unique_coordinate(
+        self,
+        run_case,
+        _build_pitch_map,
+        _provenance,
+    ):
+        run_case.return_value = SimpleNamespace(
+            report={
+                "algorithm_revision": "clicked_hypothesis_v1",
+                "interactive_result": {
+                    "success": False,
+                    "failure_reasons": [
+                        "immediate_neighbors_not_verified"
+                    ],
+                    "left": None,
+                    "clicked": None,
+                    "right": None,
+                    "stripe_spacing_px": None,
+                },
+                "candidate_arbitration": {
+                    "candidates": {
+                        "original_otsu": {
+                            "adjacency_verification": {
+                                "clicked_hypothesis_arbitration": {
+                                    "attempted": True,
+                                    "decision": "unique_verified_adopted",
+                                }
+                            }
+                        }
+                    }
+                },
+            }
+        )
+
+        report = run_scan(np.zeros((1, 1), dtype=np.uint8))
+
+        self.assertEqual(report["unique_coordinate_count_per_brightness"], 605)
+        self.assertEqual(report["total_unique_evaluation_count"], 2420)
+        self.assertEqual(run_case.call_count, 2420)
+        for row in report["brightness_results"]:
+            counts = row["clicked_hypothesis_arbitration_counts"]
+            self.assertEqual(row["point_count"], 605)
+            self.assertEqual(counts["outcome_coordinate_count"], 605)
+            self.assertEqual(counts["attempted"], 605)
+            self.assertEqual(counts["adopted"], 605)
+            self.assertEqual(counts["no_verified"], 0)
+            self.assertEqual(counts["ambiguous"], 0)
+            self.assertEqual(counts["trigger_not_met"], 0)
+            self.assertEqual(counts["legacy_missing_field"], 0)
 
     def test_stripe_9_10_ground_truth_has_no_wrong_success(self):
         truth_path = (

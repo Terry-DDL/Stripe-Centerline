@@ -20,9 +20,11 @@ from interactive_pipeline import (  # noqa: E402
     _apply_neighbor_consistency_guard,
     _build_adjacency_verification,
     _build_shadow_arbitration,
+    _clicked_hypothesis_hard_failure,
     _effective_adaptive_block_size,
     _formal_result_failure,
     _recover_weak_neighbors,
+    _resolve_alternate_clicked_hypothesis,
     _select_threshold_candidate,
     calculate_interactive_roi_bounds,
     estimate_rotation_shadow,
@@ -37,6 +39,107 @@ from stripe_analysis import analyze_adjacent_stripes  # noqa: E402
 
 
 class InteractivePipelineTests(unittest.TestCase):
+    def hypothesis_track(
+        self,
+        track_id,
+        center_x,
+        *,
+        width=10.0,
+        support=1.0,
+        crossing_valid_count=0,
+        rejection_reasons=(),
+        valid_rows=(0, 119),
+    ):
+        return SimpleNamespace(
+            track_id=track_id,
+            center_x_roi=float(center_x),
+            median_width_px=float(width),
+            valid_row_ratio=float(support),
+            crossing_valid_count=crossing_valid_count,
+            rejection_reasons=list(rejection_reasons),
+            valid_runs=[
+                SimpleNamespace(y_roi=y_roi) for y_roi in valid_rows
+            ],
+        )
+
+    def clicked_hypothesis_candidate(
+        self,
+        *,
+        geometry="original",
+        threshold_method="otsu",
+        adjacency_status="rejected",
+        adjacency_reason="selected_stripes_not_immediate_neighbors",
+        clicked_center=110.0,
+        clicked_width=30.0,
+        extra_tracks=(),
+    ):
+        left = self.hypothesis_track(1, 80)
+        clicked = self.hypothesis_track(
+            2,
+            clicked_center,
+            width=clicked_width,
+            crossing_valid_count=100,
+        )
+        right = self.hypothesis_track(3, 120)
+        stable_context = (
+            self.hypothesis_track(4, 40),
+            self.hypothesis_track(5, 60),
+            self.hypothesis_track(6, 140),
+        )
+        selection = InteractiveStripeSelection(
+            click_classification="black_stripe",
+            clicked_track=clicked,
+            left_track=left,
+            right_track=right,
+            success=True,
+            failure_reasons=(),
+            warning_flags=(),
+        )
+        return SimpleNamespace(
+            geometry=geometry,
+            threshold_method=threshold_method,
+            selection=selection,
+            analysis=SimpleNamespace(
+                tracks=[
+                    *stable_context,
+                    left,
+                    clicked,
+                    right,
+                    *extra_tracks,
+                ],
+                x_ref_roi=100,
+                roi_shape=(120, 200),
+            ),
+            adjacency_verification={
+                "status": adjacency_status,
+                "reason": adjacency_reason,
+            },
+            grayscale_topology={
+                "strong_same_basin_conflict": False,
+                "strong_merged_basin_conflict": False,
+            },
+            inverse_rotation_matrix=np.array(
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                dtype=np.float64,
+            ),
+        )
+
+    def resolve_hypothesis_report(self, candidate):
+        with patch(
+            "interactive_pipeline._attach_clicked_hypothesis_report",
+            side_effect=lambda _candidate, report: report,
+        ):
+            return _resolve_alternate_clicked_hypothesis(
+                candidate,
+                np.full((120, 200), 128, dtype=np.uint8),
+                100,
+                100,
+                60,
+                ProcessingConfig(),
+                InteractiveConfig(),
+                None,
+            )
+
     def weak_neighbor_case(self, weak_center_x: int, continuous_dark=False):
         height, width = 120, 300
         mask = np.zeros((height, width), dtype=np.uint8)
@@ -286,6 +389,18 @@ class InteractivePipelineTests(unittest.TestCase):
                             )
                         )
 
+    def test_clicked_hypothesis_center_distance_must_be_positive(self):
+        for invalid_distance in (0.0, -1.0):
+            with self.subTest(distance=invalid_distance):
+                with self.assertRaises(ValueError):
+                    validate_interactive_config(
+                        InteractiveConfig(
+                            clicked_hypothesis_max_center_distance_px=(
+                                invalid_distance
+                            )
+                        )
+                    )
+
     def test_pitch_and_grayscale_can_recover_a_weak_neighbor(self):
         image, analysis, selection = self.weak_neighbor_case(100)
 
@@ -332,6 +447,164 @@ class InteractivePipelineTests(unittest.TestCase):
                     verification["status"],
                     "verified",
                 )
+
+    def test_clicked_hypothesis_trigger_is_narrowly_scoped(self):
+        cases = (
+            (
+                {"geometry": "rotated"},
+                "geometry_not_original",
+            ),
+            (
+                {"threshold_method": "adaptive"},
+                "threshold_method_not_otsu",
+            ),
+            (
+                {
+                    "adjacency_status": "verified",
+                    "adjacency_reason": "immediate_neighbors_verified",
+                },
+                "original_adjacency_not_rejected",
+            ),
+            (
+                {"clicked_center": 103.0},
+                "original_clicked_not_materially_offset",
+            ),
+            (
+                {"clicked_width": 18.0},
+                "original_clicked_not_abnormally_wide",
+            ),
+        )
+        for overrides, expected_reason in cases:
+            with self.subTest(expected_reason=expected_reason):
+                report = self.resolve_hypothesis_report(
+                    self.clicked_hypothesis_candidate(**overrides)
+                )
+
+                self.assertFalse(report["attempted"])
+                self.assertEqual(
+                    report["decision"],
+                    "trigger_not_met",
+                )
+                self.assertEqual(
+                    report["trigger_reason"],
+                    expected_reason,
+                )
+
+    def test_clicked_hypothesis_reports_insufficient_weak_evidence(self):
+        report = self.resolve_hypothesis_report(
+            self.clicked_hypothesis_candidate()
+        )
+
+        self.assertTrue(report["attempted"])
+        self.assertEqual(
+            report["decision"],
+            "no_eligible_alternate",
+        )
+        self.assertEqual(report["verified_hypothesis_count"], 0)
+        self.assertIsNone(report["adopted_track_ids"])
+
+    def test_offset_weak_track_cannot_steal_clicked_identity(self):
+        offset_weak_track = self.hypothesis_track(
+            20,
+            104,
+            support=0.2,
+            crossing_valid_count=20,
+            rejection_reasons=("insufficient_row_support",),
+        )
+
+        report = self.resolve_hypothesis_report(
+            self.clicked_hypothesis_candidate(
+                extra_tracks=(offset_weak_track,)
+            )
+        )
+
+        self.assertTrue(report["attempted"])
+        self.assertEqual(
+            report["decision"],
+            "no_eligible_alternate",
+        )
+        self.assertEqual(report["hypotheses"], [])
+
+    def test_conflicting_verified_clicked_hypotheses_remain_ambiguous(self):
+        weak_left = self.hypothesis_track(
+            20,
+            99,
+            support=0.2,
+            crossing_valid_count=20,
+            rejection_reasons=("insufficient_row_support",),
+        )
+        weak_right = self.hypothesis_track(
+            21,
+            101,
+            support=0.2,
+            crossing_valid_count=20,
+            rejection_reasons=("insufficient_row_support",),
+        )
+        candidate = self.clicked_hypothesis_candidate(
+            extra_tracks=(weak_left, weak_right)
+        )
+
+        def verified_evaluation(selection, *_args):
+            return {
+                "selection": selection,
+                "neighbor_consistency": {
+                    "checked": True,
+                    "passed": True,
+                },
+                "pitch_guard": {
+                    "status": "Normal",
+                    "interval_pitch_ratios": [1.0, 1.0],
+                },
+                "topology": SimpleNamespace(
+                    report={
+                        "status": "Consistent",
+                        "strong_same_basin_conflict": False,
+                        "strong_merged_basin_conflict": False,
+                    },
+                    debug_image=np.zeros((1, 1), dtype=np.uint8),
+                ),
+                "quality": {
+                    "success": True,
+                    "hard_invalid_reasons": [],
+                },
+                "adjacency_verification": {
+                    "status": "verified",
+                    "reason": "immediate_neighbors_verified",
+                },
+                "pitch_tolerance_passed": True,
+                "verified_for_adoption": True,
+                "rejection_reason": None,
+            }
+
+        with patch(
+            "interactive_pipeline._evaluate_alternate_clicked_selection",
+            side_effect=verified_evaluation,
+        ), patch(
+            "interactive_pipeline._attach_clicked_hypothesis_report",
+            side_effect=lambda _candidate, report: report,
+        ):
+            report = _resolve_alternate_clicked_hypothesis(
+                candidate,
+                np.full((120, 200), 128, dtype=np.uint8),
+                100,
+                100,
+                60,
+                ProcessingConfig(),
+                InteractiveConfig(),
+                None,
+            )
+
+        self.assertTrue(report["attempted"])
+        self.assertEqual(report["verified_hypothesis_count"], 2)
+        self.assertEqual(
+            report["decision"],
+            "ambiguous_verified_clicked_hypotheses",
+        )
+        self.assertEqual(
+            report["hard_failure_reason"],
+            "ambiguous_verified_clicked_hypotheses",
+        )
+        self.assertIsNone(report["adopted_track_ids"])
 
     def test_verified_candidate_beats_higher_support_unverified_or_rejected(self):
         def candidate(method, status, support):
@@ -632,6 +905,58 @@ class InteractivePipelineTests(unittest.TestCase):
             report["failure_reason"],
             "immediate_neighbors_not_verified",
         )
+
+    def test_ambiguous_verified_clicked_hypotheses_are_a_safe_failure(self):
+        ambiguous_selection = InteractiveStripeSelection(
+            click_classification="black_stripe",
+            clicked_track=object(),
+            left_track=object(),
+            right_track=object(),
+            success=True,
+            failure_reasons=(),
+            warning_flags=(),
+        )
+        candidate = SimpleNamespace(
+            geometry="original",
+            threshold_method="otsu",
+            adjacency_verification={
+                "status": "unverified",
+                "reason": "ambiguous_verified_clicked_hypotheses",
+                "clicked_hypothesis_arbitration": {
+                    "attempted": True,
+                    "decision": (
+                        "ambiguous_verified_clicked_hypotheses"
+                    ),
+                },
+            },
+            selection=ambiguous_selection,
+        )
+
+        hard_failure = _clicked_hypothesis_hard_failure([candidate])
+        report, formal, debug = _apply_adjacency_safety_gate(
+            candidate,
+            candidate,
+            [candidate],
+            None,
+            hard_failure=hard_failure,
+        )
+
+        self.assertIsNone(formal)
+        self.assertIs(debug, candidate)
+        self.assertTrue(report["gate_applied"])
+        self.assertTrue(report["hard_failure_applied"])
+        self.assertEqual(
+            report["failure_reason"],
+            "ambiguous_verified_clicked_hypotheses",
+        )
+        failure = _formal_result_failure(
+            candidate,
+            report["failure_reason"],
+        )
+        self.assertFalse(failure.success)
+        self.assertIsNone(failure.left_track)
+        self.assertIsNone(failure.clicked_track)
+        self.assertIsNone(failure.right_track)
 
     def test_roi_is_fixed_size_away_from_edges(self):
         bounds = calculate_interactive_roi_bounds(

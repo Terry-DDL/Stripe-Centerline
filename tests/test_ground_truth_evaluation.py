@@ -5,12 +5,17 @@ import sys
 import unittest
 
 
-SRC_DIR = Path(__file__).resolve().parent.parent / "src"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SRC_DIR = PROJECT_ROOT / "src"
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SRC_DIR))
 
 from ground_truth_evaluation import (  # noqa: E402
     evaluate_ground_truth_predictions,
     validate_ground_truth_document,
+)
+from tools.run_ground_truth_regression import (  # noqa: E402
+    _original_otsu_clicked_hypothesis_counts,
 )
 
 
@@ -42,6 +47,47 @@ def document():
 
 
 class GroundTruthEvaluationTests(unittest.TestCase):
+    def test_original_otsu_clicked_hypothesis_counts_are_additive(self):
+        def report(decision=None, attempted=False):
+            verification = {}
+            if decision is not None:
+                verification["clicked_hypothesis_arbitration"] = {
+                    "attempted": attempted,
+                    "decision": decision,
+                }
+            return {
+                "candidate_arbitration": {
+                    "candidates": {
+                        "original_otsu": {
+                            "adjacency_verification": verification
+                        }
+                    }
+                }
+            }
+
+        reports = [
+            report("trigger_not_met"),
+            report("no_eligible_alternate", attempted=True),
+            report("no_verified_alternate", attempted=True),
+            report("unique_verified_adopted", attempted=True),
+            report(
+                "ambiguous_verified_clicked_hypotheses",
+                attempted=True,
+            ),
+            report(),
+        ]
+
+        self.assertEqual(
+            _original_otsu_clicked_hypothesis_counts(reports),
+            {
+                "attempted": 4,
+                "adopted": 1,
+                "no_verified": 2,
+                "ambiguous": 1,
+                "trigger_not_met": 2,
+            },
+        )
+
     def test_pending_case_is_allowed_only_before_metric_evaluation(self):
         pending = document()
         pending["cases"][0]["ground_truth"]["review_status"] = "pending"

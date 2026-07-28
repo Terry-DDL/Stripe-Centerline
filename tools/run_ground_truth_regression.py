@@ -22,6 +22,56 @@ from interactive_pipeline import run_interactive_case  # noqa: E402
 from pitch_reference import build_pitch_reference_map  # noqa: E402
 
 
+CLICKED_HYPOTHESIS_DECISION_OUTCOMES = {
+    "trigger_not_met": "trigger_not_met",
+    "no_eligible_alternate": "no_verified",
+    "no_verified_alternate": "no_verified",
+    "unique_verified_adopted": "adopted",
+    "ambiguous_verified_clicked_hypotheses": "ambiguous",
+}
+
+
+def _original_otsu_clicked_hypothesis_counts(
+    reports: list[dict],
+) -> dict[str, int]:
+    """Summarize the bounded clicked-hypothesis decisions for original Otsu."""
+
+    counts = {
+        "attempted": 0,
+        "adopted": 0,
+        "no_verified": 0,
+        "ambiguous": 0,
+        "trigger_not_met": 0,
+    }
+    for report in reports:
+        candidate = report.get("candidate_arbitration", {}).get(
+            "candidates",
+            {},
+        ).get("original_otsu", {})
+        arbitration = candidate.get("adjacency_verification", {}).get(
+            "clicked_hypothesis_arbitration"
+        )
+        if not isinstance(arbitration, dict):
+            counts["trigger_not_met"] += 1
+            continue
+
+        attempted = arbitration.get("attempted")
+        if not isinstance(attempted, bool):
+            raise ValueError(
+                "clicked hypothesis arbitration attempted must be boolean"
+            )
+        if attempted:
+            counts["attempted"] += 1
+        decision = arbitration.get("decision")
+        if decision not in CLICKED_HYPOTHESIS_DECISION_OUTCOMES:
+            raise ValueError(
+                "unknown clicked hypothesis arbitration decision: "
+                f"{decision!r}"
+            )
+        counts[CLICKED_HYPOTHESIS_DECISION_OUTCOMES[decision]] += 1
+    return counts
+
+
 def _candidate_shadow_rows(
     case: dict,
     report: dict,
@@ -187,6 +237,9 @@ def run_regression(truth: dict, output_dir: Path) -> dict:
             "pitch_status": interactive["pitch_guard"]["status"],
         }
     metrics = evaluate_ground_truth_predictions(truth, predictions)
+    metrics["original_otsu_clicked_hypothesis_counts"] = (
+        _original_otsu_clicked_hypothesis_counts(reports)
+    )
     return {
         "metrics": metrics,
         "shadow_metrics": _shadow_summary(shadow_rows, reports),

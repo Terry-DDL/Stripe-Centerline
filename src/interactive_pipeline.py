@@ -43,7 +43,7 @@ from stripe_analysis import (
     analyze_adjacent_stripes,
 )
 
-ALGORITHM_REVISION = "adjacency_gate_v1"
+ALGORITHM_REVISION = "adjacency_gate_v1_clicked_hypothesis_v1"
 
 
 @dataclass(frozen=True)
@@ -197,6 +197,11 @@ def validate_interactive_config(config: InteractiveConfig) -> None:
         value = getattr(config, field_name)
         if not 0.0 <= value <= 1.0:
             raise ValueError(f"{field_name} must be between 0 and 1")
+    if config.clicked_hypothesis_max_center_distance_px <= 0.0:
+        raise ValueError(
+            "clicked_hypothesis_max_center_distance_px "
+            "must be greater than 0"
+        )
     if config.topology_shadow_min_informative_rows < 1:
         raise ValueError(
             "topology_shadow_min_informative_rows must be at least 1"
@@ -576,14 +581,12 @@ def _neighbor_consistency_check(
         details["reason"] = "insufficient_tracks_for_pitch_check"
         return details
 
-    stable_widths = [track.median_width_px for track in stable_tracks]
-    typical_width = float(np.median(stable_widths))
-    min_normal_width = typical_width * 0.5
-    max_normal_width = (
-        typical_width
-        * (1.0 + processing_config.max_width_deviation_ratio)
-        + processing_config.min_width_tolerance_px
+    width_statistics = _regular_width_statistics(
+        stable_tracks,
+        processing_config,
     )
+    min_normal_width = width_statistics["regular_min"]
+    max_normal_width = width_statistics["regular_max"]
     pitch_tracks = [
         track
         for track in analysis.tracks
@@ -654,6 +657,28 @@ def _neighbor_consistency_check(
         }
     )
     return details
+
+
+def _regular_width_statistics(
+    stable_tracks: list[StripeTrack],
+    processing_config: ProcessingConfig,
+) -> dict | None:
+    """Return the shared regular-width range for a stable-track set."""
+
+    if not stable_tracks:
+        return None
+    stable_widths = [track.median_width_px for track in stable_tracks]
+    typical_width = float(np.median(stable_widths))
+    return {
+        "typical_width": typical_width,
+        "regular_min": typical_width * 0.5,
+        "regular_max": (
+            typical_width
+            * (1.0 + processing_config.max_width_deviation_ratio)
+            + processing_config.min_width_tolerance_px
+        ),
+        "stable_track_count": len(stable_tracks),
+    }
 
 
 def _apply_neighbor_consistency_guard(
@@ -739,6 +764,647 @@ def _build_adjacency_verification(
         },
         "arbitration_fields": {},
     }
+
+
+def _track_triplet_ids(selection: InteractiveStripeSelection) -> dict:
+    """Return the selected track ids without exposing geometry."""
+
+    return {
+        "left": (
+            None
+            if selection.left_track is None
+            else selection.left_track.track_id
+        ),
+        "clicked": (
+            None
+            if selection.clicked_track is None
+            else selection.clicked_track.track_id
+        ),
+        "right": (
+            None
+            if selection.right_track is None
+            else selection.right_track.track_id
+        ),
+    }
+
+
+def _hypothesis_track_summary(track: StripeTrack) -> dict:
+    """Return compact evidence for one alternate-hypothesis role."""
+
+    return {
+        "track_id": track.track_id,
+        "center_x_roi": round(track.center_x_roi, 3),
+        "median_width_px": round(track.median_width_px, 3),
+        "valid_row_ratio": round(track.valid_row_ratio, 6),
+        "crossing_valid_count": track.crossing_valid_count,
+        "rejection_reasons": list(track.rejection_reasons),
+    }
+
+
+def _vertical_track_distribution(
+    track: StripeTrack,
+    roi_height: int,
+    interactive_config: InteractiveConfig,
+) -> dict:
+    """Describe whether a weak track is vertically distributed evidence."""
+
+    rows = sorted({run.y_roi for run in track.valid_runs})
+    if not rows:
+        return {
+            "passed": False,
+            "covered_band_count": 0,
+            "vertical_span_ratio": 0.0,
+        }
+    covered_bands = {
+        min(2, int((y_roi / max(roi_height, 1)) * 3))
+        for y_roi in rows
+    }
+    vertical_span_ratio = (
+        (rows[-1] - rows[0]) / max(roi_height - 1, 1)
+    )
+    return {
+        "passed": (
+            len(covered_bands) >= 2
+            and vertical_span_ratio
+            >= interactive_config.topology_shadow_min_vertical_span_ratio
+        ),
+        "covered_band_count": len(covered_bands),
+        "vertical_span_ratio": round(vertical_span_ratio, 6),
+    }
+
+
+def _track_is_regular_width(
+    track: StripeTrack,
+    width_statistics: dict,
+) -> bool:
+    return (
+        width_statistics["regular_min"]
+        <= track.median_width_px
+        <= width_statistics["regular_max"]
+    )
+
+
+def _outer_track_allowed_for_clicked_hypothesis(
+    track: StripeTrack,
+    width_statistics: dict,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    roi_height: int,
+) -> tuple[bool, dict]:
+    """Apply the alternate-only floor without changing global eligibility."""
+
+    vertical_distribution = _vertical_track_distribution(
+        track,
+        roi_height,
+        interactive_config,
+    )
+    rejection_allowed = track.rejection_reasons in (
+        [],
+        ["insufficient_row_support"],
+    )
+    weak_distribution_allowed = (
+        track.valid_row_ratio >= processing_config.min_stripe_support_ratio
+        or vertical_distribution["passed"]
+    )
+    allowed = (
+        track.valid_row_ratio
+        >= processing_config.min_clicked_track_support_ratio
+        and rejection_allowed
+        and track.crossing_valid_count == 0
+        and _track_is_regular_width(track, width_statistics)
+        and weak_distribution_allowed
+    )
+    return allowed, vertical_distribution
+
+
+def _tracks_are_geometrically_separate(
+    left_track: StripeTrack,
+    right_track: StripeTrack,
+) -> bool:
+    center_gap = right_track.center_x_roi - left_track.center_x_roi
+    minimum_gap = (
+        left_track.median_width_px + right_track.median_width_px
+    ) / 2.0
+    return center_gap >= minimum_gap
+
+
+def _evaluate_alternate_clicked_selection(
+    selection: InteractiveStripeSelection,
+    analysis: AdjacentStripeAnalysis,
+    image_gray_original_roi,
+    click_x_roi: int,
+    click_x_global: int,
+    click_y_global: int,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    pitch_reference_map: PitchReferenceMap,
+    inverse_rotation_matrix: np.ndarray,
+) -> dict:
+    """Evaluate one complete alternate with the unchanged formal guards."""
+
+    guarded_selection, neighbor_consistency = (
+        _apply_neighbor_consistency_guard(
+            selection,
+            analysis,
+            processing_config,
+            interactive_config,
+        )
+    )
+    pitch_guard = evaluate_pitch_guard(
+        guarded_selection,
+        click_x_global,
+        click_y_global,
+        pitch_reference_map,
+        interactive_config,
+    )
+    topology = evaluate_grayscale_topology(
+        image_gray_original_roi,
+        guarded_selection,
+        inverse_rotation_matrix,
+        interactive_config,
+    )
+    quality = build_candidate_quality(
+        guarded_selection,
+        analysis,
+        neighbor_consistency,
+        pitch_guard,
+        (
+            topology.report
+            if interactive_config.enable_grayscale_topology_rejection
+            else {"status": "Not considered"}
+        ),
+        click_x_roi,
+        processing_config,
+    )
+    adjacency_verification = _build_adjacency_verification(
+        guarded_selection,
+        neighbor_consistency,
+        quality,
+    )
+    quality["adjacency_verification_status"] = (
+        adjacency_verification["status"]
+    )
+    adjacency_verification["arbitration_fields"] = {
+        "adjacency_verification_status": adjacency_verification["status"],
+        "combined_pitch_status": quality["combined_pitch_status"],
+        "grayscale_topology_status": quality[
+            "grayscale_topology_status"
+        ],
+        "quality_success": quality["success"],
+        "minimum_valid_row_ratio": quality["minimum_valid_row_ratio"],
+        "minimum_retention_ratio": quality["minimum_retention_ratio"],
+    }
+    pitch_ratios = pitch_guard.get("interval_pitch_ratios", [])
+    pitch_tolerance_passed = (
+        len(pitch_ratios) == 2
+        and all(
+            abs(ratio - 1.0)
+            <= interactive_config.neighbor_recovery_max_pitch_error_ratio
+            for ratio in pitch_ratios
+        )
+    )
+    strong_topology_conflict = bool(
+        topology.report.get("strong_same_basin_conflict")
+        or topology.report.get("strong_merged_basin_conflict")
+    )
+    verified_for_adoption = (
+        quality["success"]
+        and adjacency_verification["status"] == "verified"
+        and pitch_tolerance_passed
+        and not strong_topology_conflict
+    )
+    if not quality["success"]:
+        rejection_reason = "candidate_not_formally_valid"
+    elif adjacency_verification["status"] != "verified":
+        rejection_reason = adjacency_verification["reason"]
+    elif not pitch_tolerance_passed:
+        rejection_reason = "pitch_not_within_recovery_tolerance"
+    elif strong_topology_conflict:
+        rejection_reason = "strong_grayscale_topology_conflict"
+    else:
+        rejection_reason = None
+    return {
+        "selection": guarded_selection,
+        "neighbor_consistency": neighbor_consistency,
+        "pitch_guard": pitch_guard,
+        "topology": topology,
+        "quality": quality,
+        "adjacency_verification": adjacency_verification,
+        "pitch_tolerance_passed": pitch_tolerance_passed,
+        "verified_for_adoption": verified_for_adoption,
+        "rejection_reason": rejection_reason,
+    }
+
+
+def _clicked_hypothesis_report(
+    candidate: DetectionCandidate,
+    width_statistics: dict | None,
+) -> dict:
+    selection = candidate.selection
+    clicked = selection.clicked_track
+    return {
+        "attempted": False,
+        "decision": "trigger_not_met",
+        "trigger_reason": None,
+        "typical_width": (
+            None
+            if width_statistics is None
+            else round(width_statistics["typical_width"], 6)
+        ),
+        "regular_min": (
+            None
+            if width_statistics is None
+            else round(width_statistics["regular_min"], 6)
+        ),
+        "regular_max": (
+            None
+            if width_statistics is None
+            else round(width_statistics["regular_max"], 6)
+        ),
+        "regular_width_stable_track_count": (
+            0
+            if width_statistics is None
+            else width_statistics["stable_track_count"]
+        ),
+        "max_clicked_center_distance_px": None,
+        "original_track_ids": _track_triplet_ids(selection),
+        "original_clicked_distance_px": (
+            None
+            if clicked is None
+            else round(
+                abs(clicked.center_x_roi - candidate.analysis.x_ref_roi),
+                6,
+            )
+        ),
+        "original_clicked_width_px": (
+            None if clicked is None else round(clicked.median_width_px, 6)
+        ),
+        "hypotheses": [],
+        "verified_hypothesis_count": 0,
+        "adopted_track_ids": None,
+        "hard_failure_reason": None,
+    }
+
+
+def _attach_clicked_hypothesis_report(
+    candidate: DetectionCandidate,
+    report: dict,
+) -> DetectionCandidate:
+    adjacency_verification = {
+        **candidate.adjacency_verification,
+        "clicked_hypothesis_arbitration": report,
+    }
+    return replace(
+        candidate,
+        adjacency_verification=adjacency_verification,
+    )
+
+
+def _resolve_alternate_clicked_hypothesis(
+    candidate: DetectionCandidate,
+    image_gray_original_roi,
+    click_x_roi: int,
+    click_x_global: int,
+    click_y_global: int,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    pitch_reference_map: PitchReferenceMap,
+) -> DetectionCandidate:
+    """Recover only a unique, fully verified alternate clicked triplet."""
+
+    original_clicked = candidate.selection.clicked_track
+    stable_tracks_without_clicked = [
+        track
+        for track in candidate.analysis.tracks
+        if track is not original_clicked
+        and track.valid_row_ratio
+        >= processing_config.min_stripe_support_ratio
+        and track.rejection_reasons in ([], ["center_on_reference"])
+    ]
+    width_statistics = _regular_width_statistics(
+        stable_tracks_without_clicked,
+        processing_config,
+    )
+    report = _clicked_hypothesis_report(candidate, width_statistics)
+    report["max_clicked_center_distance_px"] = (
+        interactive_config.clicked_hypothesis_max_center_distance_px
+    )
+
+    def trigger_not_met(reason: str) -> DetectionCandidate:
+        report["trigger_reason"] = reason
+        return _attach_clicked_hypothesis_report(candidate, report)
+
+    if candidate.geometry != "original":
+        return trigger_not_met("geometry_not_original")
+    if candidate.threshold_method != "otsu":
+        return trigger_not_met("threshold_method_not_otsu")
+    if candidate.adjacency_verification["status"] != "rejected":
+        return trigger_not_met("original_adjacency_not_rejected")
+    if (
+        candidate.adjacency_verification["reason"]
+        != "selected_stripes_not_immediate_neighbors"
+    ):
+        return trigger_not_met("original_rejection_reason_not_supported")
+    if (
+        not candidate.selection.success
+        or candidate.selection.click_classification != "black_stripe"
+        or original_clicked is None
+        or candidate.selection.left_track is None
+        or candidate.selection.right_track is None
+    ):
+        return trigger_not_met("original_selection_not_complete_black_triplet")
+    if (
+        candidate.grayscale_topology.get("strong_same_basin_conflict")
+        or candidate.grayscale_topology.get("strong_merged_basin_conflict")
+    ):
+        return trigger_not_met("original_has_strong_topology_conflict")
+    if (
+        width_statistics is None
+        or width_statistics["stable_track_count"]
+        < interactive_config.neighbor_min_pitch_track_count
+    ):
+        return trigger_not_met("insufficient_regular_width_reference_tracks")
+
+    click_distance = abs(
+        original_clicked.center_x_roi - candidate.analysis.x_ref_roi
+    )
+    if click_distance <= processing_config.center_cluster_tolerance_px:
+        return trigger_not_met("original_clicked_not_materially_offset")
+    if original_clicked.median_width_px <= width_statistics["regular_max"]:
+        return trigger_not_met("original_clicked_not_abnormally_wide")
+
+    report["attempted"] = True
+    report["trigger_reason"] = "wide_offset_clicked_track_rejected"
+    roi_height = candidate.analysis.roi_shape[0]
+    weak_clicked_tracks = []
+    for track in candidate.analysis.tracks:
+        weak_distance = abs(
+            track.center_x_roi - candidate.analysis.x_ref_roi
+        )
+        vertical_distribution = _vertical_track_distribution(
+            track,
+            roi_height,
+            interactive_config,
+        )
+        width_merge_limit = (
+            track.median_width_px
+            * (1.0 + processing_config.max_width_deviation_ratio)
+            + processing_config.min_width_tolerance_px
+        )
+        if (
+            track.rejection_reasons == ["insufficient_row_support"]
+            and track.valid_row_ratio
+            >= processing_config.min_clicked_track_support_ratio
+            and weak_distance
+            <= interactive_config.clicked_hypothesis_max_center_distance_px
+            and click_distance - weak_distance
+            >= processing_config.center_cluster_tolerance_px
+            and track.crossing_valid_count > 0
+            and weak_distance <= track.median_width_px / 2.0
+            and _track_is_regular_width(track, width_statistics)
+            and original_clicked.median_width_px > width_merge_limit
+            and vertical_distribution["passed"]
+        ):
+            weak_clicked_tracks.append((track, vertical_distribution))
+
+    evaluated_hypotheses = []
+    for weak_clicked, clicked_vertical_distribution in weak_clicked_tracks:
+        left_candidates = []
+        right_candidates = []
+        vertical_by_track_id = {
+            weak_clicked.track_id: clicked_vertical_distribution,
+        }
+        for track in candidate.analysis.tracks:
+            allowed, vertical_distribution = (
+                _outer_track_allowed_for_clicked_hypothesis(
+                    track,
+                    width_statistics,
+                    processing_config,
+                    interactive_config,
+                    roi_height,
+                )
+            )
+            if not allowed:
+                continue
+            vertical_by_track_id[track.track_id] = vertical_distribution
+            if track.center_x_roi < weak_clicked.center_x_roi:
+                left_candidates.append(track)
+            elif track.center_x_roi > weak_clicked.center_x_roi:
+                right_candidates.append(track)
+
+        left_track = max(
+            left_candidates,
+            key=lambda track: track.center_x_roi,
+            default=None,
+        )
+        right_track = min(
+            right_candidates,
+            key=lambda track: track.center_x_roi,
+            default=None,
+        )
+        hypothesis_report = {
+            "track_ids": {
+                "left": (
+                    None if left_track is None else left_track.track_id
+                ),
+                "clicked": weak_clicked.track_id,
+                "right": (
+                    None if right_track is None else right_track.track_id
+                ),
+            },
+            "tracks": {
+                "left": (
+                    None
+                    if left_track is None
+                    else _hypothesis_track_summary(left_track)
+                ),
+                "clicked": _hypothesis_track_summary(weak_clicked),
+                "right": (
+                    None
+                    if right_track is None
+                    else _hypothesis_track_summary(right_track)
+                ),
+            },
+            "center_improvement_px": round(
+                click_distance
+                - abs(
+                    weak_clicked.center_x_roi
+                    - candidate.analysis.x_ref_roi
+                ),
+                6,
+            ),
+            "width_merge_check": {
+                "passed": True,
+                "original_clicked_width_px": round(
+                    original_clicked.median_width_px,
+                    6,
+                ),
+                "alternate_clicked_width_px": round(
+                    weak_clicked.median_width_px,
+                    6,
+                ),
+            },
+            "vertical_distribution": {},
+            "neighbor_consistency": None,
+            "pitch_status": None,
+            "pitch_interval_ratios": [],
+            "pitch_tolerance_passed": False,
+            "topology_status": None,
+            "strong_topology_conflict": None,
+            "quality_success": False,
+            "quality_hard_invalid_reasons": [],
+            "adjacency_status": None,
+            "rejection_reason": None,
+        }
+        if left_track is None or right_track is None:
+            hypothesis_report["rejection_reason"] = (
+                "missing_nearest_allowed_outer_track"
+            )
+            report["hypotheses"].append(hypothesis_report)
+            continue
+        hypothesis_report["vertical_distribution"] = {
+            "left": vertical_by_track_id[left_track.track_id],
+            "clicked": clicked_vertical_distribution,
+            "right": vertical_by_track_id[right_track.track_id],
+        }
+        if (
+            max(
+                left_track.valid_row_ratio,
+                right_track.valid_row_ratio,
+            )
+            < interactive_config.outer_neighbor_recovery_min_support_ratio
+        ):
+            hypothesis_report["rejection_reason"] = (
+                "no_outer_reaches_existing_recovery_support"
+            )
+            report["hypotheses"].append(hypothesis_report)
+            continue
+        if not (
+            _tracks_are_geometrically_separate(
+                left_track,
+                weak_clicked,
+            )
+            and _tracks_are_geometrically_separate(
+                weak_clicked,
+                right_track,
+            )
+        ):
+            hypothesis_report["rejection_reason"] = (
+                "alternate_tracks_not_geometrically_separate"
+            )
+            report["hypotheses"].append(hypothesis_report)
+            continue
+
+        alternate_selection = InteractiveStripeSelection(
+            click_classification="black_stripe",
+            clicked_track=weak_clicked,
+            left_track=left_track,
+            right_track=right_track,
+            success=True,
+            failure_reasons=(),
+            warning_flags=("alternate_clicked_hypothesis_adopted",),
+        )
+        evaluation = _evaluate_alternate_clicked_selection(
+            alternate_selection,
+            candidate.analysis,
+            image_gray_original_roi,
+            click_x_roi,
+            click_x_global,
+            click_y_global,
+            processing_config,
+            interactive_config,
+            pitch_reference_map,
+            candidate.inverse_rotation_matrix,
+        )
+        topology_report = evaluation["topology"].report
+        hypothesis_report.update(
+            {
+                "neighbor_consistency": evaluation[
+                    "neighbor_consistency"
+                ],
+                "pitch_status": evaluation["pitch_guard"]["status"],
+                "pitch_interval_ratios": evaluation["pitch_guard"].get(
+                    "interval_pitch_ratios",
+                    [],
+                ),
+                "pitch_tolerance_passed": evaluation[
+                    "pitch_tolerance_passed"
+                ],
+                "topology_status": topology_report["status"],
+                "strong_topology_conflict": bool(
+                    topology_report.get("strong_same_basin_conflict")
+                    or topology_report.get(
+                        "strong_merged_basin_conflict"
+                    )
+                ),
+                "quality_success": evaluation["quality"]["success"],
+                "quality_hard_invalid_reasons": evaluation["quality"][
+                    "hard_invalid_reasons"
+                ],
+                "adjacency_status": evaluation[
+                    "adjacency_verification"
+                ]["status"],
+                "rejection_reason": evaluation["rejection_reason"],
+            }
+        )
+        report["hypotheses"].append(hypothesis_report)
+        evaluated_hypotheses.append(
+            (
+                (
+                    left_track.track_id,
+                    weak_clicked.track_id,
+                    right_track.track_id,
+                ),
+                evaluation,
+            )
+        )
+
+    verified_by_triplet = {}
+    for triplet, evaluation in evaluated_hypotheses:
+        if evaluation["verified_for_adoption"]:
+            verified_by_triplet.setdefault(triplet, evaluation)
+    report["verified_hypothesis_count"] = len(verified_by_triplet)
+
+    if len(verified_by_triplet) > 1:
+        report["decision"] = "ambiguous_verified_clicked_hypotheses"
+        report["hard_failure_reason"] = (
+            "ambiguous_verified_clicked_hypotheses"
+        )
+        return _attach_clicked_hypothesis_report(candidate, report)
+    if not verified_by_triplet:
+        report["decision"] = (
+            "no_eligible_alternate"
+            if not evaluated_hypotheses
+            else "no_verified_alternate"
+        )
+        return _attach_clicked_hypothesis_report(candidate, report)
+
+    triplet, evaluation = next(iter(verified_by_triplet.items()))
+    report["decision"] = "unique_verified_adopted"
+    report["adopted_track_ids"] = {
+        "left": triplet[0],
+        "clicked": triplet[1],
+        "right": triplet[2],
+    }
+    adjacency_verification = {
+        **evaluation["adjacency_verification"],
+        "clicked_hypothesis_arbitration": report,
+    }
+    return replace(
+        candidate,
+        selection=evaluation["selection"],
+        neighbor_consistency=evaluation["neighbor_consistency"],
+        adjacency_verification=adjacency_verification,
+        pitch_guard=evaluation["pitch_guard"],
+        neighbor_recovery={
+            "applied": False,
+            "recoveries": [],
+            "reason": "alternate_clicked_hypothesis_selected",
+        },
+        grayscale_topology=evaluation["topology"].report,
+        grayscale_topology_debug=evaluation["topology"].debug_image,
+        quality=evaluation["quality"],
+    )
 
 
 def _recover_weak_neighbors(
@@ -1076,7 +1742,7 @@ def _build_detection_candidate(
         "minimum_valid_row_ratio": quality["minimum_valid_row_ratio"],
         "minimum_retention_ratio": quality["minimum_retention_ratio"],
     }
-    return DetectionCandidate(
+    candidate = DetectionCandidate(
         geometry=geometry,
         threshold_method=threshold_method,
         stages=stages,
@@ -1091,6 +1757,16 @@ def _build_detection_candidate(
         quality=quality,
         rotation_matrix=rotation_matrix,
         inverse_rotation_matrix=inverse_rotation_matrix,
+    )
+    return _resolve_alternate_clicked_hypothesis(
+        candidate,
+        image_gray_original_roi,
+        click_x_roi,
+        click_x_global,
+        click_y_global,
+        processing_config,
+        interactive_config,
+        pitch_reference_map,
     )
 
 
@@ -1571,18 +2247,52 @@ def _build_shadow_arbitration(
     return report, formal_winner, debug_winner
 
 
+def _clicked_hypothesis_hard_failure(
+    candidates: list[DetectionCandidate],
+) -> dict | None:
+    """Return an ambiguity that no later candidate may bypass."""
+
+    sources = []
+    source_arbitration = None
+    for candidate in candidates:
+        arbitration = candidate.adjacency_verification.get(
+            "clicked_hypothesis_arbitration"
+        )
+        if (
+            arbitration is None
+            or arbitration.get("decision")
+            != "ambiguous_verified_clicked_hypotheses"
+        ):
+            continue
+        sources.append(_candidate_identity(candidate))
+        if source_arbitration is None:
+            source_arbitration = arbitration
+    if not sources:
+        return None
+    return {
+        "reason": "ambiguous_verified_clicked_hypotheses",
+        "source_candidates": sources,
+        "clicked_hypothesis_arbitration": source_arbitration,
+    }
+
+
 def _apply_adjacency_safety_gate(
     formal_candidate: DetectionCandidate | None,
     debug_candidate: DetectionCandidate,
     candidates: list[DetectionCandidate],
     prior_failure_reason: str | None,
+    hard_failure: dict | None = None,
 ) -> tuple[dict, DetectionCandidate | None, DetectionCandidate]:
     """Allow only a locally verified candidate into the formal result."""
 
     failure_reason = prior_failure_reason
     gated_candidate = formal_candidate
     gate_applied = False
-    if (
+    if hard_failure is not None:
+        gated_candidate = None
+        failure_reason = hard_failure["reason"]
+        gate_applied = True
+    elif (
         gated_candidate is not None
         and gated_candidate.adjacency_verification["status"] != "verified"
     ):
@@ -1608,6 +2318,8 @@ def _apply_adjacency_safety_gate(
         "gate_applied": gate_applied,
         "final_winner": _candidate_identity(gated_candidate),
         "failure_reason": failure_reason,
+        "hard_failure_applied": hard_failure is not None,
+        "hard_failure": hard_failure,
     }
     return report, gated_candidate, debug_candidate
 
@@ -1628,6 +2340,26 @@ def _formal_result_failure(
         failure_reasons=selection.failure_reasons + (reason,),
         warning_flags=selection.warning_flags + (reason,),
     )
+
+
+def _safe_failure_neighbor_consistency(
+    reason: str,
+    interactive_config: InteractiveConfig,
+) -> dict:
+    """Return a geometry-free formal neighbor report."""
+
+    return {
+        "checked": False,
+        "passed": None,
+        "local_pitch_px": None,
+        "selected_span_px": None,
+        "span_pitch_ratio": None,
+        "max_span_pitch_ratio": (
+            interactive_config.neighbor_max_span_pitch_ratio
+        ),
+        "pitch_track_count": 0,
+        "reason": reason,
+    }
 
 
 def _selection_for_output(
@@ -2064,6 +2796,31 @@ def _build_report(
     adjacency_arbitration: dict,
 ) -> dict:
     final_candidate_identity = adjacency_arbitration["final_winner"]
+    hard_failure = adjacency_arbitration.get("hard_failure")
+    if hard_failure is None:
+        formal_adjacency_verification = (
+            selected_candidate.adjacency_verification
+        )
+    else:
+        formal_adjacency_verification = {
+            "status": "rejected",
+            "reason": hard_failure["reason"],
+            "neighbor_check": {
+                "checked": False,
+                "passed": None,
+                "reason": hard_failure["reason"],
+                "local_pitch_px": None,
+                "selected_span_px": None,
+                "span_pitch_ratio": None,
+                "max_span_pitch_ratio": (
+                    interactive_config.neighbor_max_span_pitch_ratio
+                ),
+            },
+            "arbitration_fields": {},
+            "clicked_hypothesis_arbitration": hard_failure[
+                "clicked_hypothesis_arbitration"
+            ],
+        }
     left = _track_report(
         selection.left_track,
         bounds,
@@ -2184,9 +2941,7 @@ def _build_report(
             "clicked": clicked,
             "distance_definition": "horizontal_in_detection_space",
             "neighbor_consistency": neighbor_consistency,
-            "adjacency_verification": (
-                selected_candidate.adjacency_verification
-            ),
+            "adjacency_verification": formal_adjacency_verification,
             "pitch_guard": pitch_guard,
             "stripe_spacing_px": stripe_spacing,
             "left": left,
@@ -2379,6 +3134,9 @@ def run_interactive_case(
         interactive_config,
     )
     all_candidates = original_candidates + rotated_candidates
+    clicked_hypothesis_hard_failure = (
+        _clicked_hypothesis_hard_failure(all_candidates)
+    )
     (
         adjacency_arbitration,
         formal_candidate,
@@ -2388,6 +3146,7 @@ def run_interactive_case(
         selected_candidate,
         all_candidates,
         shadow_arbitration["formal_failure_reason"],
+        hard_failure=clicked_hypothesis_hard_failure,
     )
     if (
         shadow_arbitration["rejection_applied"]
@@ -2406,30 +3165,41 @@ def run_interactive_case(
         }
         geometry_selection_reason = current_geometry_selection_reason
 
-    rotation_applied = selected_candidate.geometry == "rotated"
+    debug_candidate = selected_candidate
+    result_candidate = formal_candidate or debug_candidate
+    rotation_applied = result_candidate.geometry == "rotated"
     if rotated_best is not None and not rotation_applied:
         rotation_fallback_reason = (
             f"rotation_candidate_not_selected_{geometry_selection_reason}"
         )
-    active_stages = selected_candidate.stages
-    active_analysis = selected_candidate.analysis
+    active_stages = result_candidate.stages
+    active_analysis = result_candidate.analysis
     if formal_candidate is None:
         selection = _formal_result_failure(
-            selected_candidate,
+            debug_candidate,
             adjacency_arbitration["failure_reason"],
         )
     else:
         selection = _selection_for_output(formal_candidate)
-    neighbor_consistency = selected_candidate.neighbor_consistency
-    rotation_matrix = selected_candidate.rotation_matrix
-    inverse_rotation_matrix = selected_candidate.inverse_rotation_matrix
-    pitch_guard = evaluate_pitch_guard(
-        selection,
-        click_x_global,
-        click_y_global,
-        pitch_reference_map,
-        interactive_config,
-    )
+    if adjacency_arbitration["hard_failure_applied"]:
+        neighbor_consistency = _safe_failure_neighbor_consistency(
+            adjacency_arbitration["failure_reason"],
+            interactive_config,
+        )
+    else:
+        neighbor_consistency = result_candidate.neighbor_consistency
+    rotation_matrix = result_candidate.rotation_matrix
+    inverse_rotation_matrix = result_candidate.inverse_rotation_matrix
+    if formal_candidate is None:
+        pitch_guard = evaluate_pitch_guard(
+            selection,
+            click_x_global,
+            click_y_global,
+            pitch_reference_map,
+            interactive_config,
+        )
+    else:
+        pitch_guard = formal_candidate.pitch_guard
     candidate_summaries = {}
     for geometry, candidates in (
         ("original", original_candidates),
@@ -2471,21 +3241,21 @@ def run_interactive_case(
         selection,
     )
     candidates_debug = _create_interactive_candidates_debug(
-        active_stages.black_mask,
-        active_analysis,
-        selected_candidate.selection,
+        debug_candidate.stages.black_mask,
+        debug_candidate.analysis,
+        debug_candidate.selection,
         click_x_roi,
         click_y_roi,
     )
     votes_debug = _create_interactive_votes_debug(
-        active_analysis,
-        selected_candidate.selection,
+        debug_candidate.analysis,
+        debug_candidate.selection,
     )
     debug_candidate_result = _create_interactive_roi_result(
-        active_stages.image_gray,
+        debug_candidate.stages.image_gray,
         click_x_roi,
         click_y_roi,
-        selected_candidate.selection,
+        debug_candidate.selection,
     )
     pitch_reference_debug = create_pitch_reference_debug(
         image_gray,
@@ -2515,7 +3285,7 @@ def run_interactive_case(
         interactive_config,
         pitch_guard,
         pitch_reference_map,
-        selected_candidate,
+        result_candidate,
         candidate_summaries,
         threshold_selection_reasons,
         geometry_selection_reason,

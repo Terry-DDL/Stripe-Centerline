@@ -52,6 +52,17 @@ class RealThresholdRegressionTests(unittest.TestCase):
             ]["original"],
             "better_adjacency_verification",
         )
+        candidates = result.report["candidate_arbitration"]["candidates"]
+        for candidate_name in ("original_otsu", "original_adaptive"):
+            with self.subTest(candidate=candidate_name):
+                hypothesis = candidates[candidate_name][
+                    "adjacency_verification"
+                ]["clicked_hypothesis_arbitration"]
+                self.assertFalse(hypothesis["attempted"])
+                self.assertEqual(
+                    hypothesis["decision"],
+                    "trigger_not_met",
+                )
 
     def test_sample2_known_split_errors_use_safe_otsu_results(self):
         image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
@@ -184,12 +195,15 @@ class RealThresholdRegressionTests(unittest.TestCase):
                         expected["recovery_applied"],
                     )
 
-    def test_sample2_screenshot_points_never_report_skipped_neighbors(self):
+    def test_sample2_screenshot_points_use_verified_otsu_hypotheses(self):
         image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
+        cases = {
+            (662, 1046): (623.5, 661.5, 701.0),
+            (662, 1065): (623.5, 661.5, 701.0),
+            (701, 996): (662.5, 700.5, 738.5),
+        }
         with tempfile.TemporaryDirectory() as temporary_directory:
-            for index, click in enumerate(
-                ((662, 1046), (662, 1065), (701, 996))
-            ):
+            for index, (click, expected_centers) in enumerate(cases.items()):
                 with self.subTest(click=click):
                     result = self.run_case(
                         image_path,
@@ -198,34 +212,171 @@ class RealThresholdRegressionTests(unittest.TestCase):
                     )
                     report = result.report
                     interactive = report["interactive_result"]
+                    otsu = report["candidate_arbitration"]["candidates"][
+                        "original_otsu"
+                    ]
 
+                    self.assertTrue(interactive["success"])
+                    self.assertEqual(interactive["threshold_method"], "otsu")
                     self.assertEqual(
-                        report["algorithm_revision"],
-                        "adjacency_gate_v1",
-                    )
-                    self.assertFalse(interactive["success"])
-                    self.assertEqual(
-                        interactive["failure_reasons"],
-                        ["immediate_neighbors_not_verified"],
-                    )
-                    for key in ("left", "clicked", "right"):
-                        self.assertIsNone(interactive[key])
-                    self.assertIsNone(interactive["stripe_spacing_px"])
-                    self.assertIsNone(interactive["threshold_method"])
-                    self.assertIn(
                         interactive["adjacency_verification"]["status"],
-                        ("unverified", "rejected"),
+                        "verified",
+                    )
+                    self.assertEqual(
+                        otsu["adjacency_verification"]["status"],
+                        "verified",
+                    )
+                    hypothesis = otsu["adjacency_verification"][
+                        "clicked_hypothesis_arbitration"
+                    ]
+                    self.assertTrue(hypothesis["attempted"])
+                    self.assertEqual(
+                        hypothesis["decision"],
+                        "unique_verified_adopted",
+                    )
+                    self.assertEqual(
+                        hypothesis["adopted_track_ids"],
+                        {
+                            label: interactive[label]["track_id"]
+                            for label in ("left", "clicked", "right")
+                        },
+                    )
+                    for label, expected_center in zip(
+                        ("left", "clicked", "right"),
+                        expected_centers,
+                    ):
+                        self.assertAlmostEqual(
+                            interactive[label]["center_x_global"],
+                            expected_center,
+                            delta=1.0,
+                        )
+                        self.assertEqual(
+                            interactive[label]["track_id"],
+                            otsu["quality"]["track_metrics"][label][
+                                "track_id"
+                            ],
+                        )
+                        self.assertAlmostEqual(
+                            interactive[label]["valid_row_ratio"],
+                            otsu["quality"]["track_metrics"][label][
+                                "valid_row_ratio"
+                            ],
+                            delta=1e-6,
+                        )
+
+                    selected_centers = otsu["selected_track_centers_roi"]
+                    self.assertLess(
+                        selected_centers["left"],
+                        selected_centers["clicked"],
+                    )
+                    self.assertLess(
+                        selected_centers["clicked"],
+                        selected_centers["right"],
                     )
                     self.assertTrue(
-                        any(
-                            candidate.get("adjacency_verification", {}).get(
-                                "status"
+                        otsu["neighbor_consistency"]["passed"]
+                    )
+                    self.assertEqual(
+                        interactive["neighbor_consistency"],
+                        otsu["neighbor_consistency"],
+                    )
+                    self.assertEqual(
+                        interactive["pitch_guard"],
+                        otsu["pitch_guard"],
+                    )
+                    self.assertEqual(
+                        interactive["adjacency_verification"][
+                            "neighbor_check"
+                        ],
+                        {
+                            key: otsu["neighbor_consistency"][key]
+                            for key in (
+                                "checked",
+                                "passed",
+                                "reason",
+                                "local_pitch_px",
+                                "selected_span_px",
+                                "span_pitch_ratio",
+                                "max_span_pitch_ratio",
                             )
-                            == "rejected"
-                            for candidate in report[
-                                "candidate_arbitration"
-                            ]["candidates"].values()
-                        )
+                        },
+                    )
+                    self.assertEqual(
+                        [
+                            (
+                                interval["left_track_id"],
+                                interval["right_track_id"],
+                            )
+                            for interval in otsu["grayscale_topology"][
+                                "evaluated_intervals"
+                            ]
+                        ],
+                        [
+                            (
+                                interactive["left"]["track_id"],
+                                interactive["clicked"]["track_id"],
+                            ),
+                            (
+                                interactive["clicked"]["track_id"],
+                                interactive["right"]["track_id"],
+                            ),
+                        ],
+                    )
+                    self.assertEqual(
+                        otsu["neighbor_recovery"]["reason"],
+                        "alternate_clicked_hypothesis_selected",
+                    )
+                    self.assertFalse(
+                        otsu["grayscale_topology"][
+                            "strong_same_basin_conflict"
+                        ]
+                    )
+                    self.assertFalse(
+                        otsu["grayscale_topology"][
+                            "strong_merged_basin_conflict"
+                        ]
+                    )
+
+    def test_stripe10_safety_cases_are_not_recovered_by_clicked_hypotheses(self):
+        image_path = (
+            PROJECT_ROOT
+            / "images"
+            / "Stripe_10_e0_t221236602_v8p56736_retry.bmp"
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            for index, click in enumerate(
+                ((564, 120), (564, 233), (564, 347))
+            ):
+                with self.subTest(click=click):
+                    result = self.run_case(
+                        image_path,
+                        click,
+                        Path(temporary_directory) / str(index),
+                    )
+
+                    interactive = result.report["interactive_result"]
+                    otsu = result.report["candidate_arbitration"][
+                        "candidates"
+                    ]["original_otsu"]
+                    self.assertFalse(interactive["success"])
+                    for label in ("left", "clicked", "right"):
+                        self.assertIsNone(interactive[label])
+                    self.assertIsNone(interactive["stripe_spacing_px"])
+                    self.assertEqual(
+                        otsu["adjacency_verification"]["status"],
+                        "rejected",
+                    )
+                    self.assertEqual(
+                        otsu["adjacency_verification"]["reason"],
+                        "selected_stripes_not_immediate_neighbors",
+                    )
+                    hypothesis = otsu["adjacency_verification"][
+                        "clicked_hypothesis_arbitration"
+                    ]
+                    self.assertFalse(hypothesis["attempted"])
+                    self.assertEqual(
+                        hypothesis["decision"],
+                        "trigger_not_met",
                     )
 
     def test_unsafe_candidates_fail_without_exposing_measurements(self):

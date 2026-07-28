@@ -46,6 +46,13 @@ ANCHORS = (
 )
 BRIGHTNESS_SHIFTS = (0, 50, 100, 150)
 CENTER_TOLERANCE_PX = 3.0
+CLICKED_HYPOTHESIS_DECISION_OUTCOMES = {
+    "trigger_not_met": "trigger_not_met",
+    "no_eligible_alternate": "no_verified",
+    "no_verified_alternate": "no_verified",
+    "unique_verified_adopted": "adopted",
+    "ambiguous_verified_clicked_hypotheses": "ambiguous",
+}
 
 
 def classify_formal_result(
@@ -79,6 +86,43 @@ def classify_formal_result(
     if all(value is None for value in hidden_fields):
         return "safe_failure"
     return "contract_violation"
+
+
+def summarize_clicked_hypothesis_arbitration(report: dict) -> dict:
+    """Normalize the original-Otsu clicked-hypothesis decision for scans."""
+
+    arbitration = (
+        report.get("candidate_arbitration", {})
+        .get("candidates", {})
+        .get("original_otsu", {})
+        .get("adjacency_verification", {})
+        .get("clicked_hypothesis_arbitration")
+    )
+    if not isinstance(arbitration, dict):
+        return {
+            "attempted": False,
+            "decision": "trigger_not_met",
+            "outcome": "trigger_not_met",
+            "legacy_missing_field": True,
+        }
+
+    decision = arbitration.get("decision")
+    if decision not in CLICKED_HYPOTHESIS_DECISION_OUTCOMES:
+        raise ValueError(
+            "unknown clicked hypothesis arbitration decision: "
+            f"{decision!r}"
+        )
+    attempted = arbitration.get("attempted")
+    if not isinstance(attempted, bool):
+        raise ValueError(
+            "clicked hypothesis arbitration attempted must be boolean"
+        )
+    return {
+        "attempted": attempted,
+        "decision": decision,
+        "outcome": CLICKED_HYPOTHESIS_DECISION_OUTCOMES[decision],
+        "legacy_missing_field": False,
+    }
 
 
 def _brighten(image_gray: np.ndarray, shift: int) -> np.ndarray:
@@ -182,6 +226,7 @@ def _point_summary(
         expected_right,
         tolerance,
     )
+    clicked_hypothesis = summarize_clicked_hypothesis_arbitration(report)
     return {
         "classification": classification,
         "failure_reasons": interactive["failure_reasons"],
@@ -196,6 +241,7 @@ def _point_summary(
             else interactive["right"]["center_x_global"]
         ),
         "algorithm_revision": report["algorithm_revision"],
+        "clicked_hypothesis_arbitration": clicked_hypothesis,
     }
 
 
@@ -226,6 +272,7 @@ def run_scan(
         )
         aggregate = Counter()
         failure_reasons = Counter()
+        clicked_hypothesis_counts = Counter()
         anchor_counts = {
             anchor["id"]: Counter() for anchor in ANCHORS
         }
@@ -254,6 +301,16 @@ def run_scan(
             classification = point["classification"]
             aggregate[classification] += 1
             revisions.add(point["algorithm_revision"])
+            clicked_hypothesis = point["clicked_hypothesis_arbitration"]
+            clicked_hypothesis_counts["attempted"] += int(
+                clicked_hypothesis["attempted"]
+            )
+            clicked_hypothesis_counts[
+                clicked_hypothesis["outcome"]
+            ] += 1
+            clicked_hypothesis_counts["legacy_missing_field"] += int(
+                clicked_hypothesis["legacy_missing_field"]
+            )
             reason = None
             if classification == "safe_failure":
                 reason = (
@@ -305,6 +362,30 @@ def run_scan(
                 "wrong_success": aggregate["wrong_success"],
                 "contract_violation": aggregate["contract_violation"],
                 "failure_reasons": dict(sorted(failure_reasons.items())),
+                "clicked_hypothesis_arbitration_counts": {
+                    "attempted": clicked_hypothesis_counts["attempted"],
+                    "adopted": clicked_hypothesis_counts["adopted"],
+                    "no_verified": clicked_hypothesis_counts["no_verified"],
+                    "ambiguous": clicked_hypothesis_counts["ambiguous"],
+                    "trigger_not_met": clicked_hypothesis_counts[
+                        "trigger_not_met"
+                    ],
+                    "legacy_missing_field": clicked_hypothesis_counts[
+                        "legacy_missing_field"
+                    ],
+                    "outcome_coordinate_count": sum(
+                        clicked_hypothesis_counts[outcome]
+                        for outcome in (
+                            "adopted",
+                            "no_verified",
+                            "ambiguous",
+                            "trigger_not_met",
+                        )
+                    ),
+                    "missing_field_policy": (
+                        "legacy_safe_counted_as_trigger_not_met"
+                    ),
+                },
                 "regions": regions,
             }
         )
@@ -353,6 +434,7 @@ def _write_outputs(report: dict, output_dir: Path) -> None:
             "wrong_success",
             "contract_violation",
             "failure_reasons",
+            "clicked_hypothesis_arbitration_counts",
         )
         writer = csv.DictWriter(output_file, fieldnames=fieldnames)
         writer.writeheader()
@@ -361,7 +443,11 @@ def _write_outputs(report: dict, output_dir: Path) -> None:
                 {
                     field: (
                         json.dumps(row[field], sort_keys=True)
-                        if field == "failure_reasons"
+                        if field
+                        in (
+                            "failure_reasons",
+                            "clicked_hypothesis_arbitration_counts",
+                        )
                         else row[field]
                     )
                     for field in fieldnames
@@ -382,7 +468,7 @@ def main() -> None:
         type=Path,
         default=PROJECT_ROOT / "images" / "Sample 2.bmp",
     )
-    parser.add_argument("--label", default="adjacency_gate_v1")
+    parser.add_argument("--label", default="clicked_hypothesis_v1")
     parser.add_argument("--y-step", type=int, default=1)
     args = parser.parse_args()
 
