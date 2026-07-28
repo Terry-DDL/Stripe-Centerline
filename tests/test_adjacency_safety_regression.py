@@ -283,13 +283,20 @@ class AdjacencySafetyRegressionTests(unittest.TestCase):
         self.assertFalse(
             any(row["false_success"] for row in metrics["rows"])
         )
+        truth_by_id = {case["id"]: case for case in truth["cases"]}
         for case_id in ("S10-11", "S10-12", "S10-14"):
-            self.assertFalse(result["predictions"][case_id]["success"])
-            self.assertIsNone(
-                result["predictions"][case_id]["left_center_x"]
+            prediction = result["predictions"][case_id]
+            ground_truth = truth_by_id[case_id]["ground_truth"]
+            self.assertTrue(prediction["success"])
+            self.assertAlmostEqual(
+                prediction["left_center_x"],
+                ground_truth["left_center_x"],
+                delta=1.0,
             )
-            self.assertIsNone(
-                result["predictions"][case_id]["right_center_x"]
+            self.assertAlmostEqual(
+                prediction["right_center_x"],
+                ground_truth["right_center_x"],
+                delta=1.0,
             )
 
 

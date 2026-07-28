@@ -43,7 +43,9 @@ from stripe_analysis import (
     analyze_adjacent_stripes,
 )
 
-ALGORITHM_REVISION = "adjacency_gate_v1_clicked_hypothesis_v1"
+ALGORITHM_REVISION = (
+    "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1"
+)
 
 
 @dataclass(frozen=True)
@@ -554,6 +556,8 @@ def _neighbor_consistency_check(
         "local_pitch_px": None,
         "selected_span_px": None,
         "span_pitch_ratio": None,
+        "comparison_basis": "center_distance",
+        "width_aware_evidence": None,
         "max_span_pitch_ratio": (
             interactive_config.neighbor_max_span_pitch_ratio
         ),
@@ -681,6 +685,226 @@ def _regular_width_statistics(
     }
 
 
+def _apply_width_aware_adjacency_evidence(
+    selection: InteractiveStripeSelection,
+    analysis: AdjacentStripeAnalysis,
+    neighbor_consistency: dict,
+    topology_report: dict,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+) -> tuple[InteractiveStripeSelection, dict]:
+    """Verify a wide clicked track without relaxing the global pitch limit."""
+
+    evidence = {
+        "checked": False,
+        "passed": False,
+        "reason": "trigger_not_met",
+        "typical_width": None,
+        "regular_min": None,
+        "regular_max": None,
+        "clicked_width": None,
+        "clicked_center_distance_px": None,
+        "max_clicked_center_distance_px": (
+            processing_config.center_cluster_tolerance_px
+        ),
+        "intervals": [],
+        "intermediate_track_ids": [],
+    }
+
+    def unchanged(reason: str):
+        evidence["reason"] = reason
+        return selection, {
+            **neighbor_consistency,
+            "width_aware_evidence": evidence,
+        }
+
+    if (
+        neighbor_consistency.get("passed") is not False
+        or neighbor_consistency.get("reason")
+        != "selected_span_exceeds_immediate_neighbor_limit"
+    ):
+        return unchanged("center_distance_check_did_not_reject")
+    if (
+        not selection.success
+        or selection.click_classification != "black_stripe"
+        or selection.left_track is None
+        or selection.clicked_track is None
+        or selection.right_track is None
+    ):
+        return unchanged("selection_not_complete_black_triplet")
+
+    left = selection.left_track
+    clicked = selection.clicked_track
+    right = selection.right_track
+    stable_without_clicked = [
+        track
+        for track in analysis.tracks
+        if track.track_id != clicked.track_id
+        and track.valid_row_ratio
+        >= processing_config.min_stripe_support_ratio
+        and track.rejection_reasons in ([], ["center_on_reference"])
+    ]
+    width_statistics = _regular_width_statistics(
+        stable_without_clicked,
+        processing_config,
+    )
+    if (
+        width_statistics is None
+        or width_statistics["stable_track_count"]
+        < interactive_config.neighbor_min_pitch_track_count
+    ):
+        return unchanged("insufficient_regular_width_reference_tracks")
+
+    evidence.update(
+        {
+            "typical_width": round(
+                width_statistics["typical_width"],
+                6,
+            ),
+            "regular_min": round(width_statistics["regular_min"], 6),
+            "regular_max": round(width_statistics["regular_max"], 6),
+            "clicked_width": round(clicked.median_width_px, 6),
+            "clicked_center_distance_px": round(
+                abs(clicked.center_x_roi - analysis.x_ref_roi),
+                6,
+            ),
+        }
+    )
+    if clicked.median_width_px <= width_statistics["regular_max"]:
+        return unchanged("clicked_track_not_abnormally_wide")
+    if not (
+        _track_is_regular_width(left, width_statistics)
+        and _track_is_regular_width(right, width_statistics)
+    ):
+        return unchanged("outer_track_not_regular_width")
+
+    selected_ids = {left.track_id, clicked.track_id, right.track_id}
+    intermediate_ids = [
+        track.track_id
+        for track in analysis.tracks
+        if track.track_id not in selected_ids
+        and track.valid_row_ratio
+        >= processing_config.min_clicked_track_support_ratio
+        and (
+            left.center_x_roi
+            < track.center_x_roi
+            < clicked.center_x_roi
+            or clicked.center_x_roi
+            < track.center_x_roi
+            < right.center_x_roi
+        )
+    ]
+    evidence["intermediate_track_ids"] = intermediate_ids
+    if intermediate_ids:
+        return unchanged("intermediate_track_evidence_present")
+    if (
+        evidence["clicked_center_distance_px"]
+        > evidence["max_clicked_center_distance_px"]
+    ):
+        return unchanged("clicked_track_not_centered_on_click")
+
+    if (
+        topology_report.get("status") != "Consistent"
+        or topology_report.get("strong_same_basin_conflict")
+        or topology_report.get("strong_merged_basin_conflict")
+    ):
+        return unchanged("topology_not_consistent")
+
+    topology_by_ids = {
+        (item["left_track_id"], item["right_track_id"]): item
+        for item in topology_report.get("evaluated_intervals", [])
+    }
+    local_pitch = neighbor_consistency.get("local_pitch_px")
+    if local_pitch is None or local_pitch <= 0.0:
+        return unchanged("local_pitch_unavailable")
+
+    normalized_ratios = []
+    for side, outer, track_pair in (
+        ("left", left, (left.track_id, clicked.track_id)),
+        ("right", right, (clicked.track_id, right.track_id)),
+    ):
+        topology_interval = topology_by_ids.get(track_pair)
+        vertical_coverage = (
+            {}
+            if topology_interval is None
+            else topology_interval.get("vertical_band_coverage", {})
+        )
+        if (
+            topology_interval is None
+            or topology_interval.get("status") != "Consistent"
+            or topology_interval.get("strong_same_basin_conflict")
+            or topology_interval.get("informative_row_count", 0)
+            < interactive_config.topology_shadow_min_informative_rows
+            or topology_interval.get("separator_support_ratio") is None
+            or topology_interval["separator_support_ratio"]
+            < interactive_config.topology_shadow_min_separator_support_ratio
+            or vertical_coverage.get("covered_band_count", 0) < 2
+        ):
+            return unchanged("interval_topology_not_verified")
+
+        center_span = abs(
+            clicked.center_x_roi - outer.center_x_roi
+        )
+        edge_gap = center_span - (
+            clicked.median_width_px + outer.median_width_px
+        ) / 2.0
+        normalized_span = edge_gap + width_statistics["typical_width"]
+        normalized_ratio = normalized_span / local_pitch
+        evidence["intervals"].append(
+            {
+                "side": side,
+                "center_span_px": round(center_span, 6),
+                "edge_gap_px": round(edge_gap, 6),
+                "normalized_span_px": round(normalized_span, 6),
+                "normalized_pitch_ratio": round(
+                    normalized_ratio,
+                    6,
+                ),
+                "topology_status": topology_interval["status"],
+                "separator_support_ratio": topology_interval[
+                    "separator_support_ratio"
+                ],
+            }
+        )
+        if edge_gap <= 0.0:
+            return unchanged("selected_track_edges_overlap")
+        normalized_ratios.append(normalized_ratio)
+
+    evidence["checked"] = True
+    if any(
+        ratio > interactive_config.neighbor_max_span_pitch_ratio
+        for ratio in normalized_ratios
+    ):
+        return unchanged("width_normalized_span_exceeds_limit")
+
+    evidence["passed"] = True
+    evidence["reason"] = "wide_clicked_edge_gaps_verified"
+    updated_consistency = {
+        **neighbor_consistency,
+        "passed": True,
+        "selected_span_px": round(
+            max(
+                interval["normalized_span_px"]
+                for interval in evidence["intervals"]
+            ),
+            3,
+        ),
+        "span_pitch_ratio": round(max(normalized_ratios), 3),
+        "comparison_basis": "width_normalized_edge_gap",
+        "reason": None,
+        "width_aware_evidence": evidence,
+    }
+    updated_selection = replace(
+        selection,
+        warning_flags=tuple(
+            flag
+            for flag in selection.warning_flags
+            if flag != "selected_stripes_not_immediate_neighbors"
+        ),
+    )
+    return updated_selection, updated_consistency
+
+
 def _apply_neighbor_consistency_guard(
     selection: InteractiveStripeSelection,
     analysis: AdjacentStripeAnalysis,
@@ -760,6 +984,13 @@ def _build_adjacency_verification(
             ),
             "max_span_pitch_ratio": neighbor_consistency.get(
                 "max_span_pitch_ratio"
+            ),
+            "comparison_basis": neighbor_consistency.get(
+                "comparison_basis",
+                "center_distance",
+            ),
+            "width_aware_evidence": neighbor_consistency.get(
+                "width_aware_evidence"
             ),
         },
         "arbitration_fields": {},
@@ -1711,6 +1942,21 @@ def _build_detection_candidate(
         inverse_rotation_matrix,
         interactive_config,
     )
+    if (
+        geometry == "original"
+        and threshold_method == "otsu"
+        and neighbor_consistency.get("passed") is False
+    ):
+        selection, neighbor_consistency = (
+            _apply_width_aware_adjacency_evidence(
+                selection,
+                analysis,
+                neighbor_consistency,
+                topology.report,
+                processing_config,
+                interactive_config,
+            )
+        )
     quality = build_candidate_quality(
         selection,
         analysis,

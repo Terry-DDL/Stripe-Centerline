@@ -298,6 +298,8 @@ class RealThresholdRegressionTests(unittest.TestCase):
                                 "selected_span_px",
                                 "span_pitch_ratio",
                                 "max_span_pitch_ratio",
+                                "comparison_basis",
+                                "width_aware_evidence",
                             )
                         },
                     )
@@ -337,16 +339,19 @@ class RealThresholdRegressionTests(unittest.TestCase):
                         ]
                     )
 
-    def test_stripe10_safety_cases_are_not_recovered_by_clicked_hypotheses(self):
+    def test_stripe10_wide_clicked_tracks_use_width_aware_adjacency(self):
         image_path = (
             PROJECT_ROOT
             / "images"
             / "Stripe_10_e0_t221236602_v8p56736_retry.bmp"
         )
+        cases = {
+            (564, 120): (547.75, 567.25, 591.75),
+            (564, 233): (546.75, 566.375, 590.5),
+            (564, 347): (545.25, 565.25, 589.25),
+        }
         with tempfile.TemporaryDirectory() as temporary_directory:
-            for index, click in enumerate(
-                ((564, 120), (564, 233), (564, 347))
-            ):
+            for index, (click, expected_centers) in enumerate(cases.items()):
                 with self.subTest(click=click):
                     result = self.run_case(
                         image_path,
@@ -358,17 +363,51 @@ class RealThresholdRegressionTests(unittest.TestCase):
                     otsu = result.report["candidate_arbitration"][
                         "candidates"
                     ]["original_otsu"]
-                    self.assertFalse(interactive["success"])
-                    for label in ("left", "clicked", "right"):
-                        self.assertIsNone(interactive[label])
-                    self.assertIsNone(interactive["stripe_spacing_px"])
+                    self.assertTrue(interactive["success"])
                     self.assertEqual(
-                        otsu["adjacency_verification"]["status"],
-                        "rejected",
+                        interactive["threshold_method"],
+                        "otsu",
                     )
                     self.assertEqual(
-                        otsu["adjacency_verification"]["reason"],
-                        "selected_stripes_not_immediate_neighbors",
+                        otsu["adjacency_verification"]["status"],
+                        "verified",
+                    )
+                    for label, expected_center in zip(
+                        ("left", "clicked", "right"),
+                        expected_centers,
+                    ):
+                        self.assertAlmostEqual(
+                            interactive[label]["center_x_global"],
+                            expected_center,
+                            delta=1.0,
+                        )
+                    neighbor = interactive["adjacency_verification"][
+                        "neighbor_check"
+                    ]
+                    self.assertEqual(
+                        neighbor["comparison_basis"],
+                        "width_normalized_edge_gap",
+                    )
+                    self.assertTrue(
+                        neighbor["width_aware_evidence"]["passed"]
+                    )
+                    self.assertLessEqual(
+                        neighbor["span_pitch_ratio"],
+                        neighbor["max_span_pitch_ratio"],
+                    )
+                    self.assertEqual(
+                        interactive["pitch_guard"]["status"],
+                        "Suspicious",
+                    )
+                    self.assertGreater(
+                        max(
+                            interactive["pitch_guard"][
+                                "interval_pitch_ratios"
+                            ]
+                        ),
+                        interactive["pitch_guard"][
+                            "normal_interval_ratio_max"
+                        ],
                     )
                     hypothesis = otsu["adjacency_verification"][
                         "clicked_hypothesis_arbitration"
@@ -377,6 +416,10 @@ class RealThresholdRegressionTests(unittest.TestCase):
                     self.assertEqual(
                         hypothesis["decision"],
                         "trigger_not_met",
+                    )
+                    self.assertEqual(
+                        hypothesis["trigger_reason"],
+                        "original_adjacency_not_rejected",
                     )
 
     def test_unsafe_candidates_fail_without_exposing_measurements(self):
@@ -409,10 +452,47 @@ class RealThresholdRegressionTests(unittest.TestCase):
             candidates["original_otsu"]["adjacency_verification"]["status"],
             "rejected",
         )
+        width_aware = candidates["original_otsu"][
+            "adjacency_verification"
+        ]["neighbor_check"]["width_aware_evidence"]
+        self.assertFalse(width_aware["passed"])
+        self.assertEqual(
+            width_aware["reason"],
+            "intermediate_track_evidence_present",
+        )
+        self.assertEqual(width_aware["intermediate_track_ids"], [2, 4])
         self.assertEqual(
             candidates["original_adaptive"]["grayscale_topology"]["status"],
             "Contradictory",
         )
+
+    def test_offset_wide_track_cannot_claim_clicked_identity(self):
+        image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = self.run_case(
+                image_path,
+                (699, 1005),
+                Path(temporary_directory),
+            )
+
+        interactive = result.report["interactive_result"]
+        self.assertFalse(interactive["success"])
+        for label in ("left", "clicked", "right"):
+            self.assertIsNone(interactive[label])
+        self.assertIsNone(interactive["stripe_spacing_px"])
+        otsu = result.report["candidate_arbitration"]["candidates"][
+            "original_otsu"
+        ]
+        width_aware = otsu["adjacency_verification"]["neighbor_check"][
+            "width_aware_evidence"
+        ]
+        self.assertFalse(width_aware["passed"])
+        self.assertEqual(
+            width_aware["reason"],
+            "clicked_track_not_centered_on_click",
+        )
+        self.assertEqual(width_aware["clicked_center_distance_px"], 19.0)
+        self.assertEqual(width_aware["max_clicked_center_distance_px"], 5)
 
     def test_unverifiable_neighbors_are_a_safe_failure(self):
         image_path = (

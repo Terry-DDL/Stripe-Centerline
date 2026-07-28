@@ -18,6 +18,7 @@ from config import InteractiveConfig, ProcessingConfig  # noqa: E402
 from interactive_pipeline import (  # noqa: E402
     _apply_adjacency_safety_gate,
     _apply_neighbor_consistency_guard,
+    _apply_width_aware_adjacency_evidence,
     _build_adjacency_verification,
     _build_shadow_arbitration,
     _clicked_hypothesis_hard_failure,
@@ -605,6 +606,189 @@ class InteractivePipelineTests(unittest.TestCase):
             "ambiguous_verified_clicked_hypotheses",
         )
         self.assertIsNone(report["adopted_track_ids"])
+
+    def width_aware_case(
+        self,
+        *,
+        include_intermediate=False,
+        topology_status="Consistent",
+        clicked_width=21.0,
+        clicked_center=103.0,
+    ):
+        left = self.hypothesis_track(1, 84, width=9)
+        clicked = self.hypothesis_track(
+            2,
+            clicked_center,
+            width=clicked_width,
+            crossing_valid_count=120,
+        )
+        right = self.hypothesis_track(3, 128, width=9)
+        tracks = [
+            self.hypothesis_track(10, 40, width=9),
+            self.hypothesis_track(11, 55, width=9),
+            left,
+            clicked,
+            right,
+            self.hypothesis_track(12, 143, width=9),
+        ]
+        if include_intermediate:
+            tracks.append(
+                self.hypothesis_track(
+                    20,
+                    116,
+                    width=9,
+                    support=0.1,
+                    rejection_reasons=("insufficient_row_support",),
+                )
+            )
+        selection = InteractiveStripeSelection(
+            click_classification="black_stripe",
+            clicked_track=clicked,
+            left_track=left,
+            right_track=right,
+            success=True,
+            failure_reasons=(),
+            warning_flags=(
+                "selected_stripes_not_immediate_neighbors",
+            ),
+        )
+        neighbor = {
+            "checked": True,
+            "passed": False,
+            "local_pitch_px": 14.5,
+            "selected_span_px": 25.0,
+            "span_pitch_ratio": 1.724,
+            "comparison_basis": "center_distance",
+            "width_aware_evidence": None,
+            "max_span_pitch_ratio": 1.5,
+            "pitch_track_count": 5,
+            "reason": "selected_span_exceeds_immediate_neighbor_limit",
+        }
+        topology = {
+            "status": topology_status,
+            "strong_same_basin_conflict": False,
+            "strong_merged_basin_conflict": False,
+            "evaluated_intervals": [
+                {
+                    "left_track_id": 1,
+                    "right_track_id": 2,
+                    "status": topology_status,
+                    "strong_same_basin_conflict": False,
+                    "informative_row_count": 120,
+                    "separator_support_ratio": 1.0,
+                    "vertical_band_coverage": {
+                        "covered_band_count": 3,
+                    },
+                },
+                {
+                    "left_track_id": 2,
+                    "right_track_id": 3,
+                    "status": topology_status,
+                    "strong_same_basin_conflict": False,
+                    "informative_row_count": 120,
+                    "separator_support_ratio": 1.0,
+                    "vertical_band_coverage": {
+                        "covered_band_count": 3,
+                    },
+                },
+            ],
+        }
+        return (
+            selection,
+            SimpleNamespace(tracks=tracks, x_ref_roi=100),
+            neighbor,
+            topology,
+        )
+
+    def test_wide_clicked_edge_gaps_can_verify_adjacency(self):
+        selection, analysis, neighbor, topology = self.width_aware_case()
+
+        updated_selection, updated = (
+            _apply_width_aware_adjacency_evidence(
+                selection,
+                analysis,
+                neighbor,
+                topology,
+                ProcessingConfig(),
+                InteractiveConfig(),
+            )
+        )
+
+        self.assertTrue(updated["passed"])
+        self.assertEqual(
+            updated["comparison_basis"],
+            "width_normalized_edge_gap",
+        )
+        self.assertAlmostEqual(updated["span_pitch_ratio"], 1.31)
+        evidence = updated["width_aware_evidence"]
+        self.assertTrue(evidence["passed"])
+        self.assertEqual(evidence["typical_width"], 9.0)
+        self.assertEqual(evidence["regular_max"], 18.75)
+        self.assertEqual(evidence["intermediate_track_ids"], [])
+        self.assertNotIn(
+            "selected_stripes_not_immediate_neighbors",
+            updated_selection.warning_flags,
+        )
+
+    def test_width_aware_adjacency_rejects_intermediate_track(self):
+        selection, analysis, neighbor, topology = self.width_aware_case(
+            include_intermediate=True,
+        )
+
+        _selection, updated = _apply_width_aware_adjacency_evidence(
+            selection,
+            analysis,
+            neighbor,
+            topology,
+            ProcessingConfig(),
+            InteractiveConfig(),
+        )
+
+        self.assertFalse(updated["passed"])
+        evidence = updated["width_aware_evidence"]
+        self.assertEqual(
+            evidence["reason"],
+            "intermediate_track_evidence_present",
+        )
+        self.assertEqual(evidence["intermediate_track_ids"], [20])
+
+    def test_width_aware_adjacency_requires_wide_track_and_topology(self):
+        cases = (
+            (
+                {"clicked_width": 9.0},
+                "clicked_track_not_abnormally_wide",
+            ),
+            (
+                {"topology_status": "Contradictory"},
+                "topology_not_consistent",
+            ),
+            (
+                {"clicked_center": 119.0},
+                "clicked_track_not_centered_on_click",
+            ),
+        )
+        for overrides, expected_reason in cases:
+            with self.subTest(reason=expected_reason):
+                selection, analysis, neighbor, topology = (
+                    self.width_aware_case(**overrides)
+                )
+
+                _selection, updated = (
+                    _apply_width_aware_adjacency_evidence(
+                        selection,
+                        analysis,
+                        neighbor,
+                        topology,
+                        ProcessingConfig(),
+                        InteractiveConfig(),
+                    )
+                )
+
+                self.assertFalse(updated["passed"])
+                self.assertEqual(
+                    updated["width_aware_evidence"]["reason"],
+                    expected_reason,
+                )
 
     def test_verified_candidate_beats_higher_support_unverified_or_rejected(self):
         def candidate(method, status, support):
