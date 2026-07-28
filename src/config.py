@@ -169,7 +169,7 @@ class InteractiveConfig:
     neighbor_max_span_pitch_ratio: float = 1.5
     neighbor_min_pitch_track_count: int = 3
     enable_grayscale_topology_rejection: bool = True
-    neighbor_recovery_min_support_ratio: float = 0.25
+    outer_neighbor_recovery_min_support_ratio: float = 0.25
     neighbor_recovery_max_pitch_error_ratio: float = 0.20
     topology_shadow_min_informative_rows: int = 12
     topology_shadow_min_separator_support_ratio: float = 0.60

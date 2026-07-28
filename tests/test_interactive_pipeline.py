@@ -16,16 +16,23 @@ sys.path.insert(0, str(SRC_DIR))
 
 from config import InteractiveConfig, ProcessingConfig  # noqa: E402
 from interactive_pipeline import (  # noqa: E402
+    _apply_adjacency_safety_gate,
     _apply_neighbor_consistency_guard,
+    _build_adjacency_verification,
     _build_shadow_arbitration,
     _effective_adaptive_block_size,
+    _formal_result_failure,
     _recover_weak_neighbors,
+    _select_threshold_candidate,
     calculate_interactive_roi_bounds,
     estimate_rotation_shadow,
     run_interactive_case,
     validate_interactive_config,
 )
-from interactive_analysis import select_interactive_tracks  # noqa: E402
+from interactive_analysis import (  # noqa: E402
+    InteractiveStripeSelection,
+    select_interactive_tracks,
+)
 from stripe_analysis import analyze_adjacent_stripes  # noqa: E402
 
 
@@ -59,6 +66,45 @@ class InteractivePipelineTests(unittest.TestCase):
             image_gray_roi=image,
         )
         return image, analysis, selection
+
+    def clicked_support_case(self, support_ratio: float):
+        height, width = 200, 300
+        mask = np.zeros((height, width), dtype=np.uint8)
+        image = np.full((height, width), 220, dtype=np.uint8)
+        for center_x in (60, 100, 180, 220):
+            mask[:, center_x - 2 : center_x + 3] = 255
+        for center_x in (60, 100, 140, 180, 220):
+            image[:, center_x - 2 : center_x + 3] = 20
+        support_rows = round(height * support_ratio)
+        mask[:support_rows, 138:143] = 255
+        processing = ProcessingConfig(stripe_search_radius_px=120)
+        analysis = analyze_adjacent_stripes(
+            mask,
+            141,
+            141,
+            0,
+            processing,
+        )
+        selection = select_interactive_tracks(
+            mask,
+            141,
+            100,
+            analysis,
+            processing,
+            image_gray_roi=image,
+        )
+        guarded, details = _apply_neighbor_consistency_guard(
+            selection,
+            analysis,
+            processing,
+            InteractiveConfig(),
+        )
+        verification = _build_adjacency_verification(
+            guarded,
+            details,
+            {"success": selection.success},
+        )
+        return selection, verification
 
     def test_adaptive_block_size_must_be_odd_and_at_least_three(self):
         for invalid_block_size in (1, 2, 30):
@@ -179,9 +225,53 @@ class InteractivePipelineTests(unittest.TestCase):
             "merged_conflict_safe_same_geometry_replacement",
         )
 
+    def test_shadow_reports_topology_quality_ordering(self):
+        def candidate(method, topology_status):
+            return SimpleNamespace(
+                geometry="original",
+                threshold_method=method,
+                grayscale_topology={
+                    "status": topology_status,
+                    "strong_same_basin_conflict": False,
+                    "strong_merged_basin_conflict": False,
+                },
+                quality={"success": True},
+                selection=SimpleNamespace(success=True),
+            )
+
+        support_winner = candidate("adaptive", "Unable to verify")
+        topology_winner = candidate("otsu", "Consistent")
+
+        with patch(
+            "interactive_pipeline._shadow_threshold_winner",
+            return_value=(
+                topology_winner,
+                "better_grayscale_topology_status",
+                [],
+            ),
+        ):
+            report, formal, debug = _build_shadow_arbitration(
+                [support_winner, topology_winner],
+                [],
+                support_winner,
+                True,
+                ProcessingConfig(),
+                InteractiveConfig(),
+            )
+
+        self.assertIs(formal, topology_winner)
+        self.assertIs(debug, topology_winner)
+        self.assertTrue(report["topology_ordering_applied"])
+        self.assertFalse(report["rejection_applied"])
+        self.assertTrue(report["would_change_formal_result"])
+        self.assertEqual(
+            report["final_winner"],
+            {"geometry": "original", "threshold_method": "otsu"},
+        )
+
     def test_neighbor_recovery_ratios_must_be_between_zero_and_one(self):
         for field_name in (
-            "neighbor_recovery_min_support_ratio",
+            "outer_neighbor_recovery_min_support_ratio",
             "neighbor_recovery_max_pitch_error_ratio",
         ):
             for invalid_ratio in (-0.1, 1.1):
@@ -217,6 +307,65 @@ class InteractivePipelineTests(unittest.TestCase):
             "weak_neighbor_recovered",
             recovered.warning_flags,
         )
+
+    def test_clicked_track_support_is_monotonic_across_stable_threshold(self):
+        for support_ratio in (
+            0.215,
+            0.249,
+            0.25,
+            0.28,
+            0.35,
+            0.499,
+            0.5,
+        ):
+            with self.subTest(support_ratio=support_ratio):
+                selection, verification = self.clicked_support_case(
+                    support_ratio
+                )
+
+                self.assertTrue(selection.success)
+                self.assertEqual(
+                    selection.clicked_track.center_x_roi,
+                    140.0,
+                )
+                self.assertEqual(
+                    verification["status"],
+                    "verified",
+                )
+
+    def test_verified_candidate_beats_higher_support_unverified_or_rejected(self):
+        def candidate(method, status, support):
+            return SimpleNamespace(
+                threshold_method=method,
+                quality={
+                    "success": True,
+                    "adjacency_verification_status": status,
+                    "combined_pitch_status": "Normal",
+                    "grayscale_topology_status": "Consistent",
+                    "minimum_valid_row_ratio": support,
+                    "minimum_retention_ratio": support,
+                    "maximum_center_mad_px": 0.0,
+                    "maximum_normalized_width_mad": 0.0,
+                    "click_association_distance_px": 0.0,
+                    "suspected_fragment_count": 0,
+                    "low_support_track_count": 0,
+                },
+            )
+
+        for unsafe_status in ("unverified", "rejected"):
+            with self.subTest(unsafe_status=unsafe_status):
+                verified = candidate("otsu", "verified", 0.55)
+                unsafe = candidate("adaptive", unsafe_status, 1.0)
+
+                winner, reason = _select_threshold_candidate(
+                    [verified, unsafe]
+                )
+
+                self.assertIs(winner, verified)
+                self.assertEqual(
+                    reason,
+                    "better_adjacency_verification",
+                )
 
     def test_half_pitch_or_same_basin_weak_track_is_not_recovered(self):
         for weak_center_x, continuous_dark in (
@@ -268,7 +417,7 @@ class InteractivePipelineTests(unittest.TestCase):
         self.assertEqual(report["reason"], "no_reliable_pitch_baseline")
         self.assertEqual(recovered.left_track.center_x_roi, 60.0)
 
-    def test_neighbor_guard_warns_without_clearing_skipped_stripes(self):
+    def test_neighbor_guard_marks_skipped_stripes_for_rejection(self):
         mask = np.zeros((100, 300), dtype=np.uint8)
         for center_x in (50, 130, 250):
             mask[:, center_x - 5 : center_x + 6] = 255
@@ -311,6 +460,16 @@ class InteractivePipelineTests(unittest.TestCase):
             details["span_pitch_ratio"],
             InteractiveConfig().neighbor_max_span_pitch_ratio,
         )
+        verification = _build_adjacency_verification(
+            guarded,
+            details,
+            {"success": True},
+        )
+        self.assertEqual(verification["status"], "rejected")
+        self.assertEqual(
+            verification["reason"],
+            "selected_stripes_not_immediate_neighbors",
+        )
 
     def test_neighbor_guard_warns_when_pitch_cannot_be_verified(self):
         mask = np.zeros((100, 320), dtype=np.uint8)
@@ -347,6 +506,12 @@ class InteractivePipelineTests(unittest.TestCase):
             "neighbor_consistency_not_verifiable",
             guarded.warning_flags,
         )
+        verification = _build_adjacency_verification(
+            guarded,
+            details,
+            {"success": True},
+        )
+        self.assertEqual(verification["status"], "unverified")
 
     def test_neighbor_guard_accepts_one_pitch_on_each_side(self):
         mask = np.zeros((100, 300), dtype=np.uint8)
@@ -378,6 +543,95 @@ class InteractivePipelineTests(unittest.TestCase):
         self.assertTrue(guarded.success)
         self.assertTrue(details["passed"])
         self.assertEqual(details["span_pitch_ratio"], 1.0)
+        verification = _build_adjacency_verification(
+            guarded,
+            details,
+            {"success": True},
+        )
+        self.assertEqual(verification["status"], "verified")
+
+    def test_adjacency_gate_clears_unverified_formal_candidate(self):
+        unsafe_selection = InteractiveStripeSelection(
+            click_classification="black_stripe",
+            clicked_track=object(),
+            left_track=object(),
+            right_track=object(),
+            success=True,
+            failure_reasons=(),
+            warning_flags=(),
+        )
+        candidate = SimpleNamespace(
+            geometry="original",
+            threshold_method="otsu",
+            adjacency_verification={"status": "unverified"},
+            selection=unsafe_selection,
+        )
+
+        report, formal, debug = _apply_adjacency_safety_gate(
+            candidate,
+            candidate,
+            [candidate],
+            None,
+        )
+
+        self.assertIsNone(formal)
+        self.assertIs(debug, candidate)
+        self.assertTrue(report["gate_applied"])
+        self.assertEqual(
+            report["failure_reason"],
+            "immediate_neighbors_not_verified",
+        )
+        failure = _formal_result_failure(
+            candidate,
+            report["failure_reason"],
+        )
+        self.assertFalse(failure.success)
+        self.assertIsNone(failure.left_track)
+        self.assertIsNone(failure.clicked_track)
+        self.assertIsNone(failure.right_track)
+        self.assertEqual(
+            failure.failure_reasons,
+            ("immediate_neighbors_not_verified",),
+        )
+
+    def test_adjacency_gate_keeps_verified_formal_candidate(self):
+        candidate = SimpleNamespace(
+            geometry="original",
+            threshold_method="adaptive",
+            adjacency_verification={"status": "verified"},
+        )
+
+        report, formal, debug = _apply_adjacency_safety_gate(
+            candidate,
+            candidate,
+            [candidate],
+            None,
+        )
+
+        self.assertIs(formal, candidate)
+        self.assertIs(debug, candidate)
+        self.assertFalse(report["gate_applied"])
+        self.assertIsNone(report["failure_reason"])
+
+    def test_adjacency_gate_always_supplies_a_failure_reason(self):
+        debug_candidate = SimpleNamespace(
+            geometry="original",
+            threshold_method="otsu",
+            adjacency_verification={"status": "unverified"},
+        )
+
+        report, formal, _debug = _apply_adjacency_safety_gate(
+            None,
+            debug_candidate,
+            [debug_candidate],
+            None,
+        )
+
+        self.assertIsNone(formal)
+        self.assertEqual(
+            report["failure_reason"],
+            "immediate_neighbors_not_verified",
+        )
 
     def test_roi_is_fixed_size_away_from_edges(self):
         bounds = calculate_interactive_roi_bounds(

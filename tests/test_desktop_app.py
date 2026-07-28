@@ -15,6 +15,7 @@ from tools.desktop_app import (  # noqa: E402
     DesktopSelectionState,
     build_output_dir,
     calculate_display_size,
+    create_failure_result_overlay,
     create_result_roi_crop,
     create_magnifier_display,
     extract_centered_region,
@@ -23,6 +24,7 @@ from tools.desktop_app import (  # noqa: E402
     map_display_point_to_source,
     mouse_wheel_scroll_pixels,
     resize_for_display,
+    result_metric_values,
     reliable_tk_runtime,
     signed_16_bit,
     pitch_safety_note,
@@ -215,6 +217,52 @@ class DesktopAppHelperTests(unittest.TestCase):
         cropped = create_result_roi_crop(result)
 
         np.testing.assert_array_equal(cropped, overlay[1:5, 2:7])
+
+    def test_failed_result_metrics_hide_all_candidate_measurements(self):
+        values = result_metric_values(
+            {"x_global": 662, "y_global": 1065},
+            {
+                "success": False,
+                "left": {"distance_to_click_px": 14.5},
+                "right": {"distance_to_click_px": 50.0},
+                "stripe_spacing_px": 64.5,
+                "pitch_guard": {"status": "Suspicious"},
+            },
+        )
+
+        self.assertEqual(
+            values,
+            (("Reference point", "(662, 1065)", ""),),
+        )
+
+    def test_failed_result_overlay_has_roi_and_click_but_no_centerlines(self):
+        image = np.full((30, 40), 128, dtype=np.uint8)
+        result = type(
+            "Result",
+            (),
+            {
+                "bounds_global": type(
+                    "Bounds",
+                    (),
+                    {
+                        "x0_global": 5,
+                        "x1_global": 35,
+                        "y0_global": 4,
+                        "y1_global": 26,
+                    },
+                )(),
+                "report": {
+                    "click": {"x_global": 20, "y_global": 15}
+                },
+            },
+        )()
+
+        overlay = create_failure_result_overlay(image, result)
+
+        self.assertTrue(np.any(np.all(overlay == (0, 255, 0), axis=2)))
+        self.assertTrue(np.any(np.all(overlay == (0, 0, 255), axis=2)))
+        self.assertFalse(np.any(np.all(overlay == (255, 0, 0), axis=2)))
+        self.assertFalse(np.any(np.all(overlay == (0, 255, 255), axis=2)))
 
     def test_new_image_clears_selection_and_result(self):
         state = DesktopSelectionState(

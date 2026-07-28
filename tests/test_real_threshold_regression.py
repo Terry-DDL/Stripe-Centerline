@@ -33,7 +33,7 @@ class RealThresholdRegressionTests(unittest.TestCase):
             image_name=image_path.name,
         )
 
-    def test_sample2_keeps_otsu_when_adaptive_pitch_is_worse(self):
+    def test_sample2_keeps_verified_otsu_over_rejected_adaptive(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             result = self.run_case(
                 PROJECT_ROOT / "images" / "Sample 2.bmp",
@@ -50,7 +50,7 @@ class RealThresholdRegressionTests(unittest.TestCase):
             result.report["candidate_arbitration"][
                 "threshold_selection_reasons"
             ]["original"],
-            "better_combined_pitch_status",
+            "better_adjacency_verification",
         )
 
     def test_sample2_known_split_errors_use_safe_otsu_results(self):
@@ -113,6 +113,10 @@ class RealThresholdRegressionTests(unittest.TestCase):
                     self.assertTrue(shadow["rejection_applied"])
                     self.assertTrue(
                         shadow["would_change_formal_result"]
+                    )
+                    self.assertIn(
+                        "original_adaptive",
+                        shadow["rejected_candidates_if_enabled"],
                     )
                     self.assertEqual(
                         shadow["hypothetical_winner"],
@@ -180,7 +184,51 @@ class RealThresholdRegressionTests(unittest.TestCase):
                         expected["recovery_applied"],
                     )
 
-    def test_topology_rejection_fails_without_safe_alternative(self):
+    def test_sample2_screenshot_points_never_report_skipped_neighbors(self):
+        image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            for index, click in enumerate(
+                ((662, 1046), (662, 1065), (701, 996))
+            ):
+                with self.subTest(click=click):
+                    result = self.run_case(
+                        image_path,
+                        click,
+                        Path(temporary_directory) / str(index),
+                    )
+                    report = result.report
+                    interactive = report["interactive_result"]
+
+                    self.assertEqual(
+                        report["algorithm_revision"],
+                        "adjacency_gate_v1",
+                    )
+                    self.assertFalse(interactive["success"])
+                    self.assertEqual(
+                        interactive["failure_reasons"],
+                        ["immediate_neighbors_not_verified"],
+                    )
+                    for key in ("left", "clicked", "right"):
+                        self.assertIsNone(interactive[key])
+                    self.assertIsNone(interactive["stripe_spacing_px"])
+                    self.assertIsNone(interactive["threshold_method"])
+                    self.assertIn(
+                        interactive["adjacency_verification"]["status"],
+                        ("unverified", "rejected"),
+                    )
+                    self.assertTrue(
+                        any(
+                            candidate.get("adjacency_verification", {}).get(
+                                "status"
+                            )
+                            == "rejected"
+                            for candidate in report[
+                                "candidate_arbitration"
+                            ]["candidates"].values()
+                        )
+                    )
+
+    def test_unsafe_candidates_fail_without_exposing_measurements(self):
         image_path = (
             PROJECT_ROOT
             / "images"
@@ -202,9 +250,20 @@ class RealThresholdRegressionTests(unittest.TestCase):
             interactive["failure_reasons"],
             ["strong_same_basin_conflict_no_safe_alternative"],
         )
-        self.assertIsNone(arbitration["final_winner"])
+        self.assertIsNone(
+            result.report["adjacency_arbitration"]["final_winner"]
+        )
+        candidates = result.report["candidate_arbitration"]["candidates"]
+        self.assertEqual(
+            candidates["original_otsu"]["adjacency_verification"]["status"],
+            "rejected",
+        )
+        self.assertEqual(
+            candidates["original_adaptive"]["grayscale_topology"]["status"],
+            "Contradictory",
+        )
 
-    def test_topology_rejection_keeps_consistent_unverifiable_otsu(self):
+    def test_unverifiable_neighbors_are_a_safe_failure(self):
         image_path = (
             PROJECT_ROOT
             / "images"
@@ -218,22 +277,18 @@ class RealThresholdRegressionTests(unittest.TestCase):
             )
 
         interactive = result.report["interactive_result"]
-        self.assertTrue(interactive["success"])
-        self.assertEqual(interactive["threshold_method"], "otsu")
+        self.assertFalse(interactive["success"])
+        self.assertIsNone(interactive["threshold_method"])
         self.assertEqual(
             interactive["combined_pitch_status"],
-            "Unable to verify",
+            "Not applicable",
         )
-        for key, expected_center in (
-            ("left", 2175.0),
-            ("clicked", 2209.5),
-            ("right", 2269.0),
-        ):
-            self.assertAlmostEqual(
-                interactive[key]["center_x_global"],
-                expected_center,
-                delta=1.0,
-            )
+        for key in ("left", "clicked", "right"):
+            self.assertIsNone(interactive[key])
+        self.assertEqual(
+            interactive["failure_reasons"],
+            ["immediate_neighbors_not_verified"],
+        )
 
     def test_topology_rejection_can_be_disabled_for_comparison(self):
         image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"

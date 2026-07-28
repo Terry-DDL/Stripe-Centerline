@@ -471,6 +471,51 @@ def track_table_rows(result_report: dict) -> list[dict]:
     return rows
 
 
+def result_metric_values(click: dict, interactive_result: dict) -> tuple:
+    """Return only measurements that are safe for the formal result."""
+
+    values = [
+        (
+            "Reference point",
+            f"({click['x_global']}, {click['y_global']})",
+            "",
+        )
+    ]
+    if not interactive_result["success"]:
+        return tuple(values)
+
+    def distance_text(side_result) -> str:
+        if side_result is None:
+            return "unavailable"
+        return f"{side_result['distance_to_click_px']:g} px"
+
+    spacing = interactive_result["stripe_spacing_px"]
+    pitch_status, pitch_details = pitch_safety_text(
+        interactive_result["pitch_guard"]
+    )
+    values.extend(
+        (
+            (
+                "Left distance",
+                distance_text(interactive_result.get("left")),
+                "",
+            ),
+            (
+                "Right distance",
+                distance_text(interactive_result.get("right")),
+                "",
+            ),
+            (
+                "Centerline spacing",
+                "unavailable" if spacing is None else f"{spacing:g} px",
+                "",
+            ),
+            ("Pitch safety", pitch_status, pitch_details),
+        )
+    )
+    return tuple(values)
+
+
 def pitch_safety_text(pitch_guard: dict) -> tuple[str, str]:
     """Return compact reader-facing pitch status and measurement details."""
 
@@ -535,11 +580,36 @@ def array_to_photo(
     return photo, scale_x, scale_y
 
 
-def create_result_roi_crop(result):
+def create_failure_result_overlay(image_gray, result):
+    """Draw a failed formal result without any candidate centerlines."""
+
+    overlay = cv2.cvtColor(image_gray, cv2.COLOR_GRAY2BGR)
+    bounds = result.bounds_global
+    click = result.report["click"]
+    cv2.rectangle(
+        overlay,
+        (bounds.x0_global, bounds.y0_global),
+        (bounds.x1_global - 1, bounds.y1_global - 1),
+        (0, 255, 0),
+        2,
+    )
+    cv2.drawMarker(
+        overlay,
+        (click["x_global"], click["y_global"]),
+        (0, 0, 255),
+        cv2.MARKER_CROSS,
+        21,
+        2,
+    )
+    return overlay
+
+
+def create_result_roi_crop(result, overlay=None):
     """Crop the final ROI overlay from the full original-image result."""
 
     bounds = result.bounds_global
-    overlay = result.debug_images["original_interactive_result.png"]
+    if overlay is None:
+        overlay = result.debug_images["original_interactive_result.png"]
     return overlay[
         bounds.y0_global : bounds.y1_global,
         bounds.x0_global : bounds.x1_global,
@@ -1271,8 +1341,6 @@ class StripeDesktopApp:
         report = result.report
         interactive_result = report["interactive_result"]
         click = report["click"]
-        left = interactive_result.get("left")
-        right = interactive_result.get("right")
         success = interactive_result["success"]
 
         header = ttk.Frame(content)
@@ -1294,29 +1362,8 @@ class StripeDesktopApp:
             text=self.image_name,
         ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(2, 0))
 
-        def distance_text(side_result) -> str:
-            if side_result is None:
-                return "unavailable"
-            return f"{side_result['distance_to_click_px']:g} px"
-
-        spacing = interactive_result["stripe_spacing_px"]
         pitch_guard = interactive_result["pitch_guard"]
-        pitch_status, pitch_details = pitch_safety_text(pitch_guard)
-        values = (
-            (
-                "Reference point",
-                f"({click['x_global']}, {click['y_global']})",
-                "",
-            ),
-            ("Left distance", distance_text(left), ""),
-            ("Right distance", distance_text(right), ""),
-            (
-                "Centerline spacing",
-                "unavailable" if spacing is None else f"{spacing:g} px",
-                "",
-            ),
-            ("Pitch safety", pitch_status, pitch_details),
-        )
+        values = result_metric_values(click, interactive_result)
         metrics = ttk.Frame(content)
         metrics.grid(row=1, column=0, sticky="ew", pady=(0, 8))
         for column, (title, value, details) in enumerate(values):
@@ -1347,9 +1394,19 @@ class StripeDesktopApp:
             if not flag.startswith("whole_image_pitch_")
         ]
         notes = []
+        if not success:
+            failure_reasons = interactive_result["failure_reasons"]
+            notes.append(
+                "Detection failed: "
+                + (
+                    " | ".join(failure_reasons)
+                    if failure_reasons
+                    else "immediate neighbors were not verified"
+                )
+            )
         if warning_flags:
             notes.append("Detection note: " + " | ".join(warning_flags))
-        pitch_note = pitch_safety_note(pitch_guard)
+        pitch_note = pitch_safety_note(pitch_guard) if success else None
         if pitch_note is not None:
             notes.append(pitch_note)
         if notes:
@@ -1380,10 +1437,16 @@ class StripeDesktopApp:
         ).pack(anchor="w", pady=(0, 6))
         ttk.Label(
             original_panel,
-            text="Green: ROI · Red: reference · Blue/Yellow: centerlines",
+            text=(
+                "Green: ROI · Red: reference · Blue/Yellow: centerlines"
+                if success
+                else "Green: ROI · Red: reference · No centerlines reported"
+            ),
         ).pack(anchor="w", pady=(0, 7))
-        original_image = result.debug_images.get(
-            "original_interactive_result.png"
+        original_image = (
+            result.debug_images.get("original_interactive_result.png")
+            if success
+            else create_failure_result_overlay(self.image_gray, result)
         )
         if original_image is not None:
             original_photo, _scale_x, _scale_y = array_to_photo(
@@ -1406,7 +1469,9 @@ class StripeDesktopApp:
             style="Section.TLabel",
         ).pack(anchor="w", pady=(0, 6))
         roi_photo, _scale_x, _scale_y = array_to_photo(
-            debug_image_to_rgb(create_result_roi_crop(result)),
+            debug_image_to_rgb(
+                create_result_roi_crop(result, overlay=original_image)
+            ),
             self.root,
             INTERACTIVE_CONFIG.desktop_result_roi_max_width_px,
             INTERACTIVE_CONFIG.desktop_result_roi_max_height_px,
@@ -1414,7 +1479,8 @@ class StripeDesktopApp:
         )
         self.result_photos.append(roi_photo)
         ttk.Label(roi_panel, image=roi_photo).pack(anchor="w", pady=(0, 10))
-        self._add_track_table(roi_panel, interactive_result)
+        if success:
+            self._add_track_table(roi_panel, interactive_result)
         roi = report["roi"]
         ttk.Label(
             roi_panel,

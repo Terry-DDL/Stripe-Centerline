@@ -18,6 +18,19 @@ PITCH_RANK = {
     "Normal": 2,
 }
 
+ADJACENCY_RANK = {
+    "rejected": 0,
+    "unverified": 1,
+    "verified": 2,
+}
+
+TOPOLOGY_RANK = {
+    "Contradictory": 0,
+    "Not considered": 1,
+    "Unable to verify": 1,
+    "Consistent": 2,
+}
+
 
 def _track_metrics(track: StripeTrack | None) -> dict | None:
     if track is None:
@@ -134,6 +147,7 @@ def build_candidate_quality(
     analysis: AdjacentStripeAnalysis,
     local_neighbor_check: dict,
     pitch_guard: dict,
+    grayscale_topology: dict,
     click_x_roi: int,
     processing_config: ProcessingConfig,
 ) -> dict:
@@ -223,8 +237,13 @@ def build_candidate_quality(
         "success": successful,
         "hard_valid": not hard_invalid_reasons,
         "hard_invalid_reasons": hard_invalid_reasons,
+        "adjacency_verification_status": "unverified",
         "combined_pitch_status": pitch_status,
         "combined_pitch_reasons": pitch_reasons,
+        "grayscale_topology_status": grayscale_topology.get(
+            "status",
+            "Unable to verify",
+        ),
         "minimum_valid_row_ratio": round(minimum_valid_row_ratio, 6),
         "minimum_retention_ratio": round(minimum_retention_ratio, 6),
         "maximum_center_mad_px": (
@@ -252,23 +271,34 @@ def build_candidate_quality(
 def candidate_quality_key(
     quality: dict,
     threshold_method: str | None = None,
+    include_topology: bool = True,
 ) -> tuple:
     """Return the documented quality sequence without a hidden score."""
 
     center_mad = quality["maximum_center_mad_px"]
     width_mad = quality["maximum_normalized_width_mad"]
     click_distance = quality["click_association_distance_px"]
-    key = (
-        bool(quality["success"]),
+    key_parts = [
+        ADJACENCY_RANK[quality["adjacency_verification_status"]],
         PITCH_RANK[quality["combined_pitch_status"]],
-        quality["minimum_valid_row_ratio"],
-        quality["minimum_retention_ratio"],
-        -math.inf if center_mad is None else -center_mad,
-        -math.inf if width_mad is None else -width_mad,
-        -math.inf if click_distance is None else -click_distance,
-        -quality["suspected_fragment_count"],
-        -quality["low_support_track_count"],
+    ]
+    if include_topology:
+        key_parts.append(
+            TOPOLOGY_RANK[quality["grayscale_topology_status"]]
+        )
+    key_parts.extend(
+        (
+            bool(quality["success"]),
+            quality["minimum_valid_row_ratio"],
+            quality["minimum_retention_ratio"],
+            -math.inf if center_mad is None else -center_mad,
+            -math.inf if width_mad is None else -width_mad,
+            -math.inf if click_distance is None else -click_distance,
+            -quality["suspected_fragment_count"],
+            -quality["low_support_track_count"],
+        )
     )
+    key = tuple(key_parts)
     if threshold_method is None:
         return key
     return key + (threshold_method == "otsu",)
@@ -277,12 +307,15 @@ def candidate_quality_key(
 def quality_difference_reason(
     winner_quality: dict,
     loser_quality: dict,
+    include_topology: bool = True,
 ) -> str:
     """Name the first documented quality field that decided a comparison."""
 
     fields = (
-        ("success", True),
+        ("adjacency_verification_status", True),
         ("combined_pitch_status", True),
+        ("grayscale_topology_status", True),
+        ("success", True),
         ("minimum_valid_row_ratio", True),
         ("minimum_retention_ratio", True),
         ("maximum_center_mad_px", False),
@@ -292,10 +325,16 @@ def quality_difference_reason(
         ("low_support_track_count", False),
     )
     for field, higher_is_better in fields:
+        if field == "grayscale_topology_status" and not include_topology:
+            continue
         winner = winner_quality[field]
         loser = loser_quality[field]
         if winner == loser:
             continue
+        if field == "adjacency_verification_status":
+            return "better_adjacency_verification"
+        if field == "grayscale_topology_status":
+            return "better_grayscale_topology_status"
         if higher_is_better:
             return f"better_{field}"
         return f"lower_{field}"

@@ -43,6 +43,8 @@ from stripe_analysis import (
     analyze_adjacent_stripes,
 )
 
+ALGORITHM_REVISION = "adjacency_gate_v1"
+
 
 @dataclass(frozen=True)
 class RotationShadowResult:
@@ -87,6 +89,7 @@ class DetectionCandidate:
     analysis: AdjacentStripeAnalysis
     selection: InteractiveStripeSelection
     neighbor_consistency: dict
+    adjacency_verification: dict
     pitch_guard: dict
     neighbor_recovery: dict
     grayscale_topology: dict
@@ -188,7 +191,7 @@ def validate_interactive_config(config: InteractiveConfig) -> None:
             "enable_grayscale_topology_rejection must be boolean"
         )
     for field_name in (
-        "neighbor_recovery_min_support_ratio",
+        "outer_neighbor_recovery_min_support_ratio",
         "neighbor_recovery_max_pitch_error_ratio",
     ):
         value = getattr(config, field_name)
@@ -693,6 +696,51 @@ def _apply_neighbor_consistency_guard(
     )
 
 
+def _build_adjacency_verification(
+    selection: InteractiveStripeSelection,
+    neighbor_consistency: dict,
+    quality: dict,
+) -> dict:
+    """Describe whether an existing candidate proves immediate adjacency."""
+
+    if neighbor_consistency.get("passed") is False:
+        status = "rejected"
+        reason = "selected_stripes_not_immediate_neighbors"
+    elif not quality["success"]:
+        status = "unverified"
+        reason = "candidate_not_formally_valid"
+    elif neighbor_consistency.get("passed") is True:
+        status = "verified"
+        reason = "immediate_neighbors_verified"
+    else:
+        status = "unverified"
+        reason = (
+            neighbor_consistency.get("reason")
+            or "neighbor_consistency_not_verifiable"
+        )
+
+    return {
+        "status": status,
+        "reason": reason,
+        "neighbor_check": {
+            "checked": bool(neighbor_consistency.get("checked")),
+            "passed": neighbor_consistency.get("passed"),
+            "reason": neighbor_consistency.get("reason"),
+            "local_pitch_px": neighbor_consistency.get("local_pitch_px"),
+            "selected_span_px": neighbor_consistency.get(
+                "selected_span_px"
+            ),
+            "span_pitch_ratio": neighbor_consistency.get(
+                "span_pitch_ratio"
+            ),
+            "max_span_pitch_ratio": neighbor_consistency.get(
+                "max_span_pitch_ratio"
+            ),
+        },
+        "arbitration_fields": {},
+    }
+
+
 def _recover_weak_neighbors(
     selection: InteractiveStripeSelection,
     analysis: AdjacentStripeAnalysis,
@@ -753,7 +801,7 @@ def _recover_weak_neighbors(
                 continue
             if (
                 track.valid_row_ratio
-                < interactive_config.neighbor_recovery_min_support_ratio
+                < interactive_config.outer_neighbor_recovery_min_support_ratio
             ):
                 continue
 
@@ -1002,9 +1050,32 @@ def _build_detection_candidate(
         analysis,
         neighbor_consistency,
         pitch_guard,
+        (
+            topology.report
+            if interactive_config.enable_grayscale_topology_rejection
+            else {"status": "Not considered"}
+        ),
         click_x_roi,
         processing_config,
     )
+    adjacency_verification = _build_adjacency_verification(
+        selection,
+        neighbor_consistency,
+        quality,
+    )
+    quality["adjacency_verification_status"] = (
+        adjacency_verification["status"]
+    )
+    adjacency_verification["arbitration_fields"] = {
+        "adjacency_verification_status": adjacency_verification["status"],
+        "combined_pitch_status": quality["combined_pitch_status"],
+        "grayscale_topology_status": quality[
+            "grayscale_topology_status"
+        ],
+        "quality_success": quality["success"],
+        "minimum_valid_row_ratio": quality["minimum_valid_row_ratio"],
+        "minimum_retention_ratio": quality["minimum_retention_ratio"],
+    }
     return DetectionCandidate(
         geometry=geometry,
         threshold_method=threshold_method,
@@ -1012,6 +1083,7 @@ def _build_detection_candidate(
         analysis=analysis,
         selection=selection,
         neighbor_consistency=neighbor_consistency,
+        adjacency_verification=adjacency_verification,
         pitch_guard=pitch_guard,
         neighbor_recovery=neighbor_recovery,
         grayscale_topology=topology.report,
@@ -1063,6 +1135,7 @@ def _build_geometry_candidates(
 
 def _select_threshold_candidate(
     candidates: list[DetectionCandidate],
+    include_topology: bool = True,
 ) -> tuple[DetectionCandidate, str]:
     if not candidates:
         raise ValueError("at least one threshold candidate is required")
@@ -1071,12 +1144,17 @@ def _select_threshold_candidate(
         key=lambda candidate: candidate_quality_key(
             candidate.quality,
             candidate.threshold_method,
+            include_topology,
         ),
     )
     if len(candidates) == 1:
         return winner, "only_available_threshold_method"
     loser = next(candidate for candidate in candidates if candidate is not winner)
-    reason = quality_difference_reason(winner.quality, loser.quality)
+    reason = quality_difference_reason(
+        winner.quality,
+        loser.quality,
+        include_topology,
+    )
     if reason == "quality_equal":
         reason = "quality_equal_otsu_tie_break"
     return winner, reason
@@ -1085,21 +1163,36 @@ def _select_threshold_candidate(
 def _select_geometry_candidate(
     original: DetectionCandidate,
     rotated: DetectionCandidate | None,
+    include_topology: bool = True,
 ) -> tuple[DetectionCandidate, str]:
     if rotated is None:
         return original, "rotation_not_eligible"
-    original_key = candidate_quality_key(original.quality)
-    rotated_key = candidate_quality_key(rotated.quality)
+    original_key = candidate_quality_key(
+        original.quality,
+        include_topology=include_topology,
+    )
+    rotated_key = candidate_quality_key(
+        rotated.quality,
+        include_topology=include_topology,
+    )
     if rotated_key > original_key:
         return (
             rotated,
-            quality_difference_reason(rotated.quality, original.quality),
+            quality_difference_reason(
+                rotated.quality,
+                original.quality,
+                include_topology,
+            ),
         )
     if rotated_key == original_key:
         return original, "quality_equal_original_tie_break"
     return (
         original,
-        quality_difference_reason(original.quality, rotated.quality),
+        quality_difference_reason(
+            original.quality,
+            rotated.quality,
+            include_topology,
+        ),
     )
 
 
@@ -1385,6 +1478,7 @@ def _build_shadow_arbitration(
     debug_winner = current_winner
     formal_failure_reason = None
     final_geometry_reason = geometry_reason
+    topology_ordering_applied = False
     if enforce_rejection and current_has_conflict:
         if current_conflict_reason == "merged_dark_basins":
             same_geometry_replacement = (
@@ -1425,6 +1519,15 @@ def _build_shadow_arbitration(
                 formal_failure_reason = (
                     "strong_same_basin_conflict_no_safe_alternative"
                 )
+    elif (
+        enforce_rejection
+        and hypothetical_winner is not None
+        and hypothetical_winner is not current_winner
+    ):
+        formal_winner = hypothetical_winner
+        debug_winner = hypothetical_winner
+        topology_ordering_applied = True
+        final_geometry_reason = "topology_quality_ordering"
 
     would_change = (
         formal_winner is None or formal_winner is not current_winner
@@ -1460,6 +1563,7 @@ def _build_shadow_arbitration(
         "rejection_applied": (
             enforce_rejection and current_has_conflict
         ),
+        "topology_ordering_applied": topology_ordering_applied,
         "final_winner": _candidate_identity(formal_winner),
         "formal_failure_reason": formal_failure_reason,
         "would_change_formal_result": would_change,
@@ -1467,11 +1571,52 @@ def _build_shadow_arbitration(
     return report, formal_winner, debug_winner
 
 
-def _topology_rejection_failure(
+def _apply_adjacency_safety_gate(
+    formal_candidate: DetectionCandidate | None,
+    debug_candidate: DetectionCandidate,
+    candidates: list[DetectionCandidate],
+    prior_failure_reason: str | None,
+) -> tuple[dict, DetectionCandidate | None, DetectionCandidate]:
+    """Allow only a locally verified candidate into the formal result."""
+
+    failure_reason = prior_failure_reason
+    gated_candidate = formal_candidate
+    gate_applied = False
+    if (
+        gated_candidate is not None
+        and gated_candidate.adjacency_verification["status"] != "verified"
+    ):
+        gated_candidate = None
+        failure_reason = "immediate_neighbors_not_verified"
+        gate_applied = True
+    elif gated_candidate is None and failure_reason is None:
+        failure_reason = "immediate_neighbors_not_verified"
+
+    report = {
+        "required_status": "verified",
+        "formal_winner_before_gate": _candidate_identity(formal_candidate),
+        "debug_winner": _candidate_identity(debug_candidate),
+        "debug_winner_status": debug_candidate.adjacency_verification[
+            "status"
+        ],
+        "candidate_statuses": {
+            (
+                f"{candidate.geometry}_{candidate.threshold_method}"
+            ): candidate.adjacency_verification["status"]
+            for candidate in candidates
+        },
+        "gate_applied": gate_applied,
+        "final_winner": _candidate_identity(gated_candidate),
+        "failure_reason": failure_reason,
+    }
+    return report, gated_candidate, debug_candidate
+
+
+def _formal_result_failure(
     candidate: DetectionCandidate,
     reason: str,
 ) -> InteractiveStripeSelection:
-    """Return an explicit failure while retaining the candidate for debug."""
+    """Return a safe formal failure while retaining the candidate for debug."""
 
     selection = candidate.selection
     return InteractiveStripeSelection(
@@ -1533,6 +1678,7 @@ def _candidate_summary(candidate: DetectionCandidate) -> dict:
             ),
         },
         "neighbor_consistency": candidate.neighbor_consistency,
+        "adjacency_verification": candidate.adjacency_verification,
         "pitch_guard": candidate.pitch_guard,
         "neighbor_recovery": candidate.neighbor_recovery,
         "grayscale_topology": candidate.grayscale_topology,
@@ -1915,8 +2061,9 @@ def _build_report(
     threshold_selection_reasons: dict,
     geometry_selection_reason: str,
     shadow_arbitration: dict,
+    adjacency_arbitration: dict,
 ) -> dict:
-    final_candidate_identity = shadow_arbitration["final_winner"]
+    final_candidate_identity = adjacency_arbitration["final_winner"]
     left = _track_report(
         selection.left_track,
         bounds,
@@ -1970,6 +2117,7 @@ def _build_report(
         "algorithm": (
             "interactive_layered_threshold_rotation_row_run_center_voting"
         ),
+        "algorithm_revision": ALGORITHM_REVISION,
         "image_name": image_name,
         "click": {
             "x_global": click_x_global,
@@ -2036,6 +2184,9 @@ def _build_report(
             "clicked": clicked,
             "distance_definition": "horizontal_in_detection_space",
             "neighbor_consistency": neighbor_consistency,
+            "adjacency_verification": (
+                selected_candidate.adjacency_verification
+            ),
             "pitch_guard": pitch_guard,
             "stripe_spacing_px": stripe_spacing,
             "left": left,
@@ -2057,6 +2208,7 @@ def _build_report(
             ),
         },
         "shadow_arbitration": shadow_arbitration,
+        "adjacency_arbitration": adjacency_arbitration,
         "pitch_reference": {
             "tile_count": len(pitch_reference_map.tiles),
             "valid_tile_count": pitch_reference_map.valid_tile_count,
@@ -2131,7 +2283,10 @@ def run_interactive_case(
         identity_matrix,
     )
     original_best, original_threshold_reason = (
-        _select_threshold_candidate(original_candidates)
+        _select_threshold_candidate(
+            original_candidates,
+            include_topology=False,
+        )
     )
     original_by_method = {
         candidate.threshold_method: candidate
@@ -2195,18 +2350,25 @@ def run_interactive_case(
             candidate_inverse_matrix,
         )
         rotated_best, rotated_threshold_reason = (
-            _select_threshold_candidate(rotated_candidates)
+            _select_threshold_candidate(
+                rotated_candidates,
+                include_topology=False,
+            )
         )
         rotation_candidate_stages = rotated_best.stages
         rotated_analysis = rotated_best.analysis
         rotated_neighbor_consistency = rotated_best.neighbor_consistency
 
     current_candidate, current_geometry_selection_reason = (
-        _select_geometry_candidate(original_best, rotated_best)
+        _select_geometry_candidate(
+            original_best,
+            rotated_best,
+            include_topology=False,
+        )
     )
     (
         shadow_arbitration,
-        formal_candidate,
+        topology_formal_candidate,
         selected_candidate,
     ) = _build_shadow_arbitration(
         original_candidates,
@@ -2216,7 +2378,21 @@ def run_interactive_case(
         processing_config,
         interactive_config,
     )
-    if shadow_arbitration["rejection_applied"]:
+    all_candidates = original_candidates + rotated_candidates
+    (
+        adjacency_arbitration,
+        formal_candidate,
+        selected_candidate,
+    ) = _apply_adjacency_safety_gate(
+        topology_formal_candidate,
+        selected_candidate,
+        all_candidates,
+        shadow_arbitration["formal_failure_reason"],
+    )
+    if (
+        shadow_arbitration["rejection_applied"]
+        or shadow_arbitration["topology_ordering_applied"]
+    ):
         threshold_selection_reasons = shadow_arbitration[
             "threshold_selection_reasons"
         ]
@@ -2238,12 +2414,12 @@ def run_interactive_case(
     active_stages = selected_candidate.stages
     active_analysis = selected_candidate.analysis
     if formal_candidate is None:
-        selection = _topology_rejection_failure(
+        selection = _formal_result_failure(
             selected_candidate,
-            shadow_arbitration["formal_failure_reason"],
+            adjacency_arbitration["failure_reason"],
         )
     else:
-        selection = _selection_for_output(selected_candidate)
+        selection = _selection_for_output(formal_candidate)
     neighbor_consistency = selected_candidate.neighbor_consistency
     rotation_matrix = selected_candidate.rotation_matrix
     inverse_rotation_matrix = selected_candidate.inverse_rotation_matrix
@@ -2297,13 +2473,19 @@ def run_interactive_case(
     candidates_debug = _create_interactive_candidates_debug(
         active_stages.black_mask,
         active_analysis,
-        selection,
+        selected_candidate.selection,
         click_x_roi,
         click_y_roi,
     )
     votes_debug = _create_interactive_votes_debug(
         active_analysis,
-        selection,
+        selected_candidate.selection,
+    )
+    debug_candidate_result = _create_interactive_roi_result(
+        active_stages.image_gray,
+        click_x_roi,
+        click_y_roi,
+        selected_candidate.selection,
     )
     pitch_reference_debug = create_pitch_reference_debug(
         image_gray,
@@ -2338,6 +2520,7 @@ def run_interactive_case(
         threshold_selection_reasons,
         geometry_selection_reason,
         shadow_arbitration,
+        adjacency_arbitration,
     )
     debug_images = {
         "original_interactive_result.png": original_overlay,
@@ -2360,6 +2543,7 @@ def run_interactive_case(
         "black_run_candidates.png": candidates_debug,
         "stripe_center_votes.png": votes_debug,
         "interactive_result.png": interactive_result,
+        "debug_candidate_interactive_result.png": debug_candidate_result,
         "rotation_score.png": rotation_shadow.score_chart,
         "rotation_preview.png": rotation_shadow.preview_image,
         "pitch_reference_map.png": pitch_reference_debug,
