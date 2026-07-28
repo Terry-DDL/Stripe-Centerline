@@ -39,13 +39,71 @@ def _missing_side_reasons(
     return reasons
 
 
+def grayscale_supports_dark_click(
+    image_gray_roi,
+    click_x_roi: int,
+    click_y_roi: int,
+    config: ProcessingConfig,
+) -> bool:
+    """Return whether raw grayscale supports a dark click location."""
+
+    if image_gray_roi is None:
+        return False
+    height, width = image_gray_roi.shape[:2]
+    half_height = config.clicked_track_contrast_half_height_px
+    half_width = config.clicked_track_contrast_half_width_px
+    y0 = max(0, click_y_roi - half_height)
+    y1 = min(height, click_y_roi + half_height + 1)
+    left0 = max(0, click_x_roi - half_width)
+    left1 = max(0, click_x_roi - 2)
+    right0 = min(width, click_x_roi + 3)
+    right1 = min(width, click_x_roi + half_width + 1)
+    center0 = max(0, click_x_roi - 1)
+    center1 = min(width, click_x_roi + 2)
+    if left1 <= left0 or right1 <= right0 or center1 <= center0:
+        return False
+    center_level = float(np.median(image_gray_roi[y0:y1, center0:center1]))
+    left_level = float(np.median(image_gray_roi[y0:y1, left0:left1]))
+    right_level = float(np.median(image_gray_roi[y0:y1, right0:right1]))
+    local_contrast = min(left_level, right_level) - center_level
+    if local_contrast >= config.clicked_track_min_local_contrast:
+        return True
+
+    context_half_width = config.clicked_track_context_half_width_px
+    context0 = max(0, click_x_roi - context_half_width)
+    context1 = min(width, click_x_roi + context_half_width + 1)
+    context = image_gray_roi[y0:y1, context0:context1]
+    if context.size == 0:
+        return False
+    low_level = float(
+        np.percentile(
+            context,
+            config.clicked_track_context_low_percentile,
+        )
+    )
+    high_level = float(
+        np.percentile(
+            context,
+            config.clicked_track_context_high_percentile,
+        )
+    )
+    dynamic_range = high_level - low_level
+    if dynamic_range < config.clicked_track_min_local_contrast:
+        return False
+    normalized_center = (center_level - low_level) / dynamic_range
+    return (
+        normalized_center
+        <= config.clicked_track_dark_max_normalized_level
+    )
+
+
 def _has_local_dark_dip(
     image_gray_roi,
     click_x_roi: int,
     click_y_roi: int,
     config: ProcessingConfig,
 ) -> bool:
-    """Return whether the raw grayscale contradicts a white classification."""
+    """Keep the original narrow dark-dip classification behavior."""
 
     if image_gray_roi is None:
         return False

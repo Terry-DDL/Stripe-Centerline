@@ -71,6 +71,10 @@ class ProcessingConfig:
     clicked_track_min_local_contrast: float = 20.0
     clicked_track_contrast_half_width_px: int = 6
     clicked_track_contrast_half_height_px: int = 5
+    clicked_track_context_half_width_px: int = 48
+    clicked_track_context_low_percentile: float = 10.0
+    clicked_track_context_high_percentile: float = 95.0
+    clicked_track_dark_max_normalized_level: float = 0.25
     reject_border_touching_runs: bool = True
 
     reference_line_color_bgr: tuple[int, int, int] = (0, 0, 255)
@@ -171,6 +175,7 @@ class InteractiveConfig:
     enable_grayscale_topology_rejection: bool = True
     neighbor_recovery_min_support_ratio: float = 0.25
     neighbor_recovery_max_pitch_error_ratio: float = 0.20
+    neighbor_recovery_raised_floor_min_ratio: float = 0.25
     topology_shadow_min_informative_rows: int = 12
     topology_shadow_min_separator_support_ratio: float = 0.60
     topology_shadow_strong_same_basin_support_ratio: float = 0.80

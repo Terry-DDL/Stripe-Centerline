@@ -11,7 +11,10 @@ SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
 
 from config import ProcessingConfig  # noqa: E402
-from interactive_analysis import select_interactive_tracks  # noqa: E402
+from interactive_analysis import (  # noqa: E402
+    grayscale_supports_dark_click,
+    select_interactive_tracks,
+)
 from stripe_analysis import analyze_adjacent_stripes  # noqa: E402
 
 
@@ -95,6 +98,20 @@ class InteractiveSelectionTests(unittest.TestCase):
             selection.failure_reasons,
             ("clicked_black_region_not_stable_track",),
         )
+
+    def test_saturated_dark_plateau_has_grayscale_support(self):
+        mask = self.make_mask(stripe_centers=(70, 220))
+        image = np.full(mask.shape, 220, dtype=np.uint8)
+        image[:, 130:171] = 20
+
+        supported = grayscale_supports_dark_click(
+            image,
+            150,
+            50,
+            self.config,
+        )
+
+        self.assertTrue(supported)
 
     def test_missing_outer_neighbor_is_an_explicit_failure(self):
         mask = self.make_mask(stripe_centers=(150, 220))

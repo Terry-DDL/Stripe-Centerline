@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 import cv2
+import numpy as np
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -179,6 +180,80 @@ class RealThresholdRegressionTests(unittest.TestCase):
                         otsu["neighbor_recovery"]["applied"],
                         expected["recovery_applied"],
                     )
+
+    def test_sample2_saturated_dark_click_recovers_pitch_triplet(self):
+        image_path = PROJECT_ROOT / "images" / "Sample 2.bmp"
+        cases = {
+            (701, 996): (662.5, 700.5, 738.5),
+            (662, 1046): (623.5, 661.5, 701.0),
+        }
+        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        self.assertIsNotNone(image)
+        brightened = np.clip(
+            image.astype(np.int16) + 150,
+            0,
+            255,
+        ).astype(np.uint8)
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            for index, (click, expected_centers) in enumerate(
+                cases.items()
+            ):
+                with self.subTest(click=click):
+                    original = self.run_case(
+                        image_path,
+                        click,
+                        Path(temporary_directory) / f"{index}_original",
+                    )
+                    saturated = run_interactive_case(
+                        brightened,
+                        click[0],
+                        click[1],
+                        Path(temporary_directory) / f"{index}_saturated",
+                        CONFIG,
+                        INTERACTIVE_CONFIG,
+                        image_name="Sample 2 +150",
+                    )
+                    for result in (original, saturated):
+                        interactive = result.report[
+                            "interactive_result"
+                        ]
+                        selected_candidate = result.report[
+                            "candidate_arbitration"
+                        ]["candidates"]["original_otsu"]
+
+                        self.assertTrue(interactive["success"])
+                        self.assertEqual(
+                            result.report["click"]["classification"],
+                            "black_stripe",
+                        )
+                        for key, expected_center in zip(
+                            ("left", "clicked", "right"),
+                            expected_centers,
+                        ):
+                            self.assertAlmostEqual(
+                                interactive[key]["center_x_global"],
+                                expected_center,
+                                delta=1.0,
+                            )
+                        self.assertEqual(
+                            interactive["combined_pitch_status"],
+                            "Normal",
+                        )
+                        self.assertTrue(
+                            selected_candidate["neighbor_recovery"][
+                                "pitch_triplet_recovered"
+                            ]
+                        )
+                    for key in ("left", "clicked", "right"):
+                        self.assertAlmostEqual(
+                            original.report["interactive_result"][key][
+                                "center_x_global"
+                            ],
+                            saturated.report["interactive_result"][key][
+                                "center_x_global"
+                            ],
+                            delta=1.0,
+                        )
 
     def test_topology_rejection_fails_without_safe_alternative(self):
         image_path = (

@@ -27,6 +27,7 @@ from image_processing import (
 )
 from interactive_analysis import (
     InteractiveStripeSelection,
+    grayscale_supports_dark_click,
     select_interactive_tracks,
 )
 from pitch_reference import (
@@ -190,6 +191,7 @@ def validate_interactive_config(config: InteractiveConfig) -> None:
     for field_name in (
         "neighbor_recovery_min_support_ratio",
         "neighbor_recovery_max_pitch_error_ratio",
+        "neighbor_recovery_raised_floor_min_ratio",
     ):
         value = getattr(config, field_name)
         if not 0.0 <= value <= 1.0:
@@ -693,6 +695,360 @@ def _apply_neighbor_consistency_guard(
     )
 
 
+def _track_allowed_for_pitch_triplet(
+    track: StripeTrack,
+    processing_config: ProcessingConfig,
+) -> bool:
+    allowed_reasons = {
+        "insufficient_row_support",
+        "center_on_reference",
+    }
+    return (
+        track.valid_row_ratio
+        >= processing_config.min_clicked_track_support_ratio
+        and set(track.rejection_reasons).issubset(allowed_reasons)
+    )
+
+
+def _raised_dark_floor_detected(
+    image_gray_roi,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+) -> bool:
+    """Return whether the ROI has a clearly raised dark intensity floor."""
+
+    if (
+        image_gray_roi is None
+        or image_gray_roi.size == 0
+        or image_gray_roi.dtype != np.uint8
+    ):
+        return False
+    low_level = float(
+        np.percentile(
+            image_gray_roi,
+            processing_config.clicked_track_context_low_percentile,
+        )
+    )
+    dtype_max = float(np.iinfo(image_gray_roi.dtype).max)
+    return (
+        low_level / dtype_max
+        >= interactive_config.neighbor_recovery_raised_floor_min_ratio
+    )
+
+
+def _track_has_distributed_rows(
+    track: StripeTrack,
+    roi_height: int,
+    minimum_span_ratio: float,
+) -> bool:
+    if not track.valid_runs:
+        return False
+    y_values = [run.y_roi for run in track.valid_runs]
+    bands = {
+        min(2, int((y_roi / max(roi_height, 1)) * 3))
+        for y_roi in y_values
+    }
+    span_ratio = (
+        (max(y_values) - min(y_values))
+        / max(roi_height - 1, 1)
+    )
+    return len(bands) >= 2 and span_ratio >= minimum_span_ratio
+
+
+def _tracks_are_separate(
+    first: StripeTrack,
+    second: StripeTrack,
+) -> bool:
+    center_distance = abs(
+        second.center_x_roi - first.center_x_roi
+    )
+    minimum_distance = (
+        first.median_width_px + second.median_width_px
+    ) / 2.0
+    return center_distance >= minimum_distance
+
+
+def _pitch_anchor_count(
+    tracks: list[StripeTrack],
+    clicked_center_x: float,
+    baseline_pitch: float,
+    processing_config: ProcessingConfig,
+    maximum_pitch_error: float,
+) -> int:
+    offsets = set()
+    for track in tracks:
+        if (
+            track.valid_row_ratio
+            < processing_config.min_stripe_support_ratio
+        ):
+            continue
+        offset = int(
+            round(
+                (track.center_x_roi - clicked_center_x)
+                / baseline_pitch
+            )
+        )
+        if offset == 0 or abs(offset) > 4:
+            continue
+        expected_center = clicked_center_x + offset * baseline_pitch
+        error_ratio = (
+            abs(track.center_x_roi - expected_center)
+            / baseline_pitch
+        )
+        if error_ratio <= maximum_pitch_error:
+            offsets.add(offset)
+    return len(offsets)
+
+
+def _recover_pitch_aligned_weak_triplet(
+    selection: InteractiveStripeSelection,
+    analysis: AdjacentStripeAnalysis,
+    image_gray_original_roi,
+    inverse_rotation_matrix: np.ndarray,
+    pitch_guard: dict,
+    click_x_roi: int,
+    click_y_roi: int,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    clicked_track_support_ceiling: float,
+) -> tuple[InteractiveStripeSelection, dict] | None:
+    """Recover a dark click and two weak neighbors on one pitch lattice."""
+
+    baseline_pitch = pitch_guard.get("baseline_pitch_px")
+    if (
+        pitch_guard.get("status") != "Suspicious"
+        or baseline_pitch is None
+        or baseline_pitch <= 0.0
+    ):
+        return None
+    if not grayscale_supports_dark_click(
+        image_gray_original_roi,
+        click_x_roi,
+        click_y_roi,
+        processing_config,
+    ):
+        return None
+
+    allowed_tracks = [
+        track
+        for track in analysis.tracks
+        if _track_allowed_for_pitch_triplet(
+            track,
+            processing_config,
+        )
+    ]
+    maximum_pitch_error = (
+        interactive_config.neighbor_recovery_max_pitch_error_ratio
+    )
+    clicked_center_tolerance = max(
+        processing_config.center_cluster_tolerance_px,
+        baseline_pitch * maximum_pitch_error,
+    )
+    clicked_candidates = [
+        track
+        for track in allowed_tracks
+        if (
+            abs(track.center_x_roi - click_x_roi)
+            <= clicked_center_tolerance
+            and track.crossing_valid_count > 0
+            and track.valid_row_ratio
+            < clicked_track_support_ceiling
+            and "insufficient_row_support"
+            in track.rejection_reasons
+        )
+    ]
+    qualifying = []
+    for clicked_track in clicked_candidates:
+        left_candidates = [
+            track
+            for track in allowed_tracks
+            if track.center_x_roi < clicked_track.center_x_roi
+            and track.crossing_valid_count == 0
+        ]
+        right_candidates = [
+            track
+            for track in allowed_tracks
+            if track.center_x_roi > clicked_track.center_x_roi
+            and track.crossing_valid_count == 0
+        ]
+        for left_track in left_candidates:
+            left_ratio = (
+                clicked_track.center_x_roi
+                - left_track.center_x_roi
+            ) / baseline_pitch
+            left_error = abs(left_ratio - 1.0)
+            if left_error > maximum_pitch_error:
+                continue
+            if not _tracks_are_separate(left_track, clicked_track):
+                continue
+            for right_track in right_candidates:
+                right_ratio = (
+                    right_track.center_x_roi
+                    - clicked_track.center_x_roi
+                ) / baseline_pitch
+                right_error = abs(right_ratio - 1.0)
+                if right_error > maximum_pitch_error:
+                    continue
+                if not _tracks_are_separate(
+                    clicked_track,
+                    right_track,
+                ):
+                    continue
+                if max(
+                    left_track.valid_row_ratio,
+                    right_track.valid_row_ratio,
+                ) < interactive_config.neighbor_recovery_min_support_ratio:
+                    continue
+                selected_tracks = (
+                    left_track,
+                    clicked_track,
+                    right_track,
+                )
+                if any(
+                    track.valid_row_ratio
+                    < processing_config.min_stripe_support_ratio
+                    and not _track_has_distributed_rows(
+                        track,
+                        analysis.roi_shape[0],
+                        interactive_config.topology_shadow_min_vertical_span_ratio,
+                    )
+                    for track in selected_tracks
+                ):
+                    continue
+                anchor_count = _pitch_anchor_count(
+                    analysis.tracks,
+                    clicked_track.center_x_roi,
+                    baseline_pitch,
+                    processing_config,
+                    maximum_pitch_error,
+                )
+                if anchor_count < 2:
+                    continue
+
+                warning_flags = selection.warning_flags
+                if "weak_pitch_triplet_recovered" not in warning_flags:
+                    warning_flags += (
+                        "weak_pitch_triplet_recovered",
+                    )
+                tentative = InteractiveStripeSelection(
+                    click_classification="black_stripe",
+                    clicked_track=clicked_track,
+                    left_track=left_track,
+                    right_track=right_track,
+                    success=True,
+                    failure_reasons=(),
+                    warning_flags=warning_flags,
+                )
+                topology = evaluate_grayscale_topology(
+                    image_gray_original_roi,
+                    tentative,
+                    inverse_rotation_matrix,
+                    interactive_config,
+                ).report
+                if (
+                    topology["strong_same_basin_conflict"]
+                    or topology.get(
+                        "strong_merged_basin_conflict",
+                        False,
+                    )
+                ):
+                    continue
+                key = (
+                    max(left_error, right_error),
+                    left_error + right_error,
+                    abs(clicked_track.center_x_roi - click_x_roi),
+                    -min(
+                        left_track.valid_row_ratio,
+                        right_track.valid_row_ratio,
+                    ),
+                    -clicked_track.valid_row_ratio,
+                )
+                qualifying.append(
+                    (
+                        key,
+                        tentative,
+                        {
+                            "type": "pitch_triplet",
+                            "left_center_x_roi": round(
+                                left_track.center_x_roi,
+                                3,
+                            ),
+                            "clicked_center_x_roi": round(
+                                clicked_track.center_x_roi,
+                                3,
+                            ),
+                            "right_center_x_roi": round(
+                                right_track.center_x_roi,
+                                3,
+                            ),
+                            "left_pitch_ratio": round(
+                                left_ratio,
+                                6,
+                            ),
+                            "right_pitch_ratio": round(
+                                right_ratio,
+                                6,
+                            ),
+                            "pitch_anchor_count": anchor_count,
+                        },
+                    )
+                )
+
+    if not qualifying:
+        return None
+    _key, recovered, details = min(
+        qualifying,
+        key=lambda item: item[0],
+    )
+    return recovered, details
+
+
+def _has_unverified_weak_click_seed(
+    analysis: AdjacentStripeAnalysis,
+    image_gray_original_roi,
+    pitch_guard: dict,
+    click_x_roi: int,
+    click_y_roi: int,
+    processing_config: ProcessingConfig,
+    interactive_config: InteractiveConfig,
+    clicked_track_support_ceiling: float,
+) -> bool:
+    """Return whether a suspicious dark click has a weak track seed."""
+
+    baseline_pitch = pitch_guard.get("baseline_pitch_px")
+    if (
+        pitch_guard.get("status") != "Suspicious"
+        or baseline_pitch is None
+        or baseline_pitch <= 0.0
+        or not grayscale_supports_dark_click(
+            image_gray_original_roi,
+            click_x_roi,
+            click_y_roi,
+            processing_config,
+        )
+    ):
+        return False
+    clicked_center_tolerance = max(
+        processing_config.center_cluster_tolerance_px,
+        baseline_pitch
+        * interactive_config.neighbor_recovery_max_pitch_error_ratio,
+    )
+    return any(
+        _track_allowed_for_pitch_triplet(
+            track,
+            processing_config,
+        )
+        and track.valid_row_ratio
+        < clicked_track_support_ceiling
+        and "insufficient_row_support"
+        in track.rejection_reasons
+        and track.crossing_valid_count > 0
+        and abs(track.center_x_roi - click_x_roi)
+        <= clicked_center_tolerance
+        for track in analysis.tracks
+    )
+
+
 def _recover_weak_neighbors(
     selection: InteractiveStripeSelection,
     analysis: AdjacentStripeAnalysis,
@@ -700,28 +1056,97 @@ def _recover_weak_neighbors(
     inverse_rotation_matrix: np.ndarray,
     pitch_guard: dict,
     interactive_config: InteractiveConfig,
+    click_x_roi: int | None = None,
+    click_y_roi: int | None = None,
+    processing_config: ProcessingConfig | None = None,
 ) -> tuple[InteractiveStripeSelection, dict]:
     """Recover a pitch-matching neighbor rejected only for low support."""
 
+    raised_dark_floor = False
+    clicked_track_support_ceiling = (
+        interactive_config.neighbor_recovery_min_support_ratio
+    )
+    if processing_config is not None:
+        raised_dark_floor = _raised_dark_floor_detected(
+            image_gray_original_roi,
+            processing_config,
+            interactive_config,
+        )
+        if raised_dark_floor:
+            clicked_track_support_ceiling = (
+                processing_config.min_stripe_support_ratio
+            )
     report = {
         "applied": False,
+        "pitch_triplet_recovered": False,
+        "unverified_pitch_triplet_evidence": False,
+        "raised_dark_floor_detected": raised_dark_floor,
+        "clicked_track_support_ceiling": round(
+            clicked_track_support_ceiling,
+            6,
+        ),
         "recoveries": [],
         "reason": "no_qualifying_weak_neighbor",
     }
+    recovered = selection
     if (
-        not selection.success
-        or selection.click_classification != "black_stripe"
-        or selection.clicked_track is None
+        click_x_roi is not None
+        and click_y_roi is not None
+        and processing_config is not None
     ):
+        pitch_triplet = _recover_pitch_aligned_weak_triplet(
+            selection,
+            analysis,
+            image_gray_original_roi,
+            inverse_rotation_matrix,
+            pitch_guard,
+            click_x_roi,
+            click_y_roi,
+            processing_config,
+            interactive_config,
+            clicked_track_support_ceiling,
+        )
+        if pitch_triplet is not None:
+            recovered, recovery_details = pitch_triplet
+            report["applied"] = True
+            report["pitch_triplet_recovered"] = True
+            report["recoveries"].append(recovery_details)
+        else:
+            report["unverified_pitch_triplet_evidence"] = (
+                _has_unverified_weak_click_seed(
+                    analysis,
+                    image_gray_original_roi,
+                    pitch_guard,
+                    click_x_roi,
+                    click_y_roi,
+                    processing_config,
+                    interactive_config,
+                    clicked_track_support_ceiling,
+                )
+            )
+
+    if (
+        not recovered.success
+        or recovered.click_classification != "black_stripe"
+        or recovered.clicked_track is None
+    ):
+        if report["applied"]:
+            report["reason"] = "pitch_aligned_weak_triplet"
+            return recovered, report
+        if report["unverified_pitch_triplet_evidence"]:
+            report["reason"] = "weak_pitch_triplet_not_verified"
+            return recovered, report
         report["reason"] = "not_applicable_to_selection"
-        return selection, report
+        return recovered, report
 
     baseline_pitch = pitch_guard.get("baseline_pitch_px")
     if baseline_pitch is None or baseline_pitch <= 0.0:
+        if report["applied"]:
+            report["reason"] = "pitch_aligned_weak_triplet"
+            return recovered, report
         report["reason"] = "no_reliable_pitch_baseline"
-        return selection, report
+        return recovered, report
 
-    recovered = selection
     for side, interval_label in (
         ("left", "left_to_clicked"),
         ("right", "clicked_to_right"),
@@ -857,14 +1282,35 @@ def _recover_weak_neighbors(
         )
 
     if not report["recoveries"]:
+        if report["unverified_pitch_triplet_evidence"]:
+            report["reason"] = "weak_pitch_triplet_not_verified"
         return selection, report
     warning_flags = recovered.warning_flags
     if "weak_neighbor_recovered" not in warning_flags:
         warning_flags += ("weak_neighbor_recovered",)
     recovered = replace(recovered, warning_flags=warning_flags)
     report["applied"] = True
-    report["reason"] = "pitch_and_grayscale_supported"
+    report["reason"] = (
+        "pitch_aligned_weak_triplet"
+        if report["pitch_triplet_recovered"]
+        else "pitch_and_grayscale_supported"
+    )
     return recovered, report
+
+
+def _unverified_weak_triplet_failure(
+    selection: InteractiveStripeSelection,
+) -> InteractiveStripeSelection:
+    reason = "skipped_weak_neighbor_not_verified"
+    return InteractiveStripeSelection(
+        click_classification="ambiguous_black_region",
+        clicked_track=None,
+        left_track=None,
+        right_track=None,
+        success=False,
+        failure_reasons=selection.failure_reasons + (reason,),
+        warning_flags=selection.warning_flags + (reason,),
+    )
 
 
 def _rotation_matrix_for_detection(
@@ -977,7 +1423,14 @@ def _build_detection_candidate(
         inverse_rotation_matrix,
         initial_pitch_guard,
         interactive_config,
+        click_x_roi,
+        click_y_roi,
+        processing_config,
     )
+    if neighbor_recovery["unverified_pitch_triplet_evidence"]:
+        recovered_selection = _unverified_weak_triplet_failure(
+            recovered_selection,
+        )
     selection, neighbor_consistency = _apply_neighbor_consistency_guard(
         recovered_selection,
         analysis,

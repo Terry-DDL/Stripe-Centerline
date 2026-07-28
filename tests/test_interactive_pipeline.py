@@ -60,6 +60,43 @@ class InteractivePipelineTests(unittest.TestCase):
         )
         return image, analysis, selection
 
+    def weak_pitch_triplet_case(self, distributed_rows=True):
+        height, width = 120, 360
+        mask = np.zeros((height, width), dtype=np.uint8)
+        image = np.full((height, width), 220, dtype=np.uint8)
+        for center_x in (70, 230, 270):
+            mask[:, center_x - 5 : center_x + 6] = 255
+        for center_x in (70, 110, 150, 190, 230, 270):
+            image[:, center_x - 5 : center_x + 6] = 20
+        if distributed_rows:
+            left_ranges = ((0, 12), (45, 57), (90, 102))
+            other_ranges = ((0, 8), (48, 56), (96, 104))
+        else:
+            left_ranges = ((0, 36),)
+            other_ranges = ((0, 24),)
+        for y0, y1 in left_ranges:
+            mask[y0:y1, 105:116] = 255
+        for center_x in (150, 190):
+            for y0, y1 in other_ranges:
+                mask[y0:y1, center_x - 5 : center_x + 6] = 255
+
+        processing = ProcessingConfig(stripe_search_radius_px=160)
+        analysis = analyze_adjacent_stripes(
+            mask,
+            150,
+            150,
+            0,
+            processing,
+        )
+        selection = select_interactive_tracks(
+            mask,
+            150,
+            60,
+            analysis,
+            processing,
+        )
+        return image, analysis, selection, processing
+
     def test_adaptive_block_size_must_be_odd_and_at_least_three(self):
         for invalid_block_size in (1, 2, 30):
             with self.subTest(block_size=invalid_block_size):
@@ -183,6 +220,7 @@ class InteractivePipelineTests(unittest.TestCase):
         for field_name in (
             "neighbor_recovery_min_support_ratio",
             "neighbor_recovery_max_pitch_error_ratio",
+            "neighbor_recovery_raised_floor_min_ratio",
         ):
             for invalid_ratio in (-0.1, 1.1):
                 with self.subTest(
@@ -267,6 +305,130 @@ class InteractivePipelineTests(unittest.TestCase):
         self.assertFalse(report["applied"])
         self.assertEqual(report["reason"], "no_reliable_pitch_baseline")
         self.assertEqual(recovered.left_track.center_x_roi, 60.0)
+
+    def test_pitch_lattice_recovers_distributed_weak_triplet(self):
+        image, analysis, selection, processing = (
+            self.weak_pitch_triplet_case()
+        )
+
+        recovered, report = _recover_weak_neighbors(
+            selection,
+            analysis,
+            image,
+            np.array(
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                dtype=np.float64,
+            ),
+            {
+                "status": "Suspicious",
+                "baseline_pitch_px": 40.0,
+            },
+            InteractiveConfig(),
+            150,
+            60,
+            processing,
+        )
+
+        self.assertTrue(report["pitch_triplet_recovered"])
+        self.assertEqual(recovered.click_classification, "black_stripe")
+        self.assertEqual(recovered.left_track.center_x_roi, 110.0)
+        self.assertEqual(recovered.clicked_track.center_x_roi, 150.0)
+        self.assertEqual(recovered.right_track.center_x_roi, 190.0)
+
+    def test_localized_weak_triplet_is_not_recovered(self):
+        image, analysis, selection, processing = (
+            self.weak_pitch_triplet_case(distributed_rows=False)
+        )
+
+        recovered, report = _recover_weak_neighbors(
+            selection,
+            analysis,
+            image,
+            np.array(
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                dtype=np.float64,
+            ),
+            {
+                "status": "Suspicious",
+                "baseline_pitch_px": 40.0,
+            },
+            InteractiveConfig(),
+            150,
+            60,
+            processing,
+        )
+
+        self.assertFalse(report["pitch_triplet_recovered"])
+        self.assertTrue(
+            report["unverified_pitch_triplet_evidence"]
+        )
+        self.assertEqual(
+            report["reason"],
+            "weak_pitch_triplet_not_verified",
+        )
+        self.assertIsNone(recovered.clicked_track)
+
+    def test_raised_floor_extends_only_clicked_support_ceiling(self):
+        image, analysis, selection, processing = (
+            self.weak_pitch_triplet_case()
+        )
+        clicked_track = next(
+            track
+            for track in analysis.tracks
+            if track.crossing_valid_count > 0
+        )
+        clicked_track.valid_row_ratio = 0.35
+        identity = np.array(
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+            dtype=np.float64,
+        )
+        pitch_guard = {
+            "status": "Suspicious",
+            "baseline_pitch_px": 40.0,
+        }
+
+        normal, normal_report = _recover_weak_neighbors(
+            selection,
+            analysis,
+            image,
+            identity,
+            pitch_guard,
+            InteractiveConfig(),
+            150,
+            60,
+            processing,
+        )
+        raised_image = np.clip(
+            image.astype(np.int16) + 150,
+            0,
+            255,
+        ).astype(np.uint8)
+        raised, raised_report = _recover_weak_neighbors(
+            selection,
+            analysis,
+            raised_image,
+            identity,
+            pitch_guard,
+            InteractiveConfig(),
+            150,
+            60,
+            processing,
+        )
+
+        self.assertFalse(normal_report["pitch_triplet_recovered"])
+        self.assertFalse(normal_report["raised_dark_floor_detected"])
+        self.assertEqual(
+            normal_report["clicked_track_support_ceiling"],
+            0.25,
+        )
+        self.assertIsNone(normal.clicked_track)
+        self.assertTrue(raised_report["pitch_triplet_recovered"])
+        self.assertTrue(raised_report["raised_dark_floor_detected"])
+        self.assertEqual(
+            raised_report["clicked_track_support_ceiling"],
+            0.5,
+        )
+        self.assertEqual(raised.clicked_track.center_x_roi, 150.0)
 
     def test_neighbor_guard_warns_without_clearing_skipped_stripes(self):
         mask = np.zeros((100, 300), dtype=np.uint8)
