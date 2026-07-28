@@ -1,0 +1,25 @@
+{
+  "dataset_version": "raw_pitch_final_heldout_v1",
+  "split": "held-out",
+  "evaluation_role": "final_held_out",
+  "access_policy": "single_evaluation_only_after_frozen_v2",
+  "frozen_pitch_commit": "41fe2f3b2870ec920ebd443307467e4bc02b1cee",
+  "frozen_configuration_checksum": "2a5e234ea21807dabf58d45b5732604e5d95a50c4cd76033a66b96fbc2bb62a3",
+  "annotations": {
+    "F001": null,
+    "F002": null,
+    "F003": null,
+    "F004": null,
+    "F005": null,
+    "F006": null,
+    "F007": null,
+    "F008": null,
+    "F009": null,
+    "F010": null,
+    "F011": null,
+    "F012": null,
+    "F013": null,
+    "F014": null,
+    "F015": null
+  }
+}

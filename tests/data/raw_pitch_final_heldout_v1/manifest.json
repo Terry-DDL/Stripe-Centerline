@@ -1,0 +1,169 @@
+{
+  "dataset_version": "raw_pitch_final_heldout_v1",
+  "status": "frozen_before_annotation",
+  "sampling_frozen_at": "2026-07-28",
+  "evaluation_role": "final_held_out",
+  "frozen_pitch_commit": "41fe2f3b2870ec920ebd443307467e4bc02b1cee",
+  "frozen_configuration_checksum": "2a5e234ea21807dabf58d45b5732604e5d95a50c4cd76033a66b96fbc2bb62a3",
+  "single_evaluation_only": true,
+  "algorithm_blind_sampling": true,
+  "coordinate_convention": {
+    "reference_global": "zero-based source-image pixel coordinate",
+    "roi_bounds_global": "half-open [x0, x1) x [y0, y1)",
+    "direction": "stripe direction; pitch axis is perpendicular"
+  },
+  "sample_count": 15,
+  "image_count": 5,
+  "samples": [
+    {
+      "sample_id": "F001",
+      "split": "held-out",
+      "image_name": "Stripe_02_e0_t105204227_v-41p8_do.bmp",
+      "image_sha256": "1cc0a700b7ad9ba0e060698d140ace0871f5d1d44d18073b79a452aa0eeafac3",
+      "reference_global": {"x": 350, "y": 350},
+      "roi_bounds_global": {"x0": 100, "y0": 250, "x1": 600, "y1": 450},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "top", "left", "low_contrast"]
+    },
+    {
+      "sample_id": "F002",
+      "split": "held-out",
+      "image_name": "Stripe_02_e0_t105204227_v-41p8_do.bmp",
+      "image_sha256": "1cc0a700b7ad9ba0e060698d140ace0871f5d1d44d18073b79a452aa0eeafac3",
+      "reference_global": {"x": 1550, "y": 700},
+      "roi_bounds_global": {"x0": 1300, "y0": 600, "x1": 1800, "y1": 800},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "upper", "right", "brightness_variation"]
+    },
+    {
+      "sample_id": "F003",
+      "split": "held-out",
+      "image_name": "Stripe_02_e0_t105204227_v-41p8_do.bmp",
+      "image_sha256": "1cc0a700b7ad9ba0e060698d140ace0871f5d1d44d18073b79a452aa0eeafac3",
+      "reference_global": {"x": 1000, "y": 1020},
+      "roi_bounds_global": {"x0": 750, "y0": 920, "x1": 1250, "y1": 1120},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "center", "occlusion", "horizontal_seam"]
+    },
+    {
+      "sample_id": "F004",
+      "split": "held-out",
+      "image_name": "Stripe_06_e0_t160727286_v0p9056_do.bmp",
+      "image_sha256": "ba91ca9177533be6fbc8e29f46989613b5235e9513b570ff91051633b06473fc",
+      "reference_global": {"x": 400, "y": 450},
+      "roi_bounds_global": {"x0": 150, "y0": 350, "x1": 650, "y1": 550},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "upper", "left", "broken"]
+    },
+    {
+      "sample_id": "F005",
+      "split": "held-out",
+      "image_name": "Stripe_06_e0_t160727286_v0p9056_do.bmp",
+      "image_sha256": "ba91ca9177533be6fbc8e29f46989613b5235e9513b570ff91051633b06473fc",
+      "reference_global": {"x": 1600, "y": 700},
+      "roi_bounds_global": {"x0": 1350, "y0": 600, "x1": 1850, "y1": 800},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "upper", "right", "high_contrast"]
+    },
+    {
+      "sample_id": "F006",
+      "split": "held-out",
+      "image_name": "Stripe_06_e0_t160727286_v0p9056_do.bmp",
+      "image_sha256": "ba91ca9177533be6fbc8e29f46989613b5235e9513b570ff91051633b06473fc",
+      "reference_global": {"x": 1000, "y": 1200},
+      "roi_bounds_global": {"x0": 750, "y0": 1100, "x1": 1250, "y1": 1300},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "middle", "occlusion"]
+    },
+    {
+      "sample_id": "F007",
+      "split": "held-out",
+      "image_name": "Stripe_07_e0_t160816815_v12p0066_do.bmp",
+      "image_sha256": "b435b54faca10e726c0001cc5666967cca3c078d7d69b7d436a8f928af3d742c",
+      "reference_global": {"x": 350, "y": 500},
+      "roi_bounds_global": {"x0": 100, "y0": 400, "x1": 600, "y1": 600},
+      "direction": "vertical",
+      "strata": ["large_pitch", "upper", "left", "broken"]
+    },
+    {
+      "sample_id": "F008",
+      "split": "held-out",
+      "image_name": "Stripe_07_e0_t160816815_v12p0066_do.bmp",
+      "image_sha256": "b435b54faca10e726c0001cc5666967cca3c078d7d69b7d436a8f928af3d742c",
+      "reference_global": {"x": 1500, "y": 900},
+      "roi_bounds_global": {"x0": 1250, "y0": 800, "x1": 1750, "y1": 1000},
+      "direction": "vertical",
+      "strata": ["large_pitch", "middle", "right", "width_variation"]
+    },
+    {
+      "sample_id": "F009",
+      "split": "held-out",
+      "image_name": "Stripe_07_e0_t160816815_v12p0066_do.bmp",
+      "image_sha256": "b435b54faca10e726c0001cc5666967cca3c078d7d69b7d436a8f928af3d742c",
+      "reference_global": {"x": 600, "y": 1650},
+      "roi_bounds_global": {"x0": 350, "y0": 1550, "x1": 850, "y1": 1750},
+      "direction": "vertical",
+      "strata": ["large_pitch", "bottom", "left", "clear"]
+    },
+    {
+      "sample_id": "F010",
+      "split": "held-out",
+      "image_name": "Stripe_08_e0_t160911003_v13p2083_do.bmp",
+      "image_sha256": "37c538d5c5a31d1fea5f94ee30404c6672a557c78a5c69473b85fae196487777",
+      "reference_global": {"x": 450, "y": 650},
+      "roi_bounds_global": {"x0": 200, "y0": 550, "x1": 700, "y1": 750},
+      "direction": "vertical",
+      "strata": ["large_pitch", "upper", "left", "weak_broken"]
+    },
+    {
+      "sample_id": "F011",
+      "split": "held-out",
+      "image_name": "Stripe_08_e0_t160911003_v13p2083_do.bmp",
+      "image_sha256": "37c538d5c5a31d1fea5f94ee30404c6672a557c78a5c69473b85fae196487777",
+      "reference_global": {"x": 1550, "y": 900},
+      "roi_bounds_global": {"x0": 1300, "y0": 800, "x1": 1800, "y1": 1000},
+      "direction": "vertical",
+      "strata": ["large_pitch", "middle", "right", "clear"]
+    },
+    {
+      "sample_id": "F012",
+      "split": "held-out",
+      "image_name": "Stripe_08_e0_t160911003_v13p2083_do.bmp",
+      "image_sha256": "37c538d5c5a31d1fea5f94ee30404c6672a557c78a5c69473b85fae196487777",
+      "reference_global": {"x": 1100, "y": 250},
+      "roi_bounds_global": {"x0": 850, "y0": 150, "x1": 1350, "y1": 350},
+      "direction": "vertical",
+      "strata": ["large_pitch", "top", "center", "low_brightness", "challenging"]
+    },
+    {
+      "sample_id": "F013",
+      "split": "held-out",
+      "image_name": "Stripe_12_e1_t220320710_v7p3386_do.bmp",
+      "image_sha256": "6ea689ad99b221e3568351278b8c1785ad0f6cf5b3c70a9ecfb534b645fb166f",
+      "reference_global": {"x": 350, "y": 500},
+      "roi_bounds_global": {"x0": 100, "y0": 400, "x1": 600, "y1": 600},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "upper", "left", "clear"]
+    },
+    {
+      "sample_id": "F014",
+      "split": "held-out",
+      "image_name": "Stripe_12_e1_t220320710_v7p3386_do.bmp",
+      "image_sha256": "6ea689ad99b221e3568351278b8c1785ad0f6cf5b3c70a9ecfb534b645fb166f",
+      "reference_global": {"x": 1550, "y": 1450},
+      "roi_bounds_global": {"x0": 1300, "y0": 1350, "x1": 1800, "y1": 1550},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "lower", "right", "clear"]
+    },
+    {
+      "sample_id": "F015",
+      "split": "held-out",
+      "image_name": "Stripe_12_e1_t220320710_v7p3386_do.bmp",
+      "image_sha256": "6ea689ad99b221e3568351278b8c1785ad0f6cf5b3c70a9ecfb534b645fb166f",
+      "reference_global": {"x": 1000, "y": 1000},
+      "roi_bounds_global": {"x0": 750, "y0": 900, "x1": 1250, "y1": 1100},
+      "direction": "vertical",
+      "strata": ["fine_pitch", "center", "occlusion"]
+    }
+  ]
+}
