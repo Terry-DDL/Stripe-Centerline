@@ -1,0 +1,37 @@
+{
+  "status": "frozen",
+  "algorithm_revision": "raw_local_pitch_stage1_v1",
+  "evaluated_split": "development",
+  "heldout_evaluated": false,
+  "parameters": {
+    "subwindow_count": 5,
+    "profile_percentile": 70.0,
+    "min_pitch_px": 8,
+    "max_pitch_px": 90,
+    "autocorrelation_floor": 0.18,
+    "earliest_peak_relative_strength": 0.5,
+    "minimum_spectral_support": 0.06,
+    "band_pitch_tolerance_ratio": 0.14,
+    "medium_relative_mad_limit": 0.14,
+    "high_relative_mad_limit": 0.07,
+    "medium_min_agreeing_bands": 3,
+    "high_min_agreeing_bands": 4,
+    "medium_autocorrelation_floor": 0.28,
+    "high_autocorrelation_floor": 0.6,
+    "harmonic_ambiguity_ratio": 0.78,
+    "harmonic_resolution_min_support": 0.25,
+    "minimum_profile_contrast": 6.0,
+    "fft_padding_factor": 8
+  },
+  "configuration_checksum": "7496c289684a112ae35cd0c115a7e15b84f3ae0733523745547041472bd99c9e",
+  "development_acceptance": {
+    "valid_total": 15,
+    "valid_estimated": 13,
+    "valid_estimated_rate": 0.8666666666666667,
+    "median_relative_error": 0.0066993559912104554,
+    "maximum_relative_error": 0.0361896408594878,
+    "confident_harmonic_errors": 0,
+    "ambiguous_or_unavailable_high_confidence": [],
+    "acceptance_passed": true
+  }
+}
