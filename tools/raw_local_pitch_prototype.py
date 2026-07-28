@@ -27,13 +27,23 @@ DATASET_VERSION = "raw_pitch_gt_v1"
 DEVELOPMENT_PATH = (
     PROJECT_ROOT / "tests" / "data" / DATASET_VERSION / "development.json"
 )
+P026_VALIDATION_PATH = (
+    PROJECT_ROOT
+    / "tests"
+    / "data"
+    / "raw_pitch_gt_v2"
+    / "p026_validation.json"
+)
 IMAGES_DIR = PROJECT_ROOT / "images"
 OUTPUT_DIR = (
-    PROJECT_ROOT / "outputs" / DATASET_VERSION / "raw_local_pitch_stage1"
+    PROJECT_ROOT
+    / "outputs"
+    / "raw_pitch_gt_v2"
+    / "raw_local_pitch_stage1_v2"
 )
-REPORT_PATH = OUTPUT_DIR / "development_report.json"
+REPORT_PATH = OUTPUT_DIR / "development_validation_report.json"
 DEBUG_DIR = OUTPUT_DIR / "debug"
-ALGORITHM_REVISION = "raw_local_pitch_stage1_v1"
+ALGORITHM_REVISION = "raw_local_pitch_stage1_v2"
 
 
 @dataclass(frozen=True)
@@ -60,6 +70,9 @@ class RawLocalPitchConfig:
     high_autocorrelation_floor: float = 0.60
     harmonic_ambiguity_ratio: float = 0.78
     harmonic_resolution_min_support: float = 0.25
+    harmonic_dominant_power_ratio: float = 1.50
+    harmonic_integer_ratio_tolerance: float = 0.12
+    harmonic_conflict_min_bands: int = 3
     minimum_profile_contrast: float = 6.0
     fft_padding_factor: int = 8
 
@@ -291,6 +304,9 @@ def estimate_subwindow_pitch(
         max_pitch,
         config.fft_padding_factor,
     )
+    dominant_spectral_index = int(np.argmax(spectral))
+    dominant_spectral_period = float(periods[dominant_spectral_index])
+    dominant_spectral_support = float(spectral[dominant_spectral_index])
     peaks = _local_maxima(
         autocorrelation,
         config.min_pitch_px,
@@ -322,6 +338,8 @@ def estimate_subwindow_pitch(
             "reason": "no_joint_periodic_peak",
             "raw_profile_contrast": contrast,
             "maximum_autocorrelation": maximum_correlation,
+            "dominant_spectral_period_px": dominant_spectral_period,
+            "dominant_spectral_support": dominant_spectral_support,
         }
 
     chosen = min(eligible)
@@ -351,6 +369,8 @@ def estimate_subwindow_pitch(
         "spectral_support": fundamental_support,
         "half_period_spectral_support": half_support,
         "double_period_spectral_support": double_support,
+        "dominant_spectral_period_px": dominant_spectral_period,
+        "dominant_spectral_support": dominant_spectral_support,
         "profile": raw_profile,
         "detrended_profile": detrended,
         "autocorrelation_curve": autocorrelation,
@@ -362,6 +382,48 @@ def _relative_mad(values: list[float], center: float) -> float:
         return float("inf")
     deviations = [abs(value - center) for value in values]
     return float(np.median(deviations) / center)
+
+
+def _integer_harmonic_conflict(
+    selected_period: float,
+    selected_spectral_support: float,
+    dominant_period: float,
+    dominant_spectral_support: float,
+    config: RawLocalPitchConfig,
+) -> dict | None:
+    """Describe an unresolved 2x/3x conflict with the dominant spectrum."""
+
+    if selected_period <= 0 or dominant_period <= 0:
+        return None
+    larger = max(selected_period, dominant_period)
+    smaller = min(selected_period, dominant_period)
+    ratio = larger / smaller
+    multiple = int(round(ratio))
+    if multiple not in {2, 3}:
+        return None
+    relative_distance = abs(ratio - multiple) / multiple
+    if relative_distance > config.harmonic_integer_ratio_tolerance:
+        return None
+    if (
+        dominant_spectral_support
+        < selected_spectral_support
+        * config.harmonic_dominant_power_ratio
+    ):
+        return None
+    return {
+        "selected_period_px": selected_period,
+        "dominant_spectral_period_px": dominant_period,
+        "ratio": ratio,
+        "nearest_multiple": multiple,
+        "relative_distance_to_multiple": relative_distance,
+        "selected_spectral_support": selected_spectral_support,
+        "dominant_spectral_support": dominant_spectral_support,
+        "direction": (
+            "selected_is_multiple_of_dominant"
+            if selected_period > dominant_period
+            else "dominant_is_multiple_of_selected"
+        ),
+    }
 
 
 def estimate_raw_local_pitch(
@@ -409,6 +471,9 @@ def estimate_raw_local_pitch(
             "algorithm_revision": ALGORITHM_REVISION,
             "configuration_checksum": configuration_checksum(config),
             "pitch_px": None,
+            "diagnostic_pitch_px": None,
+            "usable_pitch_px": None,
+            "success_eligible": False,
             "confidence": "unavailable",
             "subwindow_consistency": {
                 "available_bands": len(available),
@@ -426,6 +491,7 @@ def estimate_raw_local_pitch(
         }
 
     resolved_half_period_bands = []
+    dominant_harmonic_conflicts = []
     for result in available:
         result["aggregation_pitch_px"] = result["pitch_px"]
         result["aggregation_spectral_support"] = result[
@@ -457,6 +523,21 @@ def estimate_raw_local_pitch(
             resolved_half_period_bands.append(result["band_index"])
         else:
             result["harmonic_resolution"] = None
+        conflict = _integer_harmonic_conflict(
+            result["aggregation_pitch_px"],
+            result["aggregation_spectral_support"],
+            result["dominant_spectral_period_px"],
+            result["dominant_spectral_support"],
+            config,
+        )
+        result["dominant_harmonic_conflict"] = conflict
+        if conflict is not None:
+            dominant_harmonic_conflicts.append(
+                {
+                    "band_index": result["band_index"],
+                    **conflict,
+                }
+            )
 
     initial_center = float(
         np.median(
@@ -477,6 +558,9 @@ def estimate_raw_local_pitch(
             "algorithm_revision": ALGORITHM_REVISION,
             "configuration_checksum": configuration_checksum(config),
             "pitch_px": None,
+            "diagnostic_pitch_px": None,
+            "usable_pitch_px": None,
+            "success_eligible": False,
             "confidence": "unavailable",
             "subwindow_consistency": {
                 "available_bands": len(available),
@@ -496,6 +580,9 @@ def estimate_raw_local_pitch(
                 "reason": "subwindow_cluster_not_established",
                 "resolved_half_period_bands": (
                     resolved_half_period_bands
+                ),
+                "dominant_harmonic_conflicts": (
+                    dominant_harmonic_conflicts
                 ),
             },
             "unavailable_reason": "inconsistent_subwindow_periods",
@@ -540,6 +627,64 @@ def estimate_raw_local_pitch(
         half_ratio >= config.harmonic_ambiguity_ratio
         or double_ratio >= config.harmonic_ambiguity_ratio
     )
+    agreeing_band_indexes = {
+        result["band_index"] for result in agreeing
+    }
+    agreeing_dominant_conflicts = [
+        conflict
+        for conflict in dominant_harmonic_conflicts
+        if conflict["band_index"] in agreeing_band_indexes
+    ]
+    hard_harmonic_ambiguity = (
+        harmonic_detected
+        or len(agreeing_dominant_conflicts)
+        >= config.harmonic_conflict_min_bands
+    )
+    consistency = {
+        "available_bands": len(available),
+        "total_bands": len(band_results),
+        "agreeing_bands": len(agreeing),
+        "relative_mad": relative_mad,
+        "band_pitches_px": [
+            result["aggregation_pitch_px"] for result in available
+        ],
+        "raw_band_pitches_px": [
+            result["pitch_px"] for result in available
+        ],
+        "median_autocorrelation": median_autocorrelation,
+    }
+    harmonic_details = {
+        "detected": hard_harmonic_ambiguity,
+        "half_period_support_ratio": half_ratio,
+        "double_period_support_ratio": double_ratio,
+        "fundamental_spectral_support": median_fundamental,
+        "resolved_half_period_bands": resolved_half_period_bands,
+        "dominant_harmonic_conflicts": agreeing_dominant_conflicts,
+        "reason": (
+            "dominant_spectral_integer_multiple_conflict"
+            if agreeing_dominant_conflicts
+            else (
+                "half_or_double_period_support_conflict"
+                if harmonic_detected
+                else None
+            )
+        ),
+    }
+    if hard_harmonic_ambiguity:
+        return {
+            "algorithm_revision": ALGORITHM_REVISION,
+            "configuration_checksum": configuration_checksum(config),
+            "pitch_px": None,
+            "diagnostic_pitch_px": pitch,
+            "usable_pitch_px": None,
+            "success_eligible": False,
+            "confidence": "unavailable",
+            "subwindow_consistency": consistency,
+            "harmonic_ambiguity": harmonic_details,
+            "unavailable_reason": "harmonic_ambiguous",
+            "reference_axis_roi": reference_axis,
+            "band_results": band_results,
+        }
 
     if (
         len(agreeing) >= config.high_min_agreeing_bands
@@ -559,32 +704,18 @@ def estimate_raw_local_pitch(
         confidence = "medium"
     else:
         confidence = "low"
+    success_eligible = confidence == "high"
 
     return {
         "algorithm_revision": ALGORITHM_REVISION,
         "configuration_checksum": configuration_checksum(config),
         "pitch_px": pitch,
+        "diagnostic_pitch_px": pitch,
+        "usable_pitch_px": pitch if success_eligible else None,
+        "success_eligible": success_eligible,
         "confidence": confidence,
-        "subwindow_consistency": {
-            "available_bands": len(available),
-            "total_bands": len(band_results),
-            "agreeing_bands": len(agreeing),
-            "relative_mad": relative_mad,
-            "band_pitches_px": [
-                result["aggregation_pitch_px"] for result in available
-            ],
-            "raw_band_pitches_px": [
-                result["pitch_px"] for result in available
-            ],
-            "median_autocorrelation": median_autocorrelation,
-        },
-        "harmonic_ambiguity": {
-            "detected": harmonic_detected,
-            "half_period_support_ratio": half_ratio,
-            "double_period_support_ratio": double_ratio,
-            "fundamental_spectral_support": median_fundamental,
-            "resolved_half_period_bands": resolved_half_period_bands,
-        },
+        "subwindow_consistency": consistency,
+        "harmonic_ambiguity": harmonic_details,
         "unavailable_reason": None,
         "reference_axis_roi": reference_axis,
         "band_results": band_results,
@@ -655,10 +786,8 @@ def _ground_truth_pitch(annotation: dict) -> dict | None:
     }
 
 
-def evaluate_development(
-    config: RawLocalPitchConfig = DEFAULT_CONFIG,
-) -> dict:
-    """Evaluate only the physically isolated development annotation file."""
+def _development_validation_annotations() -> dict[str, dict]:
+    """Load original development plus the transferred P026 validation case."""
 
     with DEVELOPMENT_PATH.open("r", encoding="utf-8") as input_file:
         document = json.load(input_file)
@@ -669,14 +798,35 @@ def evaluate_development(
         != "available_during_method_design"
     ):
         raise ValueError("refusing to evaluate a non-development document")
+    with P026_VALIDATION_PATH.open("r", encoding="utf-8") as input_file:
+        validation = json.load(input_file)
+    if (
+        validation.get("dataset_version") != "raw_pitch_gt_v2"
+        or validation.get("split") != "development-validation"
+        or set(validation.get("annotations", {})) != {"P026"}
+    ):
+        raise ValueError("P026 validation fixture is invalid")
+    annotations = dict(document["annotations"])
+    annotations.update(validation["annotations"])
+    return annotations
 
+
+def evaluate_development(
+    config: RawLocalPitchConfig = DEFAULT_CONFIG,
+) -> dict:
+    """Evaluate original development plus P026, never the old held-out set."""
+
+    annotations = _development_validation_annotations()
     image_cache: dict[str, np.ndarray] = {}
     rows = []
     valid_errors = []
     valid_estimated = 0
+    valid_success_eligible = 0
     confident_harmonic_errors = 0
-    nonvalid_high_confidence = []
-    for sample_id, annotation in document["annotations"].items():
+    prevented_harmonic_errors = []
+    nonvalid_success_eligible = []
+    medium_success_eligible = []
+    for sample_id, annotation in annotations.items():
         image_name = annotation["image_name"]
         if image_name not in image_cache:
             image_cache[image_name] = load_grayscale_image(
@@ -702,14 +852,42 @@ def evaluate_development(
             harmonic_error = ratio < 0.67 or ratio > 1.5
             if result["confidence"] == "high" and harmonic_error:
                 confident_harmonic_errors += 1
+        if ground_truth is not None and result["success_eligible"]:
+            valid_success_eligible += 1
+        if (
+            ground_truth is not None
+            and result["pitch_px"] is None
+            and result["diagnostic_pitch_px"] is not None
+        ):
+            diagnostic_ratio = (
+                result["diagnostic_pitch_px"]
+                / ground_truth["pitch_px"]
+            )
+            if diagnostic_ratio < 0.67 or diagnostic_ratio > 1.5:
+                prevented_harmonic_errors.append(
+                    {
+                        "sample_id": sample_id,
+                        "diagnostic_ratio": diagnostic_ratio,
+                        "unavailable_reason": result[
+                            "unavailable_reason"
+                        ],
+                    }
+                )
         if (
             annotation["label"] in {"ambiguous", "unavailable"}
-            and result["confidence"] == "high"
+            and result["success_eligible"]
         ):
-            nonvalid_high_confidence.append(sample_id)
+            nonvalid_success_eligible.append(sample_id)
+        if result["confidence"] == "medium" and result["success_eligible"]:
+            medium_success_eligible.append(sample_id)
         rows.append(
             {
                 "sample_id": sample_id,
+                "evaluation_source": (
+                    "p026_validation"
+                    if sample_id == "P026"
+                    else "original_development"
+                ),
                 "label": annotation["label"],
                 "annotation_confidence": annotation["confidence"],
                 "ground_truth": ground_truth,
@@ -723,8 +901,9 @@ def evaluate_development(
     estimated_rate = valid_estimated / valid_total if valid_total else 0.0
     metrics = {
         "valid_total": valid_total,
-        "valid_estimated": valid_estimated,
-        "valid_estimated_rate": estimated_rate,
+        "valid_auxiliary_estimated": valid_estimated,
+        "valid_auxiliary_estimated_rate": estimated_rate,
+        "valid_success_eligible": valid_success_eligible,
         "median_relative_error": (
             float(np.median(valid_errors)) if valid_errors else None
         ),
@@ -732,21 +911,33 @@ def evaluate_development(
             float(np.max(valid_errors)) if valid_errors else None
         ),
         "confident_harmonic_errors": confident_harmonic_errors,
-        "ambiguous_or_unavailable_high_confidence": (
-            nonvalid_high_confidence
+        "prevented_harmonic_errors": prevented_harmonic_errors,
+        "medium_success_eligible": medium_success_eligible,
+        "ambiguous_or_unavailable_success_eligible": (
+            nonvalid_success_eligible
         ),
     }
+    p026_row = next(row for row in rows if row["sample_id"] == "P026")
+    p026_harmonic_safe = (
+        p026_row["estimate"]["pitch_px"] is None
+        and not p026_row["estimate"]["success_eligible"]
+        and p026_row["estimate"]["unavailable_reason"]
+        == "harmonic_ambiguous"
+    )
+    metrics["p026_harmonic_safe"] = p026_harmonic_safe
     metrics["acceptance_passed"] = (
         estimated_rate >= 0.80
         and metrics["median_relative_error"] is not None
         and metrics["median_relative_error"] <= 0.10
         and metrics["maximum_relative_error"] <= 0.20
         and confident_harmonic_errors == 0
-        and not nonvalid_high_confidence
+        and not nonvalid_success_eligible
+        and not medium_success_eligible
+        and p026_harmonic_safe
     )
     return {
         "dataset_version": DATASET_VERSION,
-        "evaluated_split": "development",
+        "evaluated_split": "development_plus_p026_validation",
         "heldout_accessed": False,
         "algorithm_revision": ALGORITHM_REVISION,
         "configuration": canonical_configuration(config),
@@ -894,13 +1085,12 @@ def write_development_outputs(report: dict) -> None:
         json.dump(report, output_file, indent=2, ensure_ascii=False)
         output_file.write("\n")
 
-    with DEVELOPMENT_PATH.open("r", encoding="utf-8") as input_file:
-        document = json.load(input_file)
+    annotations = _development_validation_annotations()
     image_cache: dict[str, np.ndarray] = {}
     rows_by_id = {
         row["sample_id"]: row for row in report["samples"]
     }
-    for sample_id, annotation in document["annotations"].items():
+    for sample_id, annotation in annotations.items():
         image_name = annotation["image_name"]
         if image_name not in image_cache:
             image_cache[image_name] = load_grayscale_image(

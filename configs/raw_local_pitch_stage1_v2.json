@@ -1,0 +1,43 @@
+{
+  "status": "frozen",
+  "algorithm_revision": "raw_local_pitch_stage1_v2",
+  "evaluated_split": "development_plus_p026_validation",
+  "old_heldout_reused": false,
+  "parameters": {
+    "subwindow_count": 5,
+    "profile_percentile": 70.0,
+    "min_pitch_px": 8,
+    "max_pitch_px": 90,
+    "autocorrelation_floor": 0.18,
+    "earliest_peak_relative_strength": 0.5,
+    "minimum_spectral_support": 0.06,
+    "band_pitch_tolerance_ratio": 0.14,
+    "medium_relative_mad_limit": 0.14,
+    "high_relative_mad_limit": 0.07,
+    "medium_min_agreeing_bands": 3,
+    "high_min_agreeing_bands": 4,
+    "medium_autocorrelation_floor": 0.28,
+    "high_autocorrelation_floor": 0.6,
+    "harmonic_ambiguity_ratio": 0.78,
+    "harmonic_resolution_min_support": 0.25,
+    "harmonic_dominant_power_ratio": 1.5,
+    "harmonic_integer_ratio_tolerance": 0.12,
+    "harmonic_conflict_min_bands": 3,
+    "minimum_profile_contrast": 6.0,
+    "fft_padding_factor": 8
+  },
+  "configuration_checksum": "2a5e234ea21807dabf58d45b5732604e5d95a50c4cd76033a66b96fbc2bb62a3",
+  "development_acceptance": {
+    "valid_total": 16,
+    "valid_auxiliary_estimated": 13,
+    "valid_auxiliary_estimated_rate": 0.8125,
+    "valid_success_eligible": 8,
+    "median_relative_error": 0.0066993559912104554,
+    "maximum_relative_error": 0.0361896408594878,
+    "confident_harmonic_errors": 0,
+    "medium_success_eligible": [],
+    "ambiguous_or_unavailable_success_eligible": [],
+    "p026_harmonic_safe": true,
+    "acceptance_passed": true
+  }
+}

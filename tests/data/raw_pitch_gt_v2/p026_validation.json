@@ -1,0 +1,59 @@
+{
+  "dataset_version": "raw_pitch_gt_v2",
+  "split": "development-validation",
+  "source": "P026 transferred after raw_pitch_stage1_v1 one-time held-out evaluation",
+  "annotations": {
+    "P026": {
+      "dataset_version": "raw_pitch_gt_v1",
+      "sample_id": "P026",
+      "split": "development-validation",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "image_sha256": "0c7588f5bf1f4571a0b43528e5713873ec33fda03b892d9771bdbf9120ea7646",
+      "reference_global": {"x": 1200, "y": 300},
+      "roi_bounds_global": {
+        "x0": 950,
+        "y0": 200,
+        "x1": 1450,
+        "y1": 400
+      },
+      "label": "valid",
+      "confidence": "medium",
+      "notes": "Transferred to development/validation after v1 one-time evaluation.",
+      "centers": [
+        {"order": 1, "x_global": 966, "x_roi": 16, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 2, "x_global": 979, "x_roi": 29, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 3, "x_global": 992, "x_roi": 42, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 4, "x_global": 1006, "x_roi": 56, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 5, "x_global": 1021, "x_roi": 71, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 6, "x_global": 1034, "x_roi": 84, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 7, "x_global": 1049, "x_roi": 99, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 8, "x_global": 1064, "x_roi": 114, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 9, "x_global": 1078, "x_roi": 128, "clicked_y_global": 365, "clicked_y_roi": 165},
+        {"order": 10, "x_global": 1091, "x_roi": 141, "clicked_y_global": 366, "clicked_y_roi": 166},
+        {"order": 11, "x_global": 1111, "x_roi": 161, "clicked_y_global": 368, "clicked_y_roi": 168},
+        {"order": 12, "x_global": 1144, "x_roi": 194, "clicked_y_global": 369, "clicked_y_roi": 169},
+        {"order": 13, "x_global": 1165, "x_roi": 215, "clicked_y_global": 369, "clicked_y_roi": 169},
+        {"order": 14, "x_global": 1181, "x_roi": 231, "clicked_y_global": 369, "clicked_y_roi": 169},
+        {"order": 15, "x_global": 1194, "x_roi": 244, "clicked_y_global": 369, "clicked_y_roi": 169},
+        {"order": 16, "x_global": 1211, "x_roi": 261, "clicked_y_global": 368, "clicked_y_roi": 168},
+        {"order": 17, "x_global": 1223, "x_roi": 273, "clicked_y_global": 368, "clicked_y_roi": 168},
+        {"order": 18, "x_global": 1239, "x_roi": 289, "clicked_y_global": 368, "clicked_y_roi": 168},
+        {"order": 19, "x_global": 1251, "x_roi": 301, "clicked_y_global": 325, "clicked_y_roi": 125},
+        {"order": 20, "x_global": 1272, "x_roi": 322, "clicked_y_global": 321, "clicked_y_roi": 121},
+        {"order": 21, "x_global": 1283, "x_roi": 333, "clicked_y_global": 321, "clicked_y_roi": 121},
+        {"order": 22, "x_global": 1296, "x_roi": 346, "clicked_y_global": 322, "clicked_y_roi": 122},
+        {"order": 23, "x_global": 1313, "x_roi": 363, "clicked_y_global": 320, "clicked_y_roi": 120},
+        {"order": 24, "x_global": 1325, "x_roi": 375, "clicked_y_global": 320, "clicked_y_roi": 120},
+        {"order": 25, "x_global": 1339, "x_roi": 389, "clicked_y_global": 319, "clicked_y_roi": 119},
+        {"order": 26, "x_global": 1355, "x_roi": 405, "clicked_y_global": 318, "clicked_y_roi": 118},
+        {"order": 27, "x_global": 1370, "x_roi": 420, "clicked_y_global": 318, "clicked_y_roi": 118},
+        {"order": 28, "x_global": 1391, "x_roi": 441, "clicked_y_global": 318, "clicked_y_roi": 118},
+        {"order": 29, "x_global": 1413, "x_roi": 463, "clicked_y_global": 319, "clicked_y_roi": 119},
+        {"order": 30, "x_global": 1428, "x_roi": 478, "clicked_y_global": 320, "clicked_y_roi": 120},
+        {"order": 31, "x_global": 1441, "x_roi": 491, "clicked_y_global": 320, "clicked_y_roi": 120}
+      ],
+      "annotated_at": "2026-07-28T21:57:42+08:00",
+      "preview_path": "outputs/raw_pitch_gt_v1/previews/P026.png"
+    }
+  }
+}
