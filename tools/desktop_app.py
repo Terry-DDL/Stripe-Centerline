@@ -17,11 +17,15 @@ from PIL import Image, ImageTk
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = PROJECT_ROOT / "src"
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SRC_DIR))
 
 from config import CONFIG, INTERACTIVE_CONFIG  # noqa: E402
 from interactive_pipeline import run_interactive_case  # noqa: E402
 from pitch_reference import build_pitch_reference_map  # noqa: E402
+from tools.basin_shadow_integration import (  # noqa: E402
+    run_shadow_and_log,
+)
 
 
 SUPPORTED_SUFFIXES = {".bmp", ".png", ".jpg", ".jpeg"}
@@ -1261,6 +1265,20 @@ class StripeDesktopApp:
         except (OSError, ValueError, cv2.error) as caught_error:
             result = None
             error = caught_error
+        if result is not None:
+            try:
+                run_shadow_and_log(
+                    image_gray,
+                    image_name,
+                    result,
+                    output_dir,
+                )
+            except Exception as shadow_error:
+                print(
+                    "Basin shadow logging failed: "
+                    f"{type(shadow_error).__name__}: {shadow_error}",
+                    file=sys.stderr,
+                )
         self.analysis_queue.put(
             (analysis_key, result, error, pitch_reference_map)
         )
