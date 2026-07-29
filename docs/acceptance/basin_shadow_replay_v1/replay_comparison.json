@@ -1,0 +1,762 @@
+{
+  "report_revision": "stage3_1_deterministic_replay_acceptance_v1",
+  "created_at": "2026-07-29T18:21:17.495202+08:00",
+  "provenance": {
+    "stage3_1_commit": "3653bb045c237555395091832df201b7a821a0d4",
+    "git_dirty_before": false,
+    "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+    "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+    "separator_candidate_checksum": "c48295fdacb145cef76a2062e9457a07b41d94fbc0c6934e54d0483630af9255",
+    "git_dirty_after": false
+  },
+  "old_shadow_report": "/private/tmp/stripe-separator-path-prototype-v1/outputs/basin_shadow_integration_v1/sample2_issues_f0f4353/issue_report.json",
+  "old_shadow_report_sha256": "ecd56de5f5d4fe76047220dcfacd414f55dbb88badbcfc326f91c44a46ca63bb",
+  "sample_count": 10,
+  "required_field_match_count": 10,
+  "complete_summary_match_count": 10,
+  "mismatch_count": 0,
+  "comparisons": [
+    {
+      "point_id": "661_921",
+      "reference_global": {
+        "x": 661,
+        "y": 921
+      },
+      "roi_bounds_global": {
+        "x0": 411,
+        "y0": 821,
+        "x1": 911,
+        "y1": 1021
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "420b5d34c763dcaf807186ee1fb41353b47cf3986190877471644364a9af0fb9",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": false,
+        "status": "unavailable",
+        "unavailable_reason": "basin_structure_not_verified",
+        "left_center_x_global": null,
+        "right_center_x_global": null,
+        "left_distance_px": null,
+        "right_distance_px": null,
+        "separator_ids": null,
+        "separator_sequence": null,
+        "basin_ids": null,
+        "basin_sequence": null,
+        "rejection_reason": "basin_structure_not_verified"
+      },
+      "replay": {
+        "success": false,
+        "status": "unavailable",
+        "unavailable_reason": "basin_structure_not_verified",
+        "left_center_x_global": null,
+        "right_center_x_global": null,
+        "left_distance_px": null,
+        "right_distance_px": null,
+        "separator_ids": null,
+        "separator_sequence": null,
+        "basin_ids": null,
+        "basin_sequence": null,
+        "rejection_reason": "basin_structure_not_verified"
+      }
+    },
+    {
+      "point_id": "482_704",
+      "reference_global": {
+        "x": 482,
+        "y": 704
+      },
+      "roi_bounds_global": {
+        "x0": 232,
+        "y0": 604,
+        "x1": 732,
+        "y1": 804
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "20b796fb83afec61468744972a7ab298619942e38e6a69ff3210b202b5cc90d5",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 436.5,
+        "right_center_x_global": 513.5,
+        "left_distance_px": 45.5,
+        "right_distance_px": 31.5,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 436.5,
+        "right_center_x_global": 513.5,
+        "left_distance_px": 45.5,
+        "right_distance_px": 31.5,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "1044_581",
+      "reference_global": {
+        "x": 1044,
+        "y": 581
+      },
+      "roi_bounds_global": {
+        "x0": 794,
+        "y0": 481,
+        "x1": 1294,
+        "y1": 681
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "2d8a004a140e7b76b90ef212dc588388fb0a25b8e483c99f4c838b35890abdcb",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1005.5,
+        "right_center_x_global": 1082.5,
+        "left_distance_px": 38.5,
+        "right_distance_px": 38.5,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1005.5,
+        "right_center_x_global": 1082.5,
+        "left_distance_px": 38.5,
+        "right_distance_px": 38.5,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "1086_525",
+      "reference_global": {
+        "x": 1086,
+        "y": 525
+      },
+      "roi_bounds_global": {
+        "x0": 836,
+        "y0": 425,
+        "x1": 1336,
+        "y1": 625
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "85c1d26ef54c6d2017f61df6392a3397587eb6ba2bfe4c566fd9aef810b26a48",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1044.5,
+        "right_center_x_global": 1121.0,
+        "left_distance_px": 41.5,
+        "right_distance_px": 35.0,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1044.5,
+        "right_center_x_global": 1121.0,
+        "left_distance_px": 41.5,
+        "right_distance_px": 35.0,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "1044_378",
+      "reference_global": {
+        "x": 1044,
+        "y": 378
+      },
+      "roi_bounds_global": {
+        "x0": 794,
+        "y0": 278,
+        "x1": 1294,
+        "y1": 478
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "edacea9244d5290140b06ede46addbb4be3dbbb199e0aa67667319c83d444968",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1005.5,
+        "right_center_x_global": 1082.0,
+        "left_distance_px": 38.5,
+        "right_distance_px": 38.0,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1005.5,
+        "right_center_x_global": 1082.0,
+        "left_distance_px": 38.5,
+        "right_distance_px": 38.0,
+        "separator_ids": {
+          "left_adjacent": "C05",
+          "left_clicked_boundary": "C06",
+          "right_clicked_boundary": "C07",
+          "right_adjacent": "C08"
+        },
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "507_686",
+      "reference_global": {
+        "x": 507,
+        "y": 686
+      },
+      "roi_bounds_global": {
+        "x0": 257,
+        "y0": 586,
+        "x1": 757,
+        "y1": 786
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "5da3ec6d3f615f4251f09eff7fb35dac11a3e5fb3ea5413df4a46d96baae7199",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 474.5,
+        "right_center_x_global": 548.0,
+        "left_distance_px": 32.5,
+        "right_distance_px": 41.0,
+        "separator_ids": {
+          "left_adjacent": "C06",
+          "left_clicked_boundary": "C07",
+          "right_clicked_boundary": "C08",
+          "right_adjacent": "C09"
+        },
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 474.5,
+        "right_center_x_global": 548.0,
+        "left_distance_px": 32.5,
+        "right_distance_px": 41.0,
+        "separator_ids": {
+          "left_adjacent": "C06",
+          "left_clicked_boundary": "C07",
+          "right_clicked_boundary": "C08",
+          "right_adjacent": "C09"
+        },
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "150_1829",
+      "reference_global": {
+        "x": 150,
+        "y": 1829
+      },
+      "roi_bounds_global": {
+        "x0": 0,
+        "y0": 1729,
+        "x1": 400,
+        "y1": 1929
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "6d394e33e90df5781e19bf17c7c8c673be0d891a3da35992a7c05bc63d0191ef",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 136.0,
+        "right_center_x_global": 170.0,
+        "left_distance_px": 14.0,
+        "right_distance_px": 20.0,
+        "separator_ids": null,
+        "separator_sequence": [
+          "C03",
+          "C04",
+          "C05"
+        ],
+        "basin_ids": {
+          "left": "B_C03_C04",
+          "right": "B_C04_C05"
+        },
+        "basin_sequence": [
+          "B_C03_C04",
+          "B_C04_C05"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 136.0,
+        "right_center_x_global": 170.0,
+        "left_distance_px": 14.0,
+        "right_distance_px": 20.0,
+        "separator_ids": null,
+        "separator_sequence": [
+          "C03",
+          "C04",
+          "C05"
+        ],
+        "basin_ids": {
+          "left": "B_C03_C04",
+          "right": "B_C04_C05"
+        },
+        "basin_sequence": [
+          "B_C03_C04",
+          "B_C04_C05"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "1143_1239",
+      "reference_global": {
+        "x": 1143,
+        "y": 1239
+      },
+      "roi_bounds_global": {
+        "x0": 893,
+        "y0": 1139,
+        "x1": 1393,
+        "y1": 1339
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "745c5d6240c638244364a984006d6c0842bcba7f0e635b953d168e7f759c390d",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1124.5,
+        "right_center_x_global": 1153.5,
+        "left_distance_px": 18.5,
+        "right_distance_px": 10.5,
+        "separator_ids": null,
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 1124.5,
+        "right_center_x_global": 1153.5,
+        "left_distance_px": 18.5,
+        "right_distance_px": 10.5,
+        "separator_ids": null,
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "275_1507",
+      "reference_global": {
+        "x": 275,
+        "y": 1507
+      },
+      "roi_bounds_global": {
+        "x0": 25,
+        "y0": 1407,
+        "x1": 525,
+        "y1": 1607
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "538cd7c2589132f80b387b27a023fc58680d513bf5db920467c598f4c3f25440",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 248.0,
+        "right_center_x_global": 330.5,
+        "left_distance_px": 27.0,
+        "right_distance_px": 55.5,
+        "separator_ids": {
+          "left_adjacent": "C06",
+          "left_clicked_boundary": "C07",
+          "right_clicked_boundary": "C08",
+          "right_adjacent": "C09"
+        },
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 248.0,
+        "right_center_x_global": 330.5,
+        "left_distance_px": 27.0,
+        "right_distance_px": 55.5,
+        "separator_ids": {
+          "left_adjacent": "C06",
+          "left_clicked_boundary": "C07",
+          "right_clicked_boundary": "C08",
+          "right_adjacent": "C09"
+        },
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ],
+        "rejection_reason": null
+      }
+    },
+    {
+      "point_id": "546_721",
+      "reference_global": {
+        "x": 546,
+        "y": 721
+      },
+      "roi_bounds_global": {
+        "x0": 296,
+        "y0": 621,
+        "x1": 796,
+        "y1": 821
+      },
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "203d5cbdee88b437f0dfc9b703228e714e8b2cca1e55632101e65e17fdc5619a",
+      "required_fields_equal": true,
+      "complete_shadow_summary_equal": true,
+      "old": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 513.7647058823529,
+        "right_center_x_global": 585.2352941176471,
+        "left_distance_px": 32.23529411764707,
+        "right_distance_px": 39.23529411764707,
+        "separator_ids": {
+          "left_adjacent": "C06",
+          "left_clicked_boundary": "C07",
+          "right_clicked_boundary": "C08",
+          "right_adjacent": "C09"
+        },
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ],
+        "rejection_reason": null
+      },
+      "replay": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "left_center_x_global": 513.7647058823529,
+        "right_center_x_global": 585.2352941176471,
+        "left_distance_px": 32.23529411764707,
+        "right_distance_px": 39.23529411764707,
+        "separator_ids": {
+          "left_adjacent": "C06",
+          "left_clicked_boundary": "C07",
+          "right_clicked_boundary": "C08",
+          "right_adjacent": "C09"
+        },
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ],
+        "rejection_reason": null
+      }
+    }
+  ]
+}

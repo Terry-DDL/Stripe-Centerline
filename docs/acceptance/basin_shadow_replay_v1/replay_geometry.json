@@ -1,0 +1,6345 @@
+{
+  "report_revision": "stage3_1_deterministic_replay_acceptance_v1",
+  "created_at": "2026-07-29T18:21:17.495202+08:00",
+  "provenance": {
+    "stage3_1_commit": "3653bb045c237555395091832df201b7a821a0d4",
+    "git_dirty_before": false,
+    "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+    "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+    "separator_candidate_checksum": "c48295fdacb145cef76a2062e9457a07b41d94fbc0c6934e54d0483630af9255",
+    "git_dirty_after": false
+  },
+  "old_shadow_report_sha256": "ecd56de5f5d4fe76047220dcfacd414f55dbb88badbcfc326f91c44a46ca63bb",
+  "sample_count": 10,
+  "records": [
+    {
+      "point_id": "661_921",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "420b5d34c763dcaf807186ee1fb41353b47cf3986190877471644364a9af0fb9",
+      "reference_global": {
+        "x": 661,
+        "y": 921
+      },
+      "roi_bounds_global": {
+        "x0": 411,
+        "y0": 821,
+        "x1": 911,
+        "y1": 1021
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 622.5,
+          "distance_to_click_px": 38.5,
+          "track_id": 3
+        },
+        "right": {
+          "center_x_global": 738.5,
+          "distance_to_click_px": 77.5,
+          "track_id": 7
+        },
+        "stripe_spacing_px": 116.0
+      },
+      "old_shadow": {
+        "success": false,
+        "status": "unavailable",
+        "unavailable_reason": "basin_structure_not_verified",
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": null,
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 37.81198343364637,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "no_joint_hypothesis",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unavailable",
+          "reference_relation": null,
+          "reference_relation_reason": "basin_structure_not_verified",
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": false,
+        "status": "unavailable",
+        "unavailable_reason": "basin_structure_not_verified",
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": null,
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 37.81198343364637,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "no_joint_hypothesis",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unavailable",
+          "reference_relation": null,
+          "reference_relation_reason": "basin_structure_not_verified",
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 661,
+          "y": 921
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": null,
+        "right_center": null,
+        "left_distance_px": null,
+        "right_distance_px": null,
+        "band_centers_y_roi": [],
+        "used_separator_paths": [],
+        "basins": []
+      }
+    },
+    {
+      "point_id": "482_704",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "20b796fb83afec61468744972a7ab298619942e38e6a69ff3210b202b5cc90d5",
+      "reference_global": {
+        "x": 482,
+        "y": 704
+      },
+      "roi_bounds_global": {
+        "x0": 232,
+        "y0": 604,
+        "x1": 732,
+        "y1": 804
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 438.0,
+          "distance_to_click_px": 44.0,
+          "track_id": 1
+        },
+        "right": {
+          "center_x_global": 548.0,
+          "distance_to_click_px": 66.0,
+          "track_id": 5
+        },
+        "stripe_spacing_px": 110.0
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 436.5,
+          "right_basin_center_x_global": 513.5,
+          "left_distance_to_reference_px": 45.5,
+          "right_distance_to_reference_px": 31.5,
+          "basin_center_spacing_px": 77.0,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.06126239422746,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 436.5,
+          "right_basin_center_x_global": 513.5,
+          "left_distance_to_reference_px": 45.5,
+          "right_distance_to_reference_px": 31.5,
+          "basin_center_spacing_px": 77.0,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.06126239422746,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 482,
+          "y": 704
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 436.5,
+          "x_roi": 204.5
+        },
+        "right_center": {
+          "x_global": 513.5,
+          "x_roi": 281.5
+        },
+        "left_distance_px": 45.5,
+        "right_distance_px": 31.5,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C05",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              188.0,
+              188.0,
+              188.0,
+              188.0,
+              188.0
+            ],
+            "x_by_band_global": [
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              420.0,
+              420.0,
+              420.0,
+              420.0,
+              420.0
+            ],
+            "y_by_band_global": [
+              612.0,
+              628.5,
+              645.0,
+              662.0,
+              678.5,
+              695.0,
+              712.0,
+              728.5,
+              745.0,
+              762.0,
+              778.5,
+              795.0
+            ],
+            "x_at_reference_roi": 187.0,
+            "x_at_reference_global": 419.0
+          },
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0
+            ],
+            "x_by_band_global": [
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0
+            ],
+            "y_by_band_global": [
+              612.0,
+              628.5,
+              645.0,
+              662.0,
+              678.5,
+              695.0,
+              712.0,
+              728.5,
+              745.0,
+              762.0,
+              778.5,
+              795.0
+            ],
+            "x_at_reference_roi": 222.0,
+            "x_at_reference_global": 454.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              262.0,
+              262.0,
+              262.0,
+              263.0,
+              264.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0
+            ],
+            "x_by_band_global": [
+              494.0,
+              494.0,
+              494.0,
+              495.0,
+              496.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0
+            ],
+            "y_by_band_global": [
+              612.0,
+              628.5,
+              645.0,
+              662.0,
+              678.5,
+              695.0,
+              712.0,
+              728.5,
+              745.0,
+              762.0,
+              778.5,
+              795.0
+            ],
+            "x_at_reference_roi": 263.0,
+            "x_at_reference_global": 495.0
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              301.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0
+            ],
+            "x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "y_by_band_global": [
+              612.0,
+              628.5,
+              645.0,
+              662.0,
+              678.5,
+              695.0,
+              712.0,
+              728.5,
+              745.0,
+              762.0,
+              778.5,
+              795.0
+            ],
+            "x_at_reference_roi": 300.0,
+            "x_at_reference_global": 532.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C05_C06",
+            "left_separator_id": "C05",
+            "right_separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              187.0,
+              188.0,
+              188.0,
+              188.0,
+              188.0,
+              188.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0
+            ],
+            "left_boundary_x_by_band_global": [
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              419.0,
+              420.0,
+              420.0,
+              420.0,
+              420.0,
+              420.0
+            ],
+            "right_boundary_x_by_band_global": [
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0
+            ],
+            "center_x_by_band_roi": [
+              204.5,
+              204.5,
+              204.5,
+              204.5,
+              204.5,
+              204.5,
+              204.5,
+              205.0,
+              205.0,
+              205.0,
+              205.0,
+              205.0
+            ],
+            "center_x_at_reference_roi": 204.5,
+            "width_at_reference_px": 35.0
+          },
+          {
+            "role": "clicked",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0,
+              222.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              262.0,
+              262.0,
+              262.0,
+              263.0,
+              264.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0
+            ],
+            "left_boundary_x_by_band_global": [
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0
+            ],
+            "right_boundary_x_by_band_global": [
+              494.0,
+              494.0,
+              494.0,
+              495.0,
+              496.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0
+            ],
+            "center_x_by_band_roi": [
+              242.0,
+              242.0,
+              242.0,
+              242.5,
+              243.0,
+              242.5,
+              242.5,
+              242.5,
+              242.5,
+              242.5,
+              242.5,
+              242.5
+            ],
+            "center_x_at_reference_roi": 242.5,
+            "width_at_reference_px": 41.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              262.0,
+              262.0,
+              262.0,
+              263.0,
+              264.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0,
+              263.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0,
+              301.0,
+              300.0,
+              300.0,
+              300.0,
+              300.0
+            ],
+            "left_boundary_x_by_band_global": [
+              494.0,
+              494.0,
+              494.0,
+              495.0,
+              496.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0
+            ],
+            "right_boundary_x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "center_x_by_band_roi": [
+              281.0,
+              281.0,
+              281.0,
+              281.5,
+              282.0,
+              281.5,
+              281.5,
+              282.0,
+              281.5,
+              281.5,
+              281.5,
+              281.5
+            ],
+            "center_x_at_reference_roi": 281.5,
+            "width_at_reference_px": 37.0
+          }
+        ],
+        "reference_relation": "inside_basin",
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ]
+      }
+    },
+    {
+      "point_id": "1044_581",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "2d8a004a140e7b76b90ef212dc588388fb0a25b8e483c99f4c838b35890abdcb",
+      "reference_global": {
+        "x": 1044,
+        "y": 581
+      },
+      "roi_bounds_global": {
+        "x0": 794,
+        "y0": 481,
+        "x1": 1294,
+        "y1": 681
+      },
+      "old_production": {
+        "success": false,
+        "failure_reasons": [
+          "clicked_black_region_not_stable_track",
+          "strong_same_basin_conflict_no_safe_alternative"
+        ],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": null,
+        "right": null,
+        "stripe_spacing_px": null
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 1005.5,
+          "right_basin_center_x_global": 1082.5,
+          "left_distance_to_reference_px": 38.5,
+          "right_distance_to_reference_px": 38.5,
+          "basin_center_spacing_px": 77.0,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.75811562813417,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 1005.5,
+          "right_basin_center_x_global": 1082.5,
+          "left_distance_to_reference_px": 38.5,
+          "right_distance_to_reference_px": 38.5,
+          "basin_center_spacing_px": 77.0,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.75811562813417,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 1044,
+          "y": 581
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 1005.5,
+          "x_roi": 211.5
+        },
+        "right_center": {
+          "x_global": 1082.5,
+          "x_roi": 288.5
+        },
+        "left_distance_px": 38.5,
+        "right_distance_px": 38.5,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C05",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0
+            ],
+            "x_by_band_global": [
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0
+            ],
+            "y_by_band_global": [
+              489.0,
+              505.5,
+              522.0,
+              539.0,
+              555.5,
+              572.0,
+              589.0,
+              605.5,
+              622.0,
+              639.0,
+              655.5,
+              672.0
+            ],
+            "x_at_reference_roi": 190.0,
+            "x_at_reference_global": 984.0
+          },
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              232.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              234.0,
+              234.0,
+              234.0,
+              234.0
+            ],
+            "x_by_band_global": [
+              1026.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1028.0,
+              1028.0,
+              1028.0,
+              1028.0
+            ],
+            "y_by_band_global": [
+              489.0,
+              505.5,
+              522.0,
+              539.0,
+              555.5,
+              572.0,
+              589.0,
+              605.5,
+              622.0,
+              639.0,
+              655.5,
+              672.0
+            ],
+            "x_at_reference_roi": 233.0,
+            "x_at_reference_global": 1027.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1061.0,
+              1061.0,
+              1061.0,
+              1061.0
+            ],
+            "y_by_band_global": [
+              489.0,
+              505.5,
+              522.0,
+              539.0,
+              555.5,
+              572.0,
+              589.0,
+              605.5,
+              622.0,
+              639.0,
+              655.5,
+              672.0
+            ],
+            "x_at_reference_roi": 268.0,
+            "x_at_reference_global": 1062.0
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0
+            ],
+            "x_by_band_global": [
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0
+            ],
+            "y_by_band_global": [
+              489.0,
+              505.5,
+              522.0,
+              539.0,
+              555.5,
+              572.0,
+              589.0,
+              605.5,
+              622.0,
+              639.0,
+              655.5,
+              672.0
+            ],
+            "x_at_reference_roi": 309.0,
+            "x_at_reference_global": 1103.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C05_C06",
+            "left_separator_id": "C05",
+            "right_separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              232.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              234.0,
+              234.0,
+              234.0,
+              234.0
+            ],
+            "left_boundary_x_by_band_global": [
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0,
+              984.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1026.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1028.0,
+              1028.0,
+              1028.0,
+              1028.0
+            ],
+            "center_x_by_band_roi": [
+              211.5,
+              212.0,
+              212.0,
+              212.0,
+              211.5,
+              211.5,
+              211.5,
+              211.5,
+              212.0,
+              212.0,
+              212.0,
+              212.0
+            ],
+            "center_x_at_reference_roi": 211.5,
+            "width_at_reference_px": 43.0
+          },
+          {
+            "role": "clicked",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              232.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              233.0,
+              234.0,
+              234.0,
+              234.0,
+              234.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1026.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1028.0,
+              1028.0,
+              1028.0,
+              1028.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1061.0,
+              1061.0,
+              1061.0,
+              1061.0
+            ],
+            "center_x_by_band_roi": [
+              250.0,
+              250.5,
+              250.5,
+              250.5,
+              250.5,
+              250.5,
+              250.5,
+              250.5,
+              250.5,
+              250.5,
+              250.5,
+              250.5
+            ],
+            "center_x_at_reference_roi": 250.5,
+            "width_at_reference_px": 35.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0,
+              309.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1061.0,
+              1061.0,
+              1061.0,
+              1061.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0
+            ],
+            "center_x_by_band_roi": [
+              288.5,
+              288.5,
+              288.5,
+              288.5,
+              288.5,
+              288.5,
+              288.5,
+              288.5,
+              288.0,
+              288.0,
+              288.0,
+              288.0
+            ],
+            "center_x_at_reference_roi": 288.5,
+            "width_at_reference_px": 41.0
+          }
+        ],
+        "reference_relation": "inside_basin",
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ]
+      }
+    },
+    {
+      "point_id": "1086_525",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "85c1d26ef54c6d2017f61df6392a3397587eb6ba2bfe4c566fd9aef810b26a48",
+      "reference_global": {
+        "x": 1086,
+        "y": 525
+      },
+      "roi_bounds_global": {
+        "x0": 836,
+        "y0": 425,
+        "x1": 1336,
+        "y1": 625
+      },
+      "old_production": {
+        "success": false,
+        "failure_reasons": [
+          "strong_same_basin_conflict_no_safe_alternative"
+        ],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": null,
+        "right": null,
+        "stripe_spacing_px": null
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 1044.5,
+          "right_basin_center_x_global": 1121.0,
+          "left_distance_to_reference_px": 41.5,
+          "right_distance_to_reference_px": 35.0,
+          "basin_center_spacing_px": 76.5,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "medium",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 37.10335037340249,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "diagnostics_only",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 1044.5,
+          "right_basin_center_x_global": 1121.0,
+          "left_distance_to_reference_px": 41.5,
+          "right_distance_to_reference_px": 35.0,
+          "basin_center_spacing_px": 76.5,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "medium",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 37.10335037340249,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "diagnostics_only",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 1086,
+          "y": 525
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 1044.5,
+          "x_roi": 208.5
+        },
+        "right_center": {
+          "x_global": 1121.0,
+          "x_roi": 285.0
+        },
+        "left_distance_px": 41.5,
+        "right_distance_px": 35.0,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C05",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0
+            ],
+            "x_by_band_global": [
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0
+            ],
+            "y_by_band_global": [
+              433.0,
+              449.5,
+              466.0,
+              483.0,
+              499.5,
+              516.0,
+              533.0,
+              549.5,
+              566.0,
+              583.0,
+              599.5,
+              616.0
+            ],
+            "x_at_reference_roi": 191.0,
+            "x_at_reference_global": 1027.0
+          },
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0
+            ],
+            "x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0
+            ],
+            "y_by_band_global": [
+              433.0,
+              449.5,
+              466.0,
+              483.0,
+              499.5,
+              516.0,
+              533.0,
+              549.5,
+              566.0,
+              583.0,
+              599.5,
+              616.0
+            ],
+            "x_at_reference_roi": 226.0,
+            "x_at_reference_global": 1062.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              266.0,
+              266.0,
+              266.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "x_by_band_global": [
+              1102.0,
+              1102.0,
+              1102.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0
+            ],
+            "y_by_band_global": [
+              433.0,
+              449.5,
+              466.0,
+              483.0,
+              499.5,
+              516.0,
+              533.0,
+              549.5,
+              566.0,
+              583.0,
+              599.5,
+              616.0
+            ],
+            "x_at_reference_roi": 267.0,
+            "x_at_reference_global": 1103.0
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0
+            ],
+            "x_by_band_global": [
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0
+            ],
+            "y_by_band_global": [
+              433.0,
+              449.5,
+              466.0,
+              483.0,
+              499.5,
+              516.0,
+              533.0,
+              549.5,
+              566.0,
+              583.0,
+              599.5,
+              616.0
+            ],
+            "x_at_reference_roi": 303.0,
+            "x_at_reference_global": 1139.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C05_C06",
+            "left_separator_id": "C05",
+            "right_separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              190.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0,
+              1027.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0
+            ],
+            "center_x_by_band_roi": [
+              208.0,
+              208.0,
+              208.0,
+              208.0,
+              208.0,
+              208.5,
+              208.5,
+              208.5,
+              208.5,
+              208.5,
+              208.5,
+              208.5
+            ],
+            "center_x_at_reference_roi": 208.5,
+            "width_at_reference_px": 35.0
+          },
+          {
+            "role": "clicked",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0,
+              226.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              266.0,
+              266.0,
+              266.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1102.0,
+              1102.0,
+              1102.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0
+            ],
+            "center_x_by_band_roi": [
+              246.0,
+              246.0,
+              246.0,
+              246.5,
+              246.5,
+              246.5,
+              246.5,
+              246.5,
+              246.5,
+              246.5,
+              246.5,
+              246.5
+            ],
+            "center_x_at_reference_roi": 246.5,
+            "width_at_reference_px": 41.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              266.0,
+              266.0,
+              266.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0,
+              303.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1102.0,
+              1102.0,
+              1102.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0,
+              1103.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0,
+              1139.0
+            ],
+            "center_x_by_band_roi": [
+              284.5,
+              284.5,
+              284.5,
+              285.0,
+              285.0,
+              285.0,
+              285.0,
+              285.0,
+              285.0,
+              285.0,
+              285.0,
+              285.0
+            ],
+            "center_x_at_reference_roi": 285.0,
+            "width_at_reference_px": 36.0
+          }
+        ],
+        "reference_relation": "inside_basin",
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ]
+      }
+    },
+    {
+      "point_id": "1044_378",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "edacea9244d5290140b06ede46addbb4be3dbbb199e0aa67667319c83d444968",
+      "reference_global": {
+        "x": 1044,
+        "y": 378
+      },
+      "roi_bounds_global": {
+        "x0": 794,
+        "y0": 278,
+        "x1": 1294,
+        "y1": 478
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 1031.0,
+          "distance_to_click_px": 13.0,
+          "track_id": 5
+        },
+        "right": {
+          "center_x_global": 1055.0,
+          "distance_to_click_px": 11.0,
+          "track_id": 6
+        },
+        "stripe_spacing_px": 24.0
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 1005.5,
+          "right_basin_center_x_global": 1082.0,
+          "left_distance_to_reference_px": 38.5,
+          "right_distance_to_reference_px": 38.0,
+          "basin_center_spacing_px": 76.5,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 38.18922374810853,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": true,
+            "reason": "unresolved_bidirectional_2x_or_3x_conflict"
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 1005.5,
+          "right_basin_center_x_global": 1082.0,
+          "left_distance_to_reference_px": 38.5,
+          "right_distance_to_reference_px": 38.0,
+          "basin_center_spacing_px": 76.5,
+          "basin_ids": {
+            "left": "B_C05_C06",
+            "clicked": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C05_C06",
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C05",
+            "left_clicked_boundary": "C06",
+            "right_clicked_boundary": "C07",
+            "right_adjacent": "C08"
+          },
+          "separator_sequence": [
+            "C05",
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 38.18922374810853,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": true,
+            "reason": "unresolved_bidirectional_2x_or_3x_conflict"
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 1044,
+          "y": 378
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 1005.5,
+          "x_roi": 211.5
+        },
+        "right_center": {
+          "x_global": 1082.0,
+          "x_roi": 288.0
+        },
+        "left_distance_px": 38.5,
+        "right_distance_px": 38.0,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C05",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              192.0,
+              192.0,
+              191.0,
+              192.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0
+            ],
+            "x_by_band_global": [
+              986.0,
+              986.0,
+              985.0,
+              986.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0
+            ],
+            "y_by_band_global": [
+              286.0,
+              302.5,
+              319.0,
+              336.0,
+              352.5,
+              369.0,
+              386.0,
+              402.5,
+              419.0,
+              436.0,
+              452.5,
+              469.0
+            ],
+            "x_at_reference_roi": 191.0,
+            "x_at_reference_global": 985.0
+          },
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              231.0,
+              231.0,
+              231.0,
+              231.0,
+              231.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0
+            ],
+            "x_by_band_global": [
+              1025.0,
+              1025.0,
+              1025.0,
+              1025.0,
+              1025.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0
+            ],
+            "y_by_band_global": [
+              286.0,
+              302.5,
+              319.0,
+              336.0,
+              352.5,
+              369.0,
+              386.0,
+              402.5,
+              419.0,
+              436.0,
+              452.5,
+              469.0
+            ],
+            "x_at_reference_roi": 232.0,
+            "x_at_reference_global": 1026.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0
+            ],
+            "x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0
+            ],
+            "y_by_band_global": [
+              286.0,
+              302.5,
+              319.0,
+              336.0,
+              352.5,
+              369.0,
+              386.0,
+              402.5,
+              419.0,
+              436.0,
+              452.5,
+              469.0
+            ],
+            "x_at_reference_roi": 268.0,
+            "x_at_reference_global": 1062.0
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              308.0,
+              308.0,
+              308.0,
+              308.0,
+              308.0,
+              308.0,
+              309.0
+            ],
+            "x_by_band_global": [
+              1101.0,
+              1101.0,
+              1101.0,
+              1101.0,
+              1101.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1103.0
+            ],
+            "y_by_band_global": [
+              286.0,
+              302.5,
+              319.0,
+              336.0,
+              352.5,
+              369.0,
+              386.0,
+              402.5,
+              419.0,
+              436.0,
+              452.5,
+              469.0
+            ],
+            "x_at_reference_roi": 308.0,
+            "x_at_reference_global": 1102.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C05_C06",
+            "left_separator_id": "C05",
+            "right_separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              192.0,
+              192.0,
+              191.0,
+              192.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0,
+              191.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              231.0,
+              231.0,
+              231.0,
+              231.0,
+              231.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0
+            ],
+            "left_boundary_x_by_band_global": [
+              986.0,
+              986.0,
+              985.0,
+              986.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0,
+              985.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1025.0,
+              1025.0,
+              1025.0,
+              1025.0,
+              1025.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0
+            ],
+            "center_x_by_band_roi": [
+              211.5,
+              211.5,
+              211.0,
+              211.5,
+              211.0,
+              211.5,
+              211.5,
+              211.5,
+              211.5,
+              211.5,
+              211.5,
+              211.5
+            ],
+            "center_x_at_reference_roi": 211.5,
+            "width_at_reference_px": 41.0
+          },
+          {
+            "role": "clicked",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              231.0,
+              231.0,
+              231.0,
+              231.0,
+              231.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              232.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1025.0,
+              1025.0,
+              1025.0,
+              1025.0,
+              1025.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0,
+              1026.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0
+            ],
+            "center_x_by_band_roi": [
+              249.5,
+              249.5,
+              249.5,
+              249.5,
+              249.5,
+              250.0,
+              250.0,
+              250.0,
+              250.0,
+              250.0,
+              250.0,
+              250.0
+            ],
+            "center_x_at_reference_roi": 250.0,
+            "width_at_reference_px": 36.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              308.0,
+              308.0,
+              308.0,
+              308.0,
+              308.0,
+              308.0,
+              309.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0,
+              1062.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1101.0,
+              1101.0,
+              1101.0,
+              1101.0,
+              1101.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1102.0,
+              1103.0
+            ],
+            "center_x_by_band_roi": [
+              287.5,
+              287.5,
+              287.5,
+              287.5,
+              287.5,
+              288.0,
+              288.0,
+              288.0,
+              288.0,
+              288.0,
+              288.0,
+              288.5
+            ],
+            "center_x_at_reference_roi": 288.0,
+            "width_at_reference_px": 40.0
+          }
+        ],
+        "reference_relation": "inside_basin",
+        "separator_sequence": [
+          "C05",
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C05_C06",
+          "clicked": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C05_C06",
+          "B_C06_C07",
+          "B_C07_C08"
+        ]
+      }
+    },
+    {
+      "point_id": "507_686",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "5da3ec6d3f615f4251f09eff7fb35dac11a3e5fb3ea5413df4a46d96baae7199",
+      "reference_global": {
+        "x": 507,
+        "y": 686
+      },
+      "roi_bounds_global": {
+        "x0": 257,
+        "y0": 586,
+        "x1": 757,
+        "y1": 786
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 438.0,
+          "distance_to_click_px": 69.0,
+          "track_id": 1
+        },
+        "right": {
+          "center_x_global": 548.5,
+          "distance_to_click_px": 41.5,
+          "track_id": 5
+        },
+        "stripe_spacing_px": 110.5
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 474.5,
+          "right_basin_center_x_global": 548.0,
+          "left_distance_to_reference_px": 32.5,
+          "right_distance_to_reference_px": 41.0,
+          "basin_center_spacing_px": 73.5,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "clicked": "B_C07_C08",
+            "right": "B_C08_C09"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08",
+            "B_C08_C09"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C06",
+            "left_clicked_boundary": "C07",
+            "right_clicked_boundary": "C08",
+            "right_adjacent": "C09"
+          },
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08",
+            "C09"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.65514030543793,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 474.5,
+          "right_basin_center_x_global": 548.0,
+          "left_distance_to_reference_px": 32.5,
+          "right_distance_to_reference_px": 41.0,
+          "basin_center_spacing_px": 73.5,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "clicked": "B_C07_C08",
+            "right": "B_C08_C09"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08",
+            "B_C08_C09"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C06",
+            "left_clicked_boundary": "C07",
+            "right_clicked_boundary": "C08",
+            "right_adjacent": "C09"
+          },
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08",
+            "C09"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.65514030543793,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 507,
+          "y": 686
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 474.5,
+          "x_roi": 217.5
+        },
+        "right_center": {
+          "x_global": 548.0,
+          "x_roi": 291.0
+        },
+        "left_distance_px": 32.5,
+        "right_distance_px": 41.0,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0
+            ],
+            "x_by_band_global": [
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0
+            ],
+            "y_by_band_global": [
+              594.0,
+              610.5,
+              627.0,
+              644.0,
+              660.5,
+              677.0,
+              694.0,
+              710.5,
+              727.0,
+              744.0,
+              760.5,
+              777.0
+            ],
+            "x_at_reference_roi": 197.0,
+            "x_at_reference_global": 454.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              237.0,
+              237.0,
+              237.0,
+              237.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0
+            ],
+            "x_by_band_global": [
+              494.0,
+              494.0,
+              494.0,
+              494.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0
+            ],
+            "y_by_band_global": [
+              594.0,
+              610.5,
+              627.0,
+              644.0,
+              660.5,
+              677.0,
+              694.0,
+              710.5,
+              727.0,
+              744.0,
+              760.5,
+              777.0
+            ],
+            "x_at_reference_roi": 238.0,
+            "x_at_reference_global": 495.0
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              276.0,
+              275.0,
+              275.0,
+              275.0
+            ],
+            "x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "y_by_band_global": [
+              594.0,
+              610.5,
+              627.0,
+              644.0,
+              660.5,
+              677.0,
+              694.0,
+              710.5,
+              727.0,
+              744.0,
+              760.5,
+              777.0
+            ],
+            "x_at_reference_roi": 275.0,
+            "x_at_reference_global": 532.0
+          },
+          {
+            "separator_id": "C09",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              308.0,
+              308.0,
+              308.0,
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              306.0,
+              306.0,
+              306.0,
+              306.0
+            ],
+            "x_by_band_global": [
+              565.0,
+              565.0,
+              565.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0
+            ],
+            "y_by_band_global": [
+              594.0,
+              610.5,
+              627.0,
+              644.0,
+              660.5,
+              677.0,
+              694.0,
+              710.5,
+              727.0,
+              744.0,
+              760.5,
+              777.0
+            ],
+            "x_at_reference_roi": 307.0,
+            "x_at_reference_global": 564.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0,
+              197.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              237.0,
+              237.0,
+              237.0,
+              237.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0
+            ],
+            "left_boundary_x_by_band_global": [
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0,
+              454.0
+            ],
+            "right_boundary_x_by_band_global": [
+              494.0,
+              494.0,
+              494.0,
+              494.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0
+            ],
+            "center_x_by_band_roi": [
+              217.0,
+              217.0,
+              217.0,
+              217.0,
+              217.5,
+              217.5,
+              217.5,
+              217.5,
+              217.5,
+              217.5,
+              217.5,
+              217.5
+            ],
+            "center_x_at_reference_roi": 217.5,
+            "width_at_reference_px": 41.0
+          },
+          {
+            "role": "clicked",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              237.0,
+              237.0,
+              237.0,
+              237.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0,
+              238.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              276.0,
+              275.0,
+              275.0,
+              275.0
+            ],
+            "left_boundary_x_by_band_global": [
+              494.0,
+              494.0,
+              494.0,
+              494.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0
+            ],
+            "right_boundary_x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "center_x_by_band_roi": [
+              256.0,
+              256.0,
+              256.0,
+              256.0,
+              256.5,
+              256.5,
+              256.5,
+              256.5,
+              257.0,
+              256.5,
+              256.5,
+              256.5
+            ],
+            "center_x_at_reference_roi": 256.5,
+            "width_at_reference_px": 37.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C08_C09",
+            "left_separator_id": "C08",
+            "right_separator_id": "C09",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              275.0,
+              276.0,
+              275.0,
+              275.0,
+              275.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              308.0,
+              308.0,
+              308.0,
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              307.0,
+              306.0,
+              306.0,
+              306.0,
+              306.0
+            ],
+            "left_boundary_x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "right_boundary_x_by_band_global": [
+              565.0,
+              565.0,
+              565.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0
+            ],
+            "center_x_by_band_roi": [
+              291.5,
+              291.5,
+              291.5,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              290.5,
+              290.5,
+              290.5
+            ],
+            "center_x_at_reference_roi": 291.0,
+            "width_at_reference_px": 32.0
+          }
+        ],
+        "reference_relation": "inside_basin",
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ]
+      }
+    },
+    {
+      "point_id": "150_1829",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "6d394e33e90df5781e19bf17c7c8c673be0d891a3da35992a7c05bc63d0191ef",
+      "reference_global": {
+        "x": 150,
+        "y": 1829
+      },
+      "roi_bounds_global": {
+        "x0": 0,
+        "y0": 1729,
+        "x1": 400,
+        "y1": 1929
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 136.0,
+          "distance_to_click_px": 14.0,
+          "track_id": 4
+        },
+        "right": {
+          "center_x_global": 156.5,
+          "distance_to_click_px": 6.5,
+          "track_id": 5
+        },
+        "stripe_spacing_px": 20.5
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "on_separator",
+          "left_basin_center_x_global": 136.0,
+          "right_basin_center_x_global": 170.0,
+          "left_distance_to_reference_px": 14.0,
+          "right_distance_to_reference_px": 20.0,
+          "basin_center_spacing_px": 34.0,
+          "basin_ids": {
+            "left": "B_C03_C04",
+            "right": "B_C04_C05"
+          },
+          "basin_sequence": [
+            "B_C03_C04",
+            "B_C04_C05"
+          ],
+          "separator_ids": null,
+          "separator_sequence": [
+            "C03",
+            "C04",
+            "C05"
+          ],
+          "clicked_separator_id": "C04",
+          "shared_boundary": {
+            "separator_id": "C04",
+            "left_basin_id": "B_C03_C04",
+            "right_basin_id": "B_C04_C05"
+          },
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 23.26024164472303,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "on_separator",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "on_separator",
+          "left_basin_center_x_global": 136.0,
+          "right_basin_center_x_global": 170.0,
+          "left_distance_to_reference_px": 14.0,
+          "right_distance_to_reference_px": 20.0,
+          "basin_center_spacing_px": 34.0,
+          "basin_ids": {
+            "left": "B_C03_C04",
+            "right": "B_C04_C05"
+          },
+          "basin_sequence": [
+            "B_C03_C04",
+            "B_C04_C05"
+          ],
+          "separator_ids": null,
+          "separator_sequence": [
+            "C03",
+            "C04",
+            "C05"
+          ],
+          "clicked_separator_id": "C04",
+          "shared_boundary": {
+            "separator_id": "C04",
+            "left_basin_id": "B_C03_C04",
+            "right_basin_id": "B_C04_C05"
+          },
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 23.26024164472303,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "on_separator",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 150,
+          "y": 1829
+        },
+        "reference_roi": {
+          "x": 150,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 136.0,
+          "x_roi": 136.0
+        },
+        "right_center": {
+          "x_global": 170.0,
+          "x_roi": 170.0
+        },
+        "left_distance_px": 14.0,
+        "right_distance_px": 20.0,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C03",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0
+            ],
+            "x_by_band_global": [
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0
+            ],
+            "y_by_band_global": [
+              1737.0,
+              1753.5,
+              1770.0,
+              1787.0,
+              1803.5,
+              1820.0,
+              1837.0,
+              1853.5,
+              1870.0,
+              1887.0,
+              1903.5,
+              1920.0
+            ],
+            "x_at_reference_roi": 124.0,
+            "x_at_reference_global": 124.0
+          },
+          {
+            "separator_id": "C04",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              147.0,
+              148.0
+            ],
+            "x_by_band_global": [
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              147.0,
+              148.0
+            ],
+            "y_by_band_global": [
+              1737.0,
+              1753.5,
+              1770.0,
+              1787.0,
+              1803.5,
+              1820.0,
+              1837.0,
+              1853.5,
+              1870.0,
+              1887.0,
+              1903.5,
+              1920.0
+            ],
+            "x_at_reference_roi": 148.0,
+            "x_at_reference_global": 148.0
+          },
+          {
+            "separator_id": "C05",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0
+            ],
+            "x_by_band_global": [
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0
+            ],
+            "y_by_band_global": [
+              1737.0,
+              1753.5,
+              1770.0,
+              1787.0,
+              1803.5,
+              1820.0,
+              1837.0,
+              1853.5,
+              1870.0,
+              1887.0,
+              1903.5,
+              1920.0
+            ],
+            "x_at_reference_roi": 192.0,
+            "x_at_reference_global": 192.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C03_C04",
+            "left_separator_id": "C03",
+            "right_separator_id": "C04",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              147.0,
+              148.0
+            ],
+            "left_boundary_x_by_band_global": [
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              124.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0,
+              125.0
+            ],
+            "right_boundary_x_by_band_global": [
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              147.0,
+              148.0
+            ],
+            "center_x_by_band_roi": [
+              136.0,
+              136.0,
+              136.0,
+              136.0,
+              136.0,
+              136.0,
+              136.0,
+              136.5,
+              136.5,
+              136.5,
+              136.0,
+              136.5
+            ],
+            "center_x_at_reference_roi": 136.0,
+            "width_at_reference_px": 24.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C04_C05",
+            "left_separator_id": "C04",
+            "right_separator_id": "C05",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              147.0,
+              148.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0
+            ],
+            "left_boundary_x_by_band_global": [
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              148.0,
+              147.0,
+              148.0
+            ],
+            "right_boundary_x_by_band_global": [
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0,
+              192.0
+            ],
+            "center_x_by_band_roi": [
+              170.0,
+              170.0,
+              170.0,
+              170.0,
+              170.0,
+              170.0,
+              170.0,
+              170.0,
+              170.0,
+              170.0,
+              169.5,
+              170.0
+            ],
+            "center_x_at_reference_roi": 170.0,
+            "width_at_reference_px": 44.0
+          }
+        ],
+        "reference_relation": "on_separator",
+        "separator_sequence": [
+          "C03",
+          "C04",
+          "C05"
+        ],
+        "basin_ids": {
+          "left": "B_C03_C04",
+          "right": "B_C04_C05"
+        },
+        "basin_sequence": [
+          "B_C03_C04",
+          "B_C04_C05"
+        ]
+      }
+    },
+    {
+      "point_id": "1143_1239",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "745c5d6240c638244364a984006d6c0842bcba7f0e635b953d168e7f759c390d",
+      "reference_global": {
+        "x": 1143,
+        "y": 1239
+      },
+      "roi_bounds_global": {
+        "x0": 893,
+        "y0": 1139,
+        "x1": 1393,
+        "y1": 1339
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 1131.5,
+          "distance_to_click_px": 11.5,
+          "track_id": 5
+        },
+        "right": {
+          "center_x_global": 1153.5,
+          "distance_to_click_px": 10.5,
+          "track_id": 6
+        },
+        "stripe_spacing_px": 22.0
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "on_separator",
+          "left_basin_center_x_global": 1124.5,
+          "right_basin_center_x_global": 1153.5,
+          "left_distance_to_reference_px": 18.5,
+          "right_distance_to_reference_px": 10.5,
+          "basin_center_spacing_px": 29.0,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": null,
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": "C07",
+          "shared_boundary": {
+            "separator_id": "C07",
+            "left_basin_id": "B_C06_C07",
+            "right_basin_id": "B_C07_C08"
+          },
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 27.503766840398225,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "on_separator",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "on_separator",
+          "left_basin_center_x_global": 1124.5,
+          "right_basin_center_x_global": 1153.5,
+          "left_distance_to_reference_px": 18.5,
+          "right_distance_to_reference_px": 10.5,
+          "basin_center_spacing_px": 29.0,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "right": "B_C07_C08"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08"
+          ],
+          "separator_ids": null,
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08"
+          ],
+          "clicked_separator_id": "C07",
+          "shared_boundary": {
+            "separator_id": "C07",
+            "left_basin_id": "B_C06_C07",
+            "right_basin_id": "B_C07_C08"
+          },
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 27.503766840398225,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "on_separator",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 1143,
+          "y": 1239
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 1124.5,
+          "x_roi": 231.5
+        },
+        "right_center": {
+          "x_global": 1153.5,
+          "x_roi": 260.5
+        },
+        "left_distance_px": 18.5,
+        "right_distance_px": 10.5,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              216.0,
+              216.0,
+              216.0,
+              216.0,
+              216.0
+            ],
+            "x_by_band_global": [
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1109.0,
+              1109.0,
+              1109.0,
+              1109.0,
+              1109.0
+            ],
+            "y_by_band_global": [
+              1147.0,
+              1163.5,
+              1180.0,
+              1197.0,
+              1213.5,
+              1230.0,
+              1247.0,
+              1263.5,
+              1280.0,
+              1297.0,
+              1313.5,
+              1330.0
+            ],
+            "x_at_reference_roi": 215.0,
+            "x_at_reference_global": 1108.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              247.0
+            ],
+            "x_by_band_global": [
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1140.0
+            ],
+            "y_by_band_global": [
+              1147.0,
+              1163.5,
+              1180.0,
+              1197.0,
+              1213.5,
+              1230.0,
+              1247.0,
+              1263.5,
+              1280.0,
+              1297.0,
+              1313.5,
+              1330.0
+            ],
+            "x_at_reference_roi": 248.0,
+            "x_at_reference_global": 1141.0
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0
+            ],
+            "x_by_band_global": [
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0
+            ],
+            "y_by_band_global": [
+              1147.0,
+              1163.5,
+              1180.0,
+              1197.0,
+              1213.5,
+              1230.0,
+              1247.0,
+              1263.5,
+              1280.0,
+              1297.0,
+              1313.5,
+              1330.0
+            ],
+            "x_at_reference_roi": 273.0,
+            "x_at_reference_global": 1166.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              215.0,
+              216.0,
+              216.0,
+              216.0,
+              216.0,
+              216.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              247.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1108.0,
+              1109.0,
+              1109.0,
+              1109.0,
+              1109.0,
+              1109.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1140.0
+            ],
+            "center_x_by_band_roi": [
+              231.5,
+              231.5,
+              231.5,
+              231.5,
+              231.5,
+              231.5,
+              231.5,
+              232.0,
+              232.0,
+              232.0,
+              232.0,
+              231.5
+            ],
+            "center_x_at_reference_roi": 231.5,
+            "width_at_reference_px": 33.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              248.0,
+              247.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0,
+              273.0
+            ],
+            "left_boundary_x_by_band_global": [
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1141.0,
+              1140.0
+            ],
+            "right_boundary_x_by_band_global": [
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0,
+              1166.0
+            ],
+            "center_x_by_band_roi": [
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.5,
+              260.0
+            ],
+            "center_x_at_reference_roi": 260.5,
+            "width_at_reference_px": 25.0
+          }
+        ],
+        "reference_relation": "on_separator",
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "right": "B_C07_C08"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08"
+        ]
+      }
+    },
+    {
+      "point_id": "275_1507",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "538cd7c2589132f80b387b27a023fc58680d513bf5db920467c598f4c3f25440",
+      "reference_global": {
+        "x": 275,
+        "y": 1507
+      },
+      "roi_bounds_global": {
+        "x0": 25,
+        "y0": 1407,
+        "x1": 525,
+        "y1": 1607
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 248.0,
+          "distance_to_click_px": 27.0,
+          "track_id": 2
+        },
+        "right": {
+          "center_x_global": 342.5,
+          "distance_to_click_px": 67.5,
+          "track_id": 4
+        },
+        "stripe_spacing_px": 94.5
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 248.0,
+          "right_basin_center_x_global": 330.5,
+          "left_distance_to_reference_px": 27.0,
+          "right_distance_to_reference_px": 55.5,
+          "basin_center_spacing_px": 82.5,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "clicked": "B_C07_C08",
+            "right": "B_C08_C09"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08",
+            "B_C08_C09"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C06",
+            "left_clicked_boundary": "C07",
+            "right_clicked_boundary": "C08",
+            "right_adjacent": "C09"
+          },
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08",
+            "C09"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 26.95532275939961,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": true,
+            "reason": "unresolved_bidirectional_2x_or_3x_conflict"
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 248.0,
+          "right_basin_center_x_global": 330.5,
+          "left_distance_to_reference_px": 27.0,
+          "right_distance_to_reference_px": 55.5,
+          "basin_center_spacing_px": 82.5,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "clicked": "B_C07_C08",
+            "right": "B_C08_C09"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08",
+            "B_C08_C09"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C06",
+            "left_clicked_boundary": "C07",
+            "right_clicked_boundary": "C08",
+            "right_adjacent": "C09"
+          },
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08",
+            "C09"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 26.95532275939961,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": true,
+            "reason": "unresolved_bidirectional_2x_or_3x_conflict"
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 275,
+          "y": 1507
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 248.0,
+          "x_roi": 223.0
+        },
+        "right_center": {
+          "x_global": 330.5,
+          "x_roi": 305.5
+        },
+        "left_distance_px": 27.0,
+        "right_distance_px": 55.5,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              211.0
+            ],
+            "x_by_band_global": [
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              236.0
+            ],
+            "y_by_band_global": [
+              1415.0,
+              1431.5,
+              1448.0,
+              1465.0,
+              1481.5,
+              1498.0,
+              1515.0,
+              1531.5,
+              1548.0,
+              1565.0,
+              1581.5,
+              1598.0
+            ],
+            "x_at_reference_roi": 210.0,
+            "x_at_reference_global": 235.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0
+            ],
+            "x_by_band_global": [
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0
+            ],
+            "y_by_band_global": [
+              1415.0,
+              1431.5,
+              1448.0,
+              1465.0,
+              1481.5,
+              1498.0,
+              1515.0,
+              1531.5,
+              1548.0,
+              1565.0,
+              1581.5,
+              1598.0
+            ],
+            "x_at_reference_roi": 236.0,
+            "x_at_reference_global": 261.0
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              290.0,
+              290.0,
+              290.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              292.0
+            ],
+            "x_by_band_global": [
+              315.0,
+              315.0,
+              315.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              317.0
+            ],
+            "y_by_band_global": [
+              1415.0,
+              1431.5,
+              1448.0,
+              1465.0,
+              1481.5,
+              1498.0,
+              1515.0,
+              1531.5,
+              1548.0,
+              1565.0,
+              1581.5,
+              1598.0
+            ],
+            "x_at_reference_roi": 291.0,
+            "x_at_reference_global": 316.0
+          },
+          {
+            "separator_id": "C09",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              321.0,
+              321.0,
+              321.0,
+              321.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0
+            ],
+            "x_by_band_global": [
+              346.0,
+              346.0,
+              346.0,
+              346.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0
+            ],
+            "y_by_band_global": [
+              1415.0,
+              1431.5,
+              1448.0,
+              1465.0,
+              1481.5,
+              1498.0,
+              1515.0,
+              1531.5,
+              1548.0,
+              1565.0,
+              1581.5,
+              1598.0
+            ],
+            "x_at_reference_roi": 320.0,
+            "x_at_reference_global": 345.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              210.0,
+              211.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0
+            ],
+            "left_boundary_x_by_band_global": [
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              235.0,
+              236.0
+            ],
+            "right_boundary_x_by_band_global": [
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0
+            ],
+            "center_x_by_band_roi": [
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.0,
+              223.5
+            ],
+            "center_x_at_reference_roi": 223.0,
+            "width_at_reference_px": 26.0
+          },
+          {
+            "role": "clicked",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              290.0,
+              290.0,
+              290.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              292.0
+            ],
+            "left_boundary_x_by_band_global": [
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0,
+              261.0
+            ],
+            "right_boundary_x_by_band_global": [
+              315.0,
+              315.0,
+              315.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              317.0
+            ],
+            "center_x_by_band_roi": [
+              263.0,
+              263.0,
+              263.0,
+              263.5,
+              263.5,
+              263.5,
+              263.5,
+              263.5,
+              263.5,
+              263.5,
+              263.5,
+              264.0
+            ],
+            "center_x_at_reference_roi": 263.5,
+            "width_at_reference_px": 55.0
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C08_C09",
+            "left_separator_id": "C08",
+            "right_separator_id": "C09",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              290.0,
+              290.0,
+              290.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              291.0,
+              292.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              321.0,
+              321.0,
+              321.0,
+              321.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0,
+              320.0
+            ],
+            "left_boundary_x_by_band_global": [
+              315.0,
+              315.0,
+              315.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              316.0,
+              317.0
+            ],
+            "right_boundary_x_by_band_global": [
+              346.0,
+              346.0,
+              346.0,
+              346.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0,
+              345.0
+            ],
+            "center_x_by_band_roi": [
+              305.5,
+              305.5,
+              305.5,
+              306.0,
+              305.5,
+              305.5,
+              305.5,
+              305.5,
+              305.5,
+              305.5,
+              305.5,
+              306.0
+            ],
+            "center_x_at_reference_roi": 305.5,
+            "width_at_reference_px": 29.0
+          }
+        ],
+        "reference_relation": "inside_basin",
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ]
+      }
+    },
+    {
+      "point_id": "546_721",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "159a672ad4db43c32712ddb1886b986a31625c596b914a874ada725007c40752",
+      "roi_sha256": "203d5cbdee88b437f0dfc9b703228e714e8b2cca1e55632101e65e17fdc5619a",
+      "reference_global": {
+        "x": 546,
+        "y": 721
+      },
+      "roi_bounds_global": {
+        "x0": 296,
+        "y0": 621,
+        "x1": 796,
+        "y1": 821
+      },
+      "old_production": {
+        "success": true,
+        "failure_reasons": [],
+        "algorithm_revision": "adjacency_gate_v1_clicked_hypothesis_v1_width_aware_v1",
+        "left": {
+          "center_x_global": 493.0,
+          "distance_to_click_px": 53.0,
+          "track_id": 2
+        },
+        "right": {
+          "center_x_global": 586.5,
+          "distance_to_click_px": 40.5,
+          "track_id": 5
+        },
+        "stripe_spacing_px": 93.5
+      },
+      "old_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 513.7647058823529,
+          "right_basin_center_x_global": 585.2352941176471,
+          "left_distance_to_reference_px": 32.23529411764707,
+          "right_distance_to_reference_px": 39.23529411764707,
+          "basin_center_spacing_px": 71.47058823529414,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "clicked": "B_C07_C08",
+            "right": "B_C08_C09"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08",
+            "B_C08_C09"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C06",
+            "left_clicked_boundary": "C07",
+            "right_clicked_boundary": "C08",
+            "right_adjacent": "C09"
+          },
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08",
+            "C09"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.7431551398019,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "replay_shadow": {
+        "success": true,
+        "status": "available",
+        "unavailable_reason": null,
+        "algorithm_revision": "basin_graph_raw_pitch_joint_stage3_v1_1",
+        "configuration_checksum": "9405facd135556db9dcc857436a478b5b418751722a8c730d017d0d30899c466",
+        "geometry": {
+          "reference_relation": "inside_basin",
+          "left_basin_center_x_global": 513.7647058823529,
+          "right_basin_center_x_global": 585.2352941176471,
+          "left_distance_to_reference_px": 32.23529411764707,
+          "right_distance_to_reference_px": 39.23529411764707,
+          "basin_center_spacing_px": 71.47058823529414,
+          "basin_ids": {
+            "left": "B_C06_C07",
+            "clicked": "B_C07_C08",
+            "right": "B_C08_C09"
+          },
+          "basin_sequence": [
+            "B_C06_C07",
+            "B_C07_C08",
+            "B_C08_C09"
+          ],
+          "separator_ids": {
+            "left_adjacent": "C06",
+            "left_clicked_boundary": "C07",
+            "right_clicked_boundary": "C08",
+            "right_adjacent": "C09"
+          },
+          "separator_sequence": [
+            "C06",
+            "C07",
+            "C08",
+            "C09"
+          ],
+          "clicked_separator_id": null,
+          "shared_boundary": null,
+          "atomic": true
+        },
+        "pitch_provenance": {
+          "algorithm_revision": "raw_local_pitch_stage1_v3",
+          "configuration_checksum": "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49",
+          "confidence": "unavailable",
+          "success_eligible": false,
+          "diagnostic_pitch_px": 36.7431551398019,
+          "usable_pitch_px": null,
+          "harmonic_ambiguity": {
+            "detected": false,
+            "reason": null
+          },
+          "joint_decision": "unavailable_no_effect",
+          "geometry_spacing_ratios": []
+        },
+        "rejection_evidence": {
+          "reference_relation_status": "unique",
+          "reference_relation": "inside_basin",
+          "reference_relation_reason": null,
+          "inherited_safety_conflicts": [],
+          "path_order_conflicts": []
+        }
+      },
+      "geometry_detail": {
+        "reference_global": {
+          "x": 546,
+          "y": 721
+        },
+        "reference_roi": {
+          "x": 250,
+          "y": 100
+        },
+        "left_center": {
+          "x_global": 513.7647058823529,
+          "x_roi": 217.76470588235293
+        },
+        "right_center": {
+          "x_global": 585.2352941176471,
+          "x_roi": 289.2352941176471
+        },
+        "left_distance_px": 32.23529411764707,
+        "right_distance_px": 39.23529411764707,
+        "band_centers_y_roi": [
+          8.0,
+          24.5,
+          41.0,
+          58.0,
+          74.5,
+          91.0,
+          108.0,
+          124.5,
+          141.0,
+          158.0,
+          174.5,
+          191.0
+        ],
+        "used_separator_paths": [
+          {
+            "separator_id": "C06",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              198.0,
+              198.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              200.0
+            ],
+            "x_by_band_global": [
+              494.0,
+              494.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              496.0
+            ],
+            "y_by_band_global": [
+              629.0,
+              645.5,
+              662.0,
+              679.0,
+              695.5,
+              712.0,
+              729.0,
+              745.5,
+              762.0,
+              779.0,
+              795.5,
+              812.0
+            ],
+            "x_at_reference_roi": 199.0,
+            "x_at_reference_global": 495.0
+          },
+          {
+            "separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              237.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0
+            ],
+            "x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "y_by_band_global": [
+              629.0,
+              645.5,
+              662.0,
+              679.0,
+              695.5,
+              712.0,
+              729.0,
+              745.5,
+              762.0,
+              779.0,
+              795.5,
+              812.0
+            ],
+            "x_at_reference_roi": 236.52941176470588,
+            "x_at_reference_global": 532.5294117647059
+          },
+          {
+            "separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "x_by_band_global": [
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0
+            ],
+            "y_by_band_global": [
+              629.0,
+              645.5,
+              662.0,
+              679.0,
+              695.5,
+              712.0,
+              729.0,
+              745.5,
+              762.0,
+              779.0,
+              795.5,
+              812.0
+            ],
+            "x_at_reference_roi": 267.47058823529414,
+            "x_at_reference_global": 563.4705882352941
+          },
+          {
+            "separator_id": "C09",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "x_by_band_roi": [
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              312.0,
+              312.0,
+              311.0,
+              312.0,
+              312.0
+            ],
+            "x_by_band_global": [
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              608.0,
+              608.0,
+              607.0,
+              608.0,
+              608.0
+            ],
+            "y_by_band_global": [
+              629.0,
+              645.5,
+              662.0,
+              679.0,
+              695.5,
+              712.0,
+              729.0,
+              745.5,
+              762.0,
+              779.0,
+              795.5,
+              812.0
+            ],
+            "x_at_reference_roi": 311.0,
+            "x_at_reference_global": 607.0
+          }
+        ],
+        "basins": [
+          {
+            "role": "left",
+            "basin_id": "B_C06_C07",
+            "left_separator_id": "C06",
+            "right_separator_id": "C07",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              198.0,
+              198.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              199.0,
+              200.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              237.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0
+            ],
+            "left_boundary_x_by_band_global": [
+              494.0,
+              494.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              495.0,
+              496.0
+            ],
+            "right_boundary_x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "center_x_by_band_roi": [
+              217.0,
+              217.0,
+              217.5,
+              217.5,
+              217.5,
+              217.5,
+              218.0,
+              217.5,
+              217.5,
+              217.5,
+              217.5,
+              218.0
+            ],
+            "center_x_at_reference_roi": 217.76470588235293,
+            "width_at_reference_px": 37.529411764705884
+          },
+          {
+            "role": "clicked",
+            "basin_id": "B_C07_C08",
+            "left_separator_id": "C07",
+            "right_separator_id": "C08",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              237.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0,
+              236.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "left_boundary_x_by_band_global": [
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              533.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0,
+              532.0
+            ],
+            "right_boundary_x_by_band_global": [
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0
+            ],
+            "center_x_by_band_roi": [
+              252.0,
+              252.0,
+              252.0,
+              252.0,
+              252.0,
+              252.0,
+              252.0,
+              251.5,
+              251.5,
+              251.5,
+              251.5,
+              251.5
+            ],
+            "center_x_at_reference_roi": 252.0,
+            "width_at_reference_px": 30.94117647058826
+          },
+          {
+            "role": "right",
+            "basin_id": "B_C08_C09",
+            "left_separator_id": "C08",
+            "right_separator_id": "C09",
+            "band_centers_y_roi": [
+              8.0,
+              24.5,
+              41.0,
+              58.0,
+              74.5,
+              91.0,
+              108.0,
+              124.5,
+              141.0,
+              158.0,
+              174.5,
+              191.0
+            ],
+            "left_boundary_x_by_band_roi": [
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              268.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0,
+              267.0
+            ],
+            "right_boundary_x_by_band_roi": [
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              311.0,
+              312.0,
+              312.0,
+              311.0,
+              312.0,
+              312.0
+            ],
+            "left_boundary_x_by_band_global": [
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              564.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0,
+              563.0
+            ],
+            "right_boundary_x_by_band_global": [
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              607.0,
+              608.0,
+              608.0,
+              607.0,
+              608.0,
+              608.0
+            ],
+            "center_x_by_band_roi": [
+              289.5,
+              289.5,
+              289.5,
+              289.5,
+              289.5,
+              289.5,
+              289.0,
+              289.5,
+              289.5,
+              289.0,
+              289.5,
+              289.5
+            ],
+            "center_x_at_reference_roi": 289.2352941176471,
+            "width_at_reference_px": 43.529411764705856
+          }
+        ],
+        "reference_relation": "inside_basin",
+        "separator_sequence": [
+          "C06",
+          "C07",
+          "C08",
+          "C09"
+        ],
+        "basin_ids": {
+          "left": "B_C06_C07",
+          "clicked": "B_C07_C08",
+          "right": "B_C08_C09"
+        },
+        "basin_sequence": [
+          "B_C06_C07",
+          "B_C07_C08",
+          "B_C08_C09"
+        ]
+      }
+    }
+  ]
+}
