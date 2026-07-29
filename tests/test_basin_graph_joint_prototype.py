@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 import tempfile
 import unittest
@@ -25,6 +26,21 @@ def synthetic_stripes(
 
 
 class BasinGraphJointPrototypeTests(unittest.TestCase):
+    @staticmethod
+    def run_development_sample(sample_id: str) -> dict:
+        annotation = separator.load_development_document()[
+            "annotations"
+        ][sample_id]
+        image = separator.load_grayscale_image(
+            separator.IMAGES_DIR / annotation["image_name"]
+        )
+        return joint.run_joint_case(
+            image,
+            annotation["reference_global"],
+            annotation["roi_bounds_global"],
+            annotation["direction"],
+        )
+
     def test_frozen_dependency_checksums(self):
         checks = joint.verify_frozen_dependencies()
         self.assertEqual(
@@ -203,6 +219,177 @@ class BasinGraphJointPrototypeTests(unittest.TestCase):
         self.assertFalse(evidence["rejects_geometry"])
         self.assertIsNone(evidence["usable_pitch_px"])
 
+    def test_unique_reference_separator_is_shared_atomic_boundary(self):
+        for sample_id in ("D007", "D008"):
+            with self.subTest(sample_id=sample_id):
+                result = self.run_development_sample(sample_id)
+                self.assertTrue(result["success"])
+                hypothesis = result["final_hypothesis"]
+                self.assertEqual(
+                    "on_separator",
+                    hypothesis["reference_relation"],
+                )
+                self.assertTrue(hypothesis["atomic"])
+                self.assertEqual(
+                    hypothesis["clicked_separator_id"],
+                    hypothesis["shared_boundary"]["separator_id"],
+                )
+                self.assertEqual(
+                    hypothesis["basin_ids"]["left"],
+                    hypothesis["shared_boundary"]["left_basin_id"],
+                )
+                self.assertEqual(
+                    hypothesis["basin_ids"]["right"],
+                    hypothesis["shared_boundary"]["right_basin_id"],
+                )
+                self.assertEqual(3, len(hypothesis["separator_sequence"]))
+                self.assertEqual(2, len(hypothesis["basin_sequence"]))
+                geometry = hypothesis["geometry"]
+                self.assertLess(
+                    geometry["basins"]["left"][
+                        "center_x_at_reference_roi"
+                    ],
+                    geometry["reference_separator_x_roi"],
+                )
+                self.assertGreater(
+                    geometry["basins"]["right"][
+                        "center_x_at_reference_roi"
+                    ],
+                    geometry["reference_separator_x_roi"],
+                )
+                self.assertGreater(
+                    geometry[
+                        "reference_to_left_basin_center_distance_px"
+                    ],
+                    0,
+                )
+                self.assertGreater(
+                    geometry[
+                        "reference_to_right_basin_center_distance_px"
+                    ],
+                    0,
+                )
+                self.assertGreater(
+                    geometry[
+                        "shared_boundary_to_left_basin_center_distance_px"
+                    ],
+                    0,
+                )
+                self.assertGreater(
+                    geometry[
+                        "shared_boundary_to_right_basin_center_distance_px"
+                    ],
+                    0,
+                )
+
+    def test_reference_separator_does_not_bypass_basin_conflicts(self):
+        expected_reasons = {
+            "D012": "separator_adjacent_dark_basins_not_verified",
+            "D014": "reference_separator_basin_safety_conflict",
+            "D019": "reference_separator_basin_safety_conflict",
+        }
+        for sample_id, expected_reason in expected_reasons.items():
+            with self.subTest(sample_id=sample_id):
+                result = self.run_development_sample(sample_id)
+                self.assertFalse(result["success"])
+                self.assertIsNone(result["final_hypothesis"])
+                self.assertEqual(
+                    expected_reason,
+                    result["unavailable_reason"],
+                )
+
+    def test_distinct_verified_reference_interpretation_is_ambiguous(self):
+        result = self.run_development_sample("D007")
+        separator_result = copy.deepcopy(
+            result["debug"]["separator_result"]
+        )
+        separator_result["arbitration_debug"][
+            "competing_explanations"
+        ].append(
+            {
+                "type": "clicked_basin_roles",
+                "hypothesis_id": "H99",
+                "verified": True,
+                "selection_candidate_ids": {
+                    "left_clicked_boundary": "C01",
+                    "right_clicked_boundary": "C02",
+                },
+            }
+        )
+        relation = joint._separator_adjacency_relation(
+            separator_result,
+            result["debug"]["basin_graph"],
+        )
+        self.assertEqual("unavailable", relation["status"])
+        self.assertEqual(
+            "multiple_reasonable_reference_hypotheses",
+            relation["unavailable_reason"],
+        )
+
+    def test_multiple_reference_separator_matches_are_unavailable(self):
+        result = self.run_development_sample("D007")
+        separator_result = copy.deepcopy(
+            result["debug"]["separator_result"]
+        )
+        separator_result["arbitration_debug"][
+            "competing_explanations"
+        ].append(
+            {
+                "type": "reference_on_separator",
+                "candidate_id": "C05",
+                "distance_px": 2.0,
+            }
+        )
+        relation = joint._separator_adjacency_relation(
+            separator_result,
+            result["debug"]["basin_graph"],
+        )
+        self.assertEqual("unavailable", relation["status"])
+        self.assertEqual(
+            "reference_relationship_not_unique",
+            relation["unavailable_reason"],
+        )
+
+    def test_high_pitch_can_reject_reference_separator_geometry(self):
+        annotation = separator.load_development_document()[
+            "annotations"
+        ]["D017"]
+        image = separator.load_grayscale_image(
+            separator.IMAGES_DIR / annotation["image_name"]
+        )
+        original = joint.raw_pitch.estimate_raw_local_pitch_v3
+
+        def conflicting_pitch(*args, **kwargs):
+            result = original(*args, **kwargs)
+            return {
+                **result,
+                "confidence": "high",
+                "success_eligible": True,
+                "usable_pitch_px": 10.0,
+                "diagnostic_pitch_px": 10.0,
+                "harmonic_ambiguity": {
+                    "detected": False,
+                    "reason": None,
+                },
+                "unavailable_reason": None,
+            }
+
+        joint.raw_pitch.estimate_raw_local_pitch_v3 = conflicting_pitch
+        try:
+            result = joint.run_joint_case(
+                image,
+                annotation["reference_global"],
+                annotation["roi_bounds_global"],
+                annotation["direction"],
+            )
+        finally:
+            joint.raw_pitch.estimate_raw_local_pitch_v3 = original
+        self.assertFalse(result["success"])
+        self.assertEqual(
+            "high_pitch_geometry_conflict",
+            result["unavailable_reason"],
+        )
+
     def test_development_safety_contract(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             report = joint.evaluate_development(
@@ -224,6 +411,22 @@ class BasinGraphJointPrototypeTests(unittest.TestCase):
         )
         self.assertTrue(
             metrics["separator_candidate_generation_unchanged"]
+        )
+        self.assertEqual(17, metrics["correct_success"])
+        self.assertEqual(9, metrics["safe_failure"])
+        self.assertEqual(
+            ["D007", "D008", "D017", "D022"],
+            metrics["reference_on_separator_correct_success"],
+        )
+        self.assertTrue(metrics["stage3_inside_geometry_unchanged"])
+        self.assertEqual(
+            ["D007", "D008", "D014", "D017", "D019", "D022"],
+            [
+                item["sample_id"]
+                for item in metrics[
+                    "stage3_to_stage3_1_changed_samples"
+                ]
+            ],
         )
 
     def test_source_has_no_tracks_or_production_detector(self):

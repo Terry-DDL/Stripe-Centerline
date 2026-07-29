@@ -30,7 +30,7 @@ from tools import raw_local_pitch_prototype_v3 as raw_pitch
 from tools import separator_path_prototype as separator
 
 
-ALGORITHM_REVISION = "basin_graph_raw_pitch_joint_stage3_v1"
+ALGORITHM_REVISION = "basin_graph_raw_pitch_joint_stage3_v1_1"
 FROZEN_SEPARATOR_COMMIT = (
     "136245853757fd7ade58537ee523fbf407042654"
 )
@@ -43,7 +43,10 @@ FROZEN_RAW_PITCH_COMMIT = (
 FROZEN_RAW_PITCH_CONFIGURATION_CHECKSUM = (
     "d1df32d7130d89f0d3e2c6611ad2a1bac11d97ea0252e2de297b63c916e40b49"
 )
-OUTPUT_DIR = PROJECT_ROOT / "outputs" / "basin_graph_joint_stage3_v1"
+FROZEN_STAGE3_INSIDE_GEOMETRY_CHECKSUM = (
+    "7e970a26969ca8d852c8655b021e7ac12283a536f443be1b2eb4186fc32070fd"
+)
+OUTPUT_DIR = PROJECT_ROOT / "outputs" / "basin_graph_joint_stage3_v1_1"
 
 
 @dataclass(frozen=True)
@@ -338,9 +341,13 @@ def _separator_adjacency_relation(
     graph: dict,
 ) -> dict:
     arbitration = separator_result["arbitration_debug"]
+    competing_explanations = arbitration.get(
+        "competing_explanations",
+        [],
+    )
     separator_relations = [
         item
-        for item in arbitration.get("competing_explanations", [])
+        for item in competing_explanations
         if item.get("type") == "reference_on_separator"
     ]
     if len(separator_relations) != 1:
@@ -355,6 +362,32 @@ def _separator_adjacency_relation(
     reference_separator_id = separator_relations[0][
         "candidate_id"
     ]
+    other_verified_explanations = [
+        item
+        for item in competing_explanations
+        if (
+            item.get("type") != "reference_on_separator"
+            and item.get("verified")
+            and reference_separator_id
+            not in {
+                item.get("selection_candidate_ids", {}).get(
+                    "left_clicked_boundary"
+                ),
+                item.get("selection_candidate_ids", {}).get(
+                    "right_clicked_boundary"
+                ),
+            }
+        )
+    ]
+    if other_verified_explanations:
+        return {
+            "status": "unavailable",
+            "relation": "on_separator",
+            "hypotheses": other_verified_explanations,
+            "unavailable_reason": (
+                "multiple_reasonable_reference_hypotheses"
+            ),
+        }
     ordered_ids = graph["ordered_separator_ids"]
     index = ordered_ids.index(reference_separator_id)
     if index == 0 or index + 1 >= len(ordered_ids):
@@ -378,9 +411,25 @@ def _separator_adjacency_relation(
                 "separator_adjacent_dark_basins_not_verified"
             ),
         }
+    inherited_safety_conflicts = sorted(
+        reason
+        for reason in arbitration.get("rejection_reasons", [])
+        if reason != "reference_on_separator"
+    )
+    if inherited_safety_conflicts:
+        return {
+            "status": "unavailable",
+            "relation": "on_separator",
+            "hypotheses": separator_relations,
+            "unavailable_reason": (
+                "reference_separator_basin_safety_conflict"
+            ),
+            "inherited_safety_conflicts": inherited_safety_conflicts,
+        }
     hypothesis = {
         "hypothesis_id": "JH01",
         "reference_relation": "on_separator",
+        "clicked_separator_id": reference_separator_id,
         "reference_separator_id": reference_separator_id,
         "separator_sequence": [
             left_id,
@@ -395,6 +444,11 @@ def _separator_adjacency_relation(
             lookup[left_pair]["basin_id"],
             lookup[right_pair]["basin_id"],
         ],
+        "shared_boundary": {
+            "separator_id": reference_separator_id,
+            "left_basin_id": lookup[left_pair]["basin_id"],
+            "right_basin_id": lookup[right_pair]["basin_id"],
+        },
         "strictly_continuous": True,
     }
     return {
@@ -429,6 +483,7 @@ def _basin_geometry(
     hypothesis: dict,
     graph: dict,
     reference_x_roi: float,
+    roi_x0_global: int,
 ) -> dict:
     basin_by_id = {
         basin["basin_id"]: basin
@@ -445,11 +500,35 @@ def _basin_geometry(
         separator_x = graph["separator_x_at_reference_roi"][
             reference_separator_id
         ]
+        left_center_x = basins["left"][
+            "center_x_at_reference_roi"
+        ]
+        right_center_x = basins["right"][
+            "center_x_at_reference_roi"
+        ]
         return {
             "reference_relation": "on_separator",
             "reference_separator_x_roi": separator_x,
+            "reference_separator_x_global": (
+                roi_x0_global + separator_x
+            ),
             "reference_separator_distance_px": abs(
                 separator_x - reference_x_roi
+            ),
+            "reference_to_left_basin_center_distance_px": (
+                reference_x_roi - left_center_x
+            ),
+            "reference_to_right_basin_center_distance_px": (
+                right_center_x - reference_x_roi
+            ),
+            "shared_boundary_to_left_basin_center_distance_px": (
+                separator_x - left_center_x
+            ),
+            "shared_boundary_to_right_basin_center_distance_px": (
+                right_center_x - separator_x
+            ),
+            "basin_center_spacing_px": (
+                right_center_x - left_center_x
             ),
             "basins": {
                 role: {
@@ -457,6 +536,10 @@ def _basin_geometry(
                     "center_x_at_reference_roi": basin[
                         "center_x_at_reference_roi"
                     ],
+                    "center_x_at_reference_global": (
+                        roi_x0_global
+                        + basin["center_x_at_reference_roi"]
+                    ),
                     "width_at_reference_px": basin[
                         "width_at_reference_px"
                     ],
@@ -546,14 +629,13 @@ def _pitch_evidence_for_geometry(
         if pitch_result["confidence"] == "unavailable":
             evidence["joint_decision"] = "unavailable_no_effect"
         return evidence
-    if geometry["reference_relation"] != "inside_basin":
-        evidence["joint_decision"] = "high_diagnostic_for_separator_relation"
-        return evidence
-
     pitch_px = float(pitch_result["usable_pitch_px"])
+    if geometry["reference_relation"] == "inside_basin":
+        geometry_spacings = geometry["separator_spacing_px"]
+    else:
+        geometry_spacings = [geometry["basin_center_spacing_px"]]
     ratios = [
-        float(spacing / pitch_px)
-        for spacing in geometry["separator_spacing_px"]
+        float(spacing / pitch_px) for spacing in geometry_spacings
     ]
     evidence["geometry_spacing_ratios"] = ratios
     conflict = any(
@@ -641,6 +723,7 @@ def run_joint_case(
         relation_hypothesis,
         graph,
         separator_result["reference_x_roi"],
+        roi_bounds_global["x0"],
     )
     pitch_evidence = _pitch_evidence_for_geometry(
         pitch_result,
@@ -669,19 +752,6 @@ def run_joint_case(
     }
     debug["joint_hypotheses"] = [atomic_hypothesis]
 
-    if relation_hypothesis["reference_relation"] == "on_separator":
-        return {
-            "algorithm_revision": ALGORITHM_REVISION,
-            "configuration_checksum": configuration_checksum(config),
-            "dependency_checks": dependency_checks,
-            "status": "unavailable",
-            "success": False,
-            "unavailable_reason": (
-                "reference_on_separator_requires_side_choice"
-            ),
-            "final_hypothesis": None,
-            "debug": debug,
-        }
     if pitch_evidence["rejects_geometry"]:
         return {
             "algorithm_revision": ALGORITHM_REVISION,
@@ -702,6 +772,108 @@ def run_joint_case(
         "unavailable_reason": None,
         "final_hypothesis": atomic_hypothesis,
         "debug": debug,
+    }
+
+
+def _evaluate_reference_separator_hypothesis(
+    separator_evaluation: dict,
+    result: dict,
+) -> dict:
+    """Compare a formal shared-boundary result with development GT.
+
+    The comparison happens only after inference.  It recognizes a reference
+    separator at either annotated clicked boundary, or a stable separator
+    between the two annotated clicked boundaries.
+    """
+
+    hypothesis = result["final_hypothesis"]
+    if (
+        not result["success"]
+        or hypothesis is None
+        or hypothesis["reference_relation"] != "on_separator"
+    ):
+        return {
+            "status": "not_applicable",
+            "correct": False,
+            "matched_semantics": None,
+            "predicted_separator_sequence": [],
+            "expected_separator_sequences": [],
+        }
+    if (
+        separator_evaluation["gt_all_ambiguous"]
+        or separator_evaluation["gt_unavailable"]
+    ):
+        return {
+            "status": "unsafe_gt_label",
+            "correct": False,
+            "matched_semantics": None,
+            "predicted_separator_sequence": hypothesis[
+                "separator_sequence"
+            ],
+            "expected_separator_sequences": [],
+        }
+
+    role_candidate_ids = {
+        role: role_result["best_candidate_id"]
+        for role, role_result in separator_evaluation["per_role"].items()
+        if (
+            role_result["numeric_gt"]
+            and role_result["candidate_recalled"]
+        )
+    }
+    required_roles = set(separator.ROLE_ORDER)
+    if set(role_candidate_ids) != required_roles:
+        return {
+            "status": "numeric_gt_paths_not_all_recalled",
+            "correct": False,
+            "matched_semantics": None,
+            "predicted_separator_sequence": hypothesis[
+                "separator_sequence"
+            ],
+            "expected_separator_sequences": [],
+        }
+
+    predicted = hypothesis["separator_sequence"]
+    left_boundary_sequence = [
+        role_candidate_ids["left_adjacent"],
+        role_candidate_ids["left_clicked_boundary"],
+        role_candidate_ids["right_clicked_boundary"],
+    ]
+    right_boundary_sequence = [
+        role_candidate_ids["left_clicked_boundary"],
+        role_candidate_ids["right_clicked_boundary"],
+        role_candidate_ids["right_adjacent"],
+    ]
+    expected_sequences = [
+        left_boundary_sequence,
+        right_boundary_sequence,
+    ]
+    if predicted == left_boundary_sequence:
+        matched_semantics = "reference_is_left_clicked_boundary"
+    elif predicted == right_boundary_sequence:
+        matched_semantics = "reference_is_right_clicked_boundary"
+    else:
+        clicked_id = hypothesis["clicked_separator_id"]
+        annotated_ids = set(role_candidate_ids.values())
+        internal_separator = bool(
+            predicted[0]
+            == role_candidate_ids["left_clicked_boundary"]
+            and predicted[2]
+            == role_candidate_ids["right_clicked_boundary"]
+            and clicked_id == predicted[1]
+            and clicked_id not in annotated_ids
+        )
+        matched_semantics = (
+            "reference_separator_inside_annotated_clicked_basin"
+            if internal_separator
+            else None
+        )
+    return {
+        "status": "matched" if matched_semantics else "mismatch",
+        "correct": matched_semantics is not None,
+        "matched_semantics": matched_semantics,
+        "predicted_separator_sequence": predicted,
+        "expected_separator_sequences": expected_sequences,
     }
 
 
@@ -731,20 +903,67 @@ def _evaluate_one(
         numeric_roles
         and all(role["selected_recalled"] for role in numeric_roles)
     )
-    unsafe_label = bool(
+    unsafe_gt_label = bool(
         separator_evaluation["gt_all_ambiguous"]
         or separator_evaluation["gt_unavailable"]
-        or separator_evaluation["gt_reference_ambiguity"][
+    )
+    candidate_recall_scorable = bool(
+        numeric_roles
+        and not unsafe_gt_label
+        and not separator_evaluation["gt_reference_ambiguity"][
             "is_ambiguity_case"
         ]
     )
-    scorable = bool(numeric_roles and not unsafe_label)
-    if result["success"] and all_roles_correct and not unsafe_label:
+    reference_separator_assessment = (
+        _evaluate_reference_separator_hypothesis(
+            separator_evaluation,
+            result,
+        )
+    )
+    relation = result["debug"]["reference_relation"]["relation"]
+    inside_basin_correct = bool(
+        relation == "inside_basin"
+        and all_roles_correct
+        and not unsafe_gt_label
+        and not separator_evaluation["gt_reference_ambiguity"][
+            "is_ambiguity_case"
+        ]
+    )
+    on_separator_correct = bool(
+        relation == "on_separator"
+        and reference_separator_assessment["correct"]
+        and not unsafe_gt_label
+    )
+    formal_result_correct = (
+        inside_basin_correct or on_separator_correct
+    )
+    if result["success"] and formal_result_correct:
         classification = "correct_success"
     elif result["success"]:
         classification = "wrong_success"
     else:
         classification = "safe_failure"
+    stage3_reference_gate_case = bool(
+        relation == "on_separator"
+        and (
+            result["success"]
+            or result["unavailable_reason"]
+            in {
+                "multiple_reasonable_reference_hypotheses",
+                "reference_separator_basin_safety_conflict",
+            }
+        )
+    )
+    if stage3_reference_gate_case and result["success"]:
+        stage3_transition = (
+            "safe_failure_to_correct_success"
+            if classification == "correct_success"
+            else "safe_failure_to_wrong_success"
+        )
+    elif stage3_reference_gate_case:
+        stage3_transition = "safe_failure_reason_changed"
+    else:
+        stage3_transition = "unchanged"
     return {
         "sample_id": annotation["sample_id"],
         "image_name": annotation["image_name"],
@@ -760,11 +979,34 @@ def _evaluate_one(
         ],
         "candidate_path_recall_count": (
             sum(role["candidate_recalled"] for role in numeric_roles)
-            if scorable
+            if candidate_recall_scorable
             else 0
         ),
-        "numeric_path_count": len(numeric_roles) if scorable else 0,
+        "numeric_path_count": (
+            len(numeric_roles) if candidate_recall_scorable else 0
+        ),
         "all_selected_roles_correct": all_roles_correct,
+        "formal_result_correct": formal_result_correct,
+        "reference_separator_gt_assessment": (
+            reference_separator_assessment
+        ),
+        "stage3_to_stage3_1": {
+            "transition": stage3_transition,
+            "stage3_status": (
+                "unavailable"
+                if stage3_reference_gate_case
+                else result["status"]
+            ),
+            "stage3_unavailable_reason": (
+                "reference_on_separator_requires_side_choice"
+                if stage3_reference_gate_case
+                else result["unavailable_reason"]
+            ),
+            "stage3_1_status": result["status"],
+            "stage3_1_unavailable_reason": result[
+                "unavailable_reason"
+            ],
+        },
         "separator_v1_1_status": separator_evaluation["status"],
         "separator_v1_1_selection": separator_evaluation["selection"],
         "final_hypothesis": result["final_hypothesis"],
@@ -785,6 +1027,22 @@ def _evaluate_one(
         },
         "joint_debug": result["debug"],
     }
+
+
+def _formal_hypothesis_has_order_conflict(sample: dict) -> bool:
+    hypothesis = sample["final_hypothesis"]
+    if not sample["success"] or hypothesis is None:
+        return False
+    sequence = hypothesis["separator_sequence"]
+    selected_pairs = set(zip(sequence, sequence[1:]))
+    conflict_pairs = {
+        (
+            conflict["left_separator_id"],
+            conflict["right_separator_id"],
+        )
+        for conflict in sample["basin_graph"]["path_order_conflicts"]
+    }
+    return bool(selected_pairs & conflict_pairs)
 
 
 def _summarize(samples: list[dict]) -> dict:
@@ -830,6 +1088,25 @@ def _summarize(samples: list[dict]) -> dict:
     full_development = len(samples) == len(
         separator.load_development_document()["annotations"]
     )
+    inside_geometry_payload = [
+        {
+            "sample_id": sample["sample_id"],
+            "geometry": sample["final_hypothesis"]["geometry"],
+        }
+        for sample in samples
+        if (
+            sample["success"]
+            and sample["final_hypothesis"]["reference_relation"]
+            == "inside_basin"
+        )
+    ]
+    inside_geometry_checksum = hashlib.sha256(
+        json.dumps(
+            inside_geometry_payload,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
     return {
         "sample_count": len(samples),
         "correct_success": sum(
@@ -862,6 +1139,13 @@ def _summarize(samples: list[dict]) -> dict:
             if full_development
             else None
         ),
+        "stage3_inside_geometry_checksum": inside_geometry_checksum,
+        "stage3_inside_geometry_unchanged": (
+            inside_geometry_checksum
+            == FROZEN_STAGE3_INSIDE_GEOMETRY_CHECKSUM
+            if full_development
+            else None
+        ),
         "ambiguous_formally_available": [
             sample["sample_id"]
             for sample in samples
@@ -875,17 +1159,28 @@ def _summarize(samples: list[dict]) -> dict:
         "reference_ambiguity_formally_available": [
             sample["sample_id"]
             for sample in samples
-            if sample["gt_reference_ambiguity"]["is_ambiguity_case"]
-            and sample["success"]
+            if (
+                sample["gt_reference_ambiguity"]["is_ambiguity_case"]
+                and sample["success"]
+                and not sample["reference_separator_gt_assessment"][
+                    "correct"
+                ]
+            )
+        ],
+        "reference_on_separator_correct_success": [
+            sample["sample_id"]
+            for sample in samples
+            if (
+                sample["success"]
+                and sample["reference_relation"]["relation"]
+                == "on_separator"
+                and sample["formal_result_correct"]
+            )
         ],
         "crossing_or_order_conflict_formally_available": [
             sample["sample_id"]
             for sample in samples
-            if sample["success"]
-            and (
-                sample["basin_graph"]["path_order_conflicts"]
-                or sample["separator_v1_1_status"] == "unavailable"
-            )
+            if _formal_hypothesis_has_order_conflict(sample)
         ],
         "failure_reason_counts": dict(sorted(failure_counts.items())),
         "pitch_joint_decision_counts": dict(
@@ -899,6 +1194,32 @@ def _summarize(samples: list[dict]) -> dict:
                 and sample["all_selected_roles_correct"]
                 and sample["classification"] == "safe_failure"
             )
+        ],
+        "stage3_to_stage3_1_transition_counts": {
+            transition: sum(
+                sample["stage3_to_stage3_1"]["transition"]
+                == transition
+                for sample in samples
+            )
+            for transition in sorted(
+                {
+                    sample["stage3_to_stage3_1"]["transition"]
+                    for sample in samples
+                }
+            )
+        },
+        "stage3_to_stage3_1_changed_samples": [
+            {
+                "sample_id": sample["sample_id"],
+                **sample["stage3_to_stage3_1"],
+                "classification": sample["classification"],
+                "matched_semantics": sample[
+                    "reference_separator_gt_assessment"
+                ]["matched_semantics"],
+            }
+            for sample in samples
+            if sample["stage3_to_stage3_1"]["transition"]
+            != "unchanged"
         ],
     }
 
@@ -944,6 +1265,14 @@ def _write_csv(path: Path, samples: list[dict]) -> None:
         "diagnostic_pitch_px",
         "usable_pitch_px",
         "pitch_joint_decision",
+        "stage3_to_stage3_1_transition",
+        "left_basin_center_x_roi",
+        "right_basin_center_x_roi",
+        "reference_to_left_basin_center_distance_px",
+        "reference_to_right_basin_center_distance_px",
+        "shared_boundary_to_left_basin_center_distance_px",
+        "shared_boundary_to_right_basin_center_distance_px",
+        "basin_center_spacing_px",
     )
     with temporary.open("w", encoding="utf-8", newline="") as output_file:
         writer = csv.DictWriter(output_file, fieldnames=fields)
@@ -956,6 +1285,15 @@ def _write_csv(path: Path, samples: list[dict]) -> None:
                     [],
                 )
                 hypothesis = hypotheses[0] if hypotheses else None
+            geometry = (
+                hypothesis["geometry"]
+                if hypothesis is not None
+                else None
+            )
+            on_separator_geometry = bool(
+                geometry is not None
+                and geometry["reference_relation"] == "on_separator"
+            )
             writer.writerow(
                 {
                     "sample_id": sample["sample_id"],
@@ -981,6 +1319,56 @@ def _write_csv(path: Path, samples: list[dict]) -> None:
                         hypothesis["pitch_evidence"]["joint_decision"]
                         if hypothesis is not None
                         else "no_joint_hypothesis"
+                    ),
+                    "stage3_to_stage3_1_transition": sample[
+                        "stage3_to_stage3_1"
+                    ]["transition"],
+                    "left_basin_center_x_roi": (
+                        geometry["basins"]["left"][
+                            "center_x_at_reference_roi"
+                        ]
+                        if on_separator_geometry
+                        else None
+                    ),
+                    "right_basin_center_x_roi": (
+                        geometry["basins"]["right"][
+                            "center_x_at_reference_roi"
+                        ]
+                        if on_separator_geometry
+                        else None
+                    ),
+                    "reference_to_left_basin_center_distance_px": (
+                        geometry[
+                            "reference_to_left_basin_center_distance_px"
+                        ]
+                        if on_separator_geometry
+                        else None
+                    ),
+                    "reference_to_right_basin_center_distance_px": (
+                        geometry[
+                            "reference_to_right_basin_center_distance_px"
+                        ]
+                        if on_separator_geometry
+                        else None
+                    ),
+                    "shared_boundary_to_left_basin_center_distance_px": (
+                        geometry[
+                            "shared_boundary_to_left_basin_center_distance_px"
+                        ]
+                        if on_separator_geometry
+                        else None
+                    ),
+                    "shared_boundary_to_right_basin_center_distance_px": (
+                        geometry[
+                            "shared_boundary_to_right_basin_center_distance_px"
+                        ]
+                        if on_separator_geometry
+                        else None
+                    ),
+                    "basin_center_spacing_px": (
+                        geometry["basin_center_spacing_px"]
+                        if on_separator_geometry
+                        else None
                     ),
                 }
             )
