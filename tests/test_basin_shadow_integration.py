@@ -439,6 +439,59 @@ class BasinShadowIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(formal_before, formal.report)
 
+    def test_release_default_skips_legacy_shadow_and_diagnostic_writes(self):
+        application = desktop_app.StripeDesktopApp.__new__(
+            desktop_app.StripeDesktopApp
+        )
+        application.pitch_reference_cache = {}
+        application.pitch_reference_lock = __import__("threading").Lock()
+        application.analysis_queue = __import__("queue").Queue()
+        application.debug_enabled = False
+        image = np.zeros((200, 500), dtype=np.uint8)
+
+        with (
+            patch.object(
+                desktop_app,
+                "get_or_build_pitch_reference",
+            ) as pitch_builder,
+            patch.object(
+                desktop_app,
+                "run_interactive_case",
+            ) as legacy_runner,
+            patch.object(
+                desktop_app,
+                "run_shadow_and_log",
+            ) as shadow_logger,
+            patch.object(
+                desktop_app,
+                "update_timing",
+            ) as timing_writer,
+            patch.object(
+                desktop_app,
+                "run_frozen_stage3",
+                return_value=available_shadow_result(),
+            ),
+            patch.object(desktop_app, "persist_formal_result"),
+        ):
+            application._run_analysis_worker(
+                ("image-id", (270, 100)),
+                image,
+                "synthetic.bmp",
+                270,
+                100,
+                Path("/tmp/stage3-release-default-test"),
+            )
+
+        completion = application.analysis_queue.get_nowait()
+        self.assertIsNone(completion.error)
+        self.assertTrue(
+            completion.result.report["interactive_result"]["success"]
+        )
+        pitch_builder.assert_not_called()
+        legacy_runner.assert_not_called()
+        shadow_logger.assert_not_called()
+        timing_writer.assert_not_called()
+
     def test_desktop_worker_never_falls_back_when_legacy_logging_raises(self):
         application = desktop_app.StripeDesktopApp.__new__(
             desktop_app.StripeDesktopApp
@@ -446,6 +499,7 @@ class BasinShadowIntegrationTests(unittest.TestCase):
         application.pitch_reference_cache = {}
         application.pitch_reference_lock = __import__("threading").Lock()
         application.analysis_queue = __import__("queue").Queue()
+        application.debug_enabled = True
         image = np.zeros((200, 500), dtype=np.uint8)
         legacy = production_result()
         logged = __import__("threading").Event()
@@ -512,6 +566,7 @@ class BasinShadowIntegrationTests(unittest.TestCase):
         application.pitch_reference_cache = {}
         application.pitch_reference_lock = __import__("threading").Lock()
         application.analysis_queue = __import__("queue").Queue()
+        application.debug_enabled = True
         image = np.zeros((200, 500), dtype=np.uint8)
         legacy_attempted = __import__("threading").Event()
 

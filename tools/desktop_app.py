@@ -1,8 +1,10 @@
 """Tkinter desktop UI for interactive single-image stripe analysis."""
 
+import argparse
 from dataclasses import dataclass
 import hashlib
 import math
+import os
 from pathlib import Path
 import queue
 import re
@@ -18,7 +20,11 @@ import numpy as np
 from PIL import Image, ImageTk
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = (
+    Path(sys._MEIPASS)
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+    else Path(__file__).resolve().parent.parent
+)
 SRC_DIR = PROJECT_ROOT / "src"
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SRC_DIR))
@@ -30,6 +36,7 @@ from interactive_pipeline import (  # noqa: E402
 )
 from pitch_reference import build_pitch_reference_map  # noqa: E402
 from tools.basin_shadow_integration import (  # noqa: E402
+    ShadowLogConfig,
     run_shadow_and_log,
 )
 from tools.desktop_performance import (  # noqa: E402
@@ -48,6 +55,8 @@ from tools.stage3_desktop_runtime import (  # noqa: E402
 SUPPORTED_SUFFIXES = {".bmp", ".png", ".jpg", ".jpeg"}
 MINIMUM_RELIABLE_MACOS_TK = (8, 6, 13)
 MOUSE_WHEEL_SCROLL_PIXELS = 54
+DEBUG_ENVIRONMENT_VARIABLE = "STRIPE_CENTERLINE_DEBUG"
+DEBUG_TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
 @dataclass
@@ -92,6 +101,36 @@ class AnalysisCompletion:
     stage3_algorithm_ms: float | None
 
 
+def desktop_debug_enabled(
+    cli_debug: bool = False,
+    environment_value: str | None = None,
+) -> bool:
+    """Enable diagnostic work only through an explicit release switch."""
+
+    if cli_debug:
+        return True
+    if environment_value is None:
+        environment_value = os.environ.get(DEBUG_ENVIRONMENT_VARIABLE, "")
+    return environment_value.strip().lower() in DEBUG_TRUE_VALUES
+
+
+def parse_desktop_arguments(argv=None):
+    """Parse release-only switches without changing detector parameters."""
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="enable legacy comparison and diagnostic disk outputs",
+    )
+    parser.add_argument(
+        "--startup-smoke-test",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    return parser.parse_args(argv)
+
+
 def project_image_paths() -> list[Path]:
     """Return supported project images in stable filename order."""
 
@@ -106,6 +145,28 @@ def project_image_paths() -> list[Path]:
         ),
         key=lambda path: path.name.lower(),
     )
+
+
+def desktop_output_root() -> Path:
+    """Use a writable user-data location inside the packaged application."""
+
+    if getattr(sys, "frozen", False):
+        return (
+            Path.home()
+            / "Library"
+            / "Application Support"
+            / "StripeCenterline"
+            / "outputs"
+        )
+    return INTERACTIVE_CONFIG.output_root_dir
+
+
+def desktop_performance_log_root() -> Path:
+    """Keep optional packaged diagnostics beside packaged formal outputs."""
+
+    if getattr(sys, "frozen", False):
+        return desktop_output_root() / "diagnostics" / "performance"
+    return PERFORMANCE_LOG_ROOT
 
 
 def decode_grayscale_image(image_bytes: bytes):
@@ -207,10 +268,12 @@ def build_output_dir(
     image_name: str,
     image_bytes: bytes,
     click_point: tuple[int, int],
-    output_root: Path = INTERACTIVE_CONFIG.output_root_dir,
+    output_root: Path | None = None,
 ) -> Path:
     """Build the unchanged interactive output directory for one click."""
 
+    if output_root is None:
+        output_root = desktop_output_root()
     click_x, click_y = click_point
     return (
         output_root
@@ -832,8 +895,13 @@ class ScrollableFrame(ttk.Frame):
 class StripeDesktopApp:
     """Desktop controller for image selection, clicking, and result display."""
 
-    def __init__(self, root: tk.Tk):
+    def __init__(
+        self,
+        root: tk.Tk,
+        debug_enabled: bool = False,
+    ):
         self.root = root
+        self.debug_enabled = bool(debug_enabled)
         self.state = DesktopSelectionState()
         self.image_gray = None
         self.image_bytes = b""
@@ -1480,7 +1548,11 @@ class StripeDesktopApp:
                 stage3_algorithm_ms=stage3_ms,
             )
         )
-        if result is not None and stage3_result is not None:
+        if (
+            self.debug_enabled
+            and result is not None
+            and stage3_result is not None
+        ):
             diagnostic_worker = threading.Thread(
                 target=self._run_legacy_diagnostic_worker,
                 args=(
@@ -1554,6 +1626,13 @@ class StripeDesktopApp:
                     image_name,
                     legacy_result,
                     legacy_output_dir,
+                    log_config=ShadowLogConfig(
+                        log_root=(
+                            desktop_output_root()
+                            / "diagnostics"
+                            / "legacy_comparisons"
+                        )
+                    ),
                     shadow_runner=lambda *_args: stage3_result,
                 )
             except Exception as comparison_error:
@@ -1580,8 +1659,8 @@ class StripeDesktopApp:
             measurements,
         )
 
-    @staticmethod
     def _record_performance(
+        self,
         output_dir: Path,
         run_id: str,
         metadata: dict,
@@ -1589,9 +1668,12 @@ class StripeDesktopApp:
     ) -> None:
         """Keep instrumentation failures outside the detection contract."""
 
+        if not getattr(self, "debug_enabled", False):
+            return
+
         try:
             update_timing(
-                PERFORMANCE_LOG_ROOT,
+                desktop_performance_log_root(),
                 output_dir,
                 run_id,
                 metadata,
@@ -1974,9 +2056,11 @@ class StripeDesktopApp:
         table.pack(fill="x")
 
 
-def main() -> None:
+def main(argv=None) -> None:
     """Launch the local desktop application."""
 
+    arguments = parse_desktop_arguments(argv)
+    debug_enabled = desktop_debug_enabled(arguments.debug)
     root = tk.Tk()
     patchlevel = str(root.tk.call("info", "patchlevel"))
     if not reliable_tk_runtime(patchlevel):
@@ -1993,7 +2077,19 @@ def main() -> None:
         )
         root.destroy()
         return
-    StripeDesktopApp(root)
+    application = StripeDesktopApp(
+        root,
+        debug_enabled=debug_enabled,
+    )
+    if arguments.startup_smoke_test:
+        root.update()
+        print(
+            "STARTUP_SMOKE_OK "
+            f"image_loaded={application.image_gray is not None} "
+            f"debug={application.debug_enabled}"
+        )
+        root.destroy()
+        return
     root.mainloop()
 
 

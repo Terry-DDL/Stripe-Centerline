@@ -21,6 +21,7 @@ from tools.desktop_app import (  # noqa: E402
     create_failure_result_overlay,
     create_result_roi_crop,
     create_magnifier_display,
+    desktop_debug_enabled,
     extract_centered_region,
     get_or_build_pitch_reference,
     magnifier_canvas_position,
@@ -33,6 +34,7 @@ from tools.desktop_app import (  # noqa: E402
     signed_16_bit,
     pitch_safety_note,
     pitch_safety_text,
+    parse_desktop_arguments,
     track_table_rows,
     unpack_touchpad_scroll_delta,
     version_numbers,
@@ -41,6 +43,15 @@ from tools.desktop_app import (  # noqa: E402
 
 
 class DesktopAppHelperTests(unittest.TestCase):
+    def test_release_debug_switch_is_off_by_default(self):
+        self.assertFalse(desktop_debug_enabled(False, ""))
+        self.assertFalse(desktop_debug_enabled(False, "0"))
+
+    def test_release_debug_switch_accepts_cli_or_environment(self):
+        self.assertTrue(desktop_debug_enabled(True, ""))
+        self.assertTrue(desktop_debug_enabled(False, "true"))
+        self.assertTrue(parse_desktop_arguments(["--debug"]).debug)
+
     def test_old_macos_tk_is_rejected(self):
         self.assertFalse(reliable_tk_runtime("8.6.12", "darwin"))
         self.assertTrue(reliable_tk_runtime("8.6.13", "darwin"))
