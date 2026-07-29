@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import hashlib
+import math
 from pathlib import Path
 import queue
 import re
@@ -88,6 +89,7 @@ class AnalysisCompletion:
     click_started_ns: int
     output_dir: Path
     performance_metadata: dict
+    stage3_algorithm_ms: float | None
 
 
 def project_image_paths() -> list[Path]:
@@ -559,6 +561,46 @@ def raw_pitch_evidence_text(pitch: dict) -> tuple[str, str]:
     return "Unavailable", "No formal pitch evidence"
 
 
+def result_performance_text(
+    interactive_result: dict,
+    stage3_ms: float | None,
+    total_ms: float | None,
+) -> str:
+    """Format one timing row for either formal result status."""
+
+    if "success" not in interactive_result:
+        raise ValueError("interactive_result must include success")
+
+    def format_ms(value: float | None) -> str:
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value < 0
+        ):
+            return "—"
+        return f"{value:.0f} ms"
+
+    return (
+        f"Analysis: {format_ms(stage3_ms)}"
+        f" · Total: {format_ms(total_ms)}"
+    )
+
+
+def completion_matches_active_request(
+    completion: AnalysisCompletion,
+    current_key: tuple,
+    active_run_id: str | None,
+) -> bool:
+    """Require both click identity and request identity to match."""
+
+    return bool(
+        active_run_id is not None
+        and completion.run_id == active_run_id
+        and completion.analysis_key == current_key
+    )
+
+
 def result_metric_values(click: dict, interactive_result: dict) -> tuple:
     """Return only measurements that are safe for the formal result."""
 
@@ -811,9 +853,11 @@ class StripeDesktopApp:
         self.magnifier_border_id = None
         self.result_frame = None
         self.result_photos = []
+        self.result_timing_label = None
         self.project_paths = project_image_paths()
         self.analysis_queue = queue.Queue()
         self.analysis_running = False
+        self.active_analysis_run_id = None
         self.pitch_reference_cache = {}
         self.pitch_reference_lock = threading.Lock()
 
@@ -1298,6 +1342,7 @@ class StripeDesktopApp:
             return
         click_started_ns = time.perf_counter_ns()
         run_id = uuid.uuid4().hex
+        self.active_analysis_run_id = run_id
         output_dir = build_output_dir(
             self.image_name,
             self.image_bytes,
@@ -1312,7 +1357,12 @@ class StripeDesktopApp:
         click_x, click_y = self.state.click_point
         self.analysis_running = True
         self._update_analyze_button()
-        self.status_label.configure(text="Analyzing...")
+        self.status_label.configure(text="Analyzing…")
+        if (
+            self.result_timing_label is not None
+            and self.result_timing_label.winfo_exists()
+        ):
+            self.result_timing_label.configure(text="Analyzing…")
         self.root.update_idletasks()
         worker = threading.Thread(
             target=self._run_analysis_worker,
@@ -1427,6 +1477,7 @@ class StripeDesktopApp:
                 click_started_ns=click_started_ns,
                 output_dir=output_dir,
                 performance_metadata=metadata,
+                stage3_algorithm_ms=stage3_ms,
             )
         )
         if result is not None and stage3_result is not None:
@@ -1561,17 +1612,35 @@ class StripeDesktopApp:
                 self.root.after(50, self._poll_analysis)
             return
 
-        self.analysis_running = False
-        self._update_analyze_button()
         current_key = (
             self.state.image_identity,
             self.state.click_point,
         )
-        if completion.analysis_key != current_key:
-            self.status_label.configure(
-                text="Previous analysis ignored after selection changed"
-            )
+        same_run = (
+            completion.run_id == self.active_analysis_run_id
+        )
+        if not completion_matches_active_request(
+            completion,
+            current_key,
+            self.active_analysis_run_id,
+        ):
+            if same_run:
+                self.analysis_running = False
+                self.active_analysis_run_id = None
+                self._update_analyze_button()
+                self.status_label.configure(
+                    text=(
+                        "Previous analysis ignored after "
+                        "selection changed"
+                    )
+                )
+            elif self.analysis_running:
+                self.root.after(50, self._poll_analysis)
             return
+
+        self.analysis_running = False
+        self.active_analysis_run_id = None
+        self._update_analyze_button()
         if completion.error is not None:
             self.status_label.configure(text="Analysis failed")
             messagebox.showerror(
@@ -1584,22 +1653,39 @@ class StripeDesktopApp:
         self.state.result = completion.result
         self.status_label.configure(text="Analysis complete")
         ui_started_ns = time.perf_counter_ns()
-        self._show_result(completion.result)
+        self._show_result(
+            completion.result,
+            completion.stage3_algorithm_ms,
+        )
         self.root.update_idletasks()
         displayed_ns = time.perf_counter_ns()
+        total_ms = elapsed_ms(
+            completion.click_started_ns,
+            displayed_ns,
+        )
+        ui_draw_ms = elapsed_ms(ui_started_ns, displayed_ns)
+        if (
+            self.result_timing_label is not None
+            and self.result_timing_label.winfo_exists()
+        ):
+            interactive_result = completion.result.report[
+                "interactive_result"
+            ]
+            self.result_timing_label.configure(
+                text=result_performance_text(
+                    interactive_result,
+                    completion.stage3_algorithm_ms,
+                    total_ms,
+                )
+            )
+            self.root.update_idletasks()
         self._record_performance(
             completion.output_dir,
             completion.run_id,
             completion.performance_metadata,
             {
-                "ui_draw_ms": elapsed_ms(
-                    ui_started_ns,
-                    displayed_ns,
-                ),
-                "click_to_display_ms": elapsed_ms(
-                    completion.click_started_ns,
-                    displayed_ns,
-                ),
+                "ui_draw_ms": ui_draw_ms,
+                "click_to_display_ms": total_ms,
             },
         )
 
@@ -1611,6 +1697,7 @@ class StripeDesktopApp:
             self.result_frame.destroy()
         self.result_frame = None
         self.result_photos = []
+        self.result_timing_label = None
         if not self.controls.winfo_manager():
             self.controls.pack(fill="x", before=self.main_container)
         if not self.selection_frame.winfo_manager():
@@ -1622,7 +1709,11 @@ class StripeDesktopApp:
 
         self._show_selection_view()
 
-    def _show_result(self, result) -> None:
+    def _show_result(
+        self,
+        result,
+        stage3_ms: float | None = None,
+    ) -> None:
         """Replace the selection view with one compact final-result page."""
 
         self._hide_magnifier()
@@ -1673,6 +1764,21 @@ class StripeDesktopApp:
             header,
             text=self.image_name,
         ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(2, 0))
+        self.result_timing_label = ttk.Label(
+            header,
+            text=result_performance_text(
+                interactive_result,
+                stage3_ms,
+                None,
+            ),
+        )
+        self.result_timing_label.grid(
+            row=2,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(3, 0),
+        )
 
         pitch_guard = interactive_result.get("pitch_guard", {})
         values = result_metric_values(click, interactive_result)

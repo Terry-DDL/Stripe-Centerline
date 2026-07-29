@@ -12,10 +12,12 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from tools.desktop_app import (  # noqa: E402
+    AnalysisCompletion,
     DesktopSelectionState,
     basin_table_rows,
     build_output_dir,
     calculate_display_size,
+    completion_matches_active_request,
     create_failure_result_overlay,
     create_result_roi_crop,
     create_magnifier_display,
@@ -25,6 +27,7 @@ from tools.desktop_app import (  # noqa: E402
     map_display_point_to_source,
     mouse_wheel_scroll_pixels,
     resize_for_display,
+    result_performance_text,
     result_metric_values,
     reliable_tk_runtime,
     signed_16_bit,
@@ -258,6 +261,71 @@ class DesktopAppHelperTests(unittest.TestCase):
         self.assertEqual("Raw pitch evidence", values[-1][0])
         self.assertEqual("Medium · diagnostics only", values[-1][1])
         self.assertIn("59", values[-1][2])
+
+    def test_performance_row_is_present_for_success_and_unavailable(self):
+        for success in (True, False):
+            with self.subTest(success=success):
+                self.assertEqual(
+                    "Analysis: 55 ms · Total: 144 ms",
+                    result_performance_text(
+                        {"success": success},
+                        55.168,
+                        143.865,
+                    ),
+                )
+
+    def test_performance_row_safely_formats_missing_or_invalid_values(self):
+        for analysis_ms, total_ms in (
+            (None, None),
+            (float("nan"), float("inf")),
+            (-1.0, True),
+        ):
+            with self.subTest(
+                analysis_ms=analysis_ms,
+                total_ms=total_ms,
+            ):
+                self.assertEqual(
+                    "Analysis: — · Total: —",
+                    result_performance_text(
+                        {"success": False},
+                        analysis_ms,
+                        total_ms,
+                    ),
+                )
+
+    def test_rapid_click_completion_requires_click_and_run_id(self):
+        completion = AnalysisCompletion(
+            analysis_key=("image-a", (482, 704)),
+            result=object(),
+            error=None,
+            run_id="request-old",
+            click_started_ns=1,
+            output_dir=Path("/tmp/request-old"),
+            performance_metadata={},
+            stage3_algorithm_ms=55.0,
+        )
+
+        self.assertFalse(
+            completion_matches_active_request(
+                completion,
+                ("image-a", (482, 704)),
+                "request-new",
+            )
+        )
+        self.assertFalse(
+            completion_matches_active_request(
+                completion,
+                ("image-a", (661, 921)),
+                "request-old",
+            )
+        )
+        self.assertTrue(
+            completion_matches_active_request(
+                completion,
+                ("image-a", (482, 704)),
+                "request-old",
+            )
+        )
 
     def test_failed_result_overlay_has_roi_and_click_but_no_centerlines(self):
         image = np.full((30, 40), 128, dtype=np.uint8)
