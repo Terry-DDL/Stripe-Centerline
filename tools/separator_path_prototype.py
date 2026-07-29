@@ -39,11 +39,21 @@ IMAGES_DIR = PROJECT_ROOT / "images"
 OUTPUT_DIR = (
     PROJECT_ROOT
     / "outputs"
-    / "separator_path_stage2_v1"
+    / "separator_path_stage2_v1_1"
 )
 REPORT_PATH = OUTPUT_DIR / "development_report.json"
 OVERLAY_DIR = OUTPUT_DIR / "overlays"
-ALGORITHM_REVISION = "separator_path_stage2_v1"
+ALGORITHM_REVISION = "separator_path_stage2_v1_1"
+FROZEN_V1_COMMIT = "2b31cb577dd1ae27b4bace6043194ab76d6fde6c"
+FROZEN_V1_CONFIGURATION_CHECKSUM = (
+    "8e28ca014c0abd378908adbaa3a54a1bd8b9281f450f5985a7e460af4733a184"
+)
+FROZEN_CANDIDATE_SOURCE_CHECKSUM = (
+    "5b1b8f71a8b33b2caa432f62c83f42e896eebfa4ee96c4114fa5d329d58aa630"
+)
+FROZEN_DEVELOPMENT_CANDIDATE_OUTPUT_CHECKSUM = (
+    "c48295fdacb145cef76a2062e9457a07b41d94fbc0c6934e54d0483630af9255"
+)
 
 ROLE_ORDER = (
     "left_adjacent",
@@ -89,6 +99,14 @@ class SeparatorPathConfig:
     match_tolerance_px: float = 6.0
     maximum_width_aware_match_tolerance_px: float = 20.0
     gt_reference_percentile_threshold: float = 0.95
+    reference_relationship_uncertainty_px: float = 2.0
+    minimum_role_path_support_fraction: float = 0.50
+    maximum_role_path_mean_step_px: float = 1.50
+    minimum_full_height_order_ratio: float = 0.70
+    minimum_dark_basin_edge_gap_px: float = 1.0
+    maximum_dark_basin_edge_gap_ratio: float = 2.70
+    minimum_dark_basin_contrast: float = 0.15
+    minimum_dark_basin_band_fraction: float = 0.75
 
 
 DEFAULT_CONFIG = SeparatorPathConfig()
@@ -97,6 +115,13 @@ DEFAULT_CONFIG = SeparatorPathConfig()
 def canonical_configuration(config: SeparatorPathConfig) -> dict:
     return {
         "algorithm_revision": ALGORITHM_REVISION,
+        "frozen_candidate_generation": {
+            "parent_commit": FROZEN_V1_COMMIT,
+            "v1_configuration_checksum": (
+                FROZEN_V1_CONFIGURATION_CHECKSUM
+            ),
+            "source_checksum": FROZEN_CANDIDATE_SOURCE_CHECKSUM,
+        },
         "parameters": asdict(config),
     }
 
@@ -557,7 +582,7 @@ def _selected_paths_cross(
     )
 
 
-def select_clicked_basin_paths(
+def _select_clicked_basin_paths_v1(
     candidates: list[dict],
     reference_x_roi: float,
     reference_y_roi: float,
@@ -654,6 +679,447 @@ def select_clicked_basin_paths(
     }
 
 
+def _reference_guard(
+    path: dict,
+    config: SeparatorPathConfig,
+) -> float:
+    return max(
+        config.reference_guard_px,
+        min(8.0, path["peak_width_px"] / 2.0),
+    )
+
+
+def _full_height_pair_order(
+    left: dict,
+    right: dict,
+    config: SeparatorPathConfig,
+) -> dict:
+    left_x = np.asarray(left["x_by_band_roi"], dtype=np.float64)
+    right_x = np.asarray(right["x_by_band_roi"], dtype=np.float64)
+    gaps = right_x - left_x
+    crossing_indices = np.flatnonzero(gaps <= 0).tolist()
+    median_gap = float(np.median(gaps))
+    minimum_gap = float(np.min(gaps))
+    minimum_to_median_ratio = (
+        minimum_gap / median_gap if median_gap > 0 else None
+    )
+    stable = bool(
+        not crossing_indices
+        and minimum_to_median_ratio is not None
+        and minimum_to_median_ratio
+        >= config.minimum_full_height_order_ratio
+    )
+    return {
+        "left_candidate_id": left["candidate_id"],
+        "right_candidate_id": right["candidate_id"],
+        "gap_by_band_px": gaps.tolist(),
+        "minimum_gap_px": minimum_gap,
+        "median_gap_px": median_gap,
+        "minimum_to_median_ratio": minimum_to_median_ratio,
+        "crossing_band_indices": crossing_indices,
+        "stable_full_height_order": stable,
+    }
+
+
+def _dark_basin_evidence(
+    left: dict,
+    right: dict,
+    evidence: dict,
+    config: SeparatorPathConfig,
+) -> dict:
+    left_x = np.rint(left["x_by_band_roi"]).astype(int)
+    right_x = np.rint(right["x_by_band_roi"]).astype(int)
+    contrast_by_band = []
+    for band_index, (left_value, right_value) in enumerate(
+        zip(left_x, right_x)
+    ):
+        x0, x1 = sorted((int(left_value), int(right_value)))
+        if x1 - x0 < 3:
+            contrast_by_band.append(-1.0)
+            continue
+        profile = evidence["profiles"][band_index]
+        interior = profile[x0 + 1 : x1]
+        local = profile[
+            max(0, x0 - 5) : min(profile.size, x1 + 6)
+        ]
+        boundary_level = min(
+            float(profile[x0]),
+            float(profile[x1]),
+        )
+        interior_level = float(np.percentile(interior, 40))
+        scale = max(
+            float(
+                np.percentile(local, 90)
+                - np.percentile(local, 10)
+            ),
+            8.0,
+        )
+        contrast_by_band.append(
+            (boundary_level - interior_level) / scale
+        )
+    contrast = np.asarray(contrast_by_band, dtype=np.float64)
+    stable_fraction = float(
+        np.mean(contrast >= config.minimum_dark_basin_contrast)
+    )
+    median_contrast = float(np.median(contrast))
+    verified = bool(
+        stable_fraction >= config.minimum_dark_basin_band_fraction
+        and median_contrast >= config.minimum_dark_basin_contrast
+    )
+    return {
+        "left_candidate_id": left["candidate_id"],
+        "right_candidate_id": right["candidate_id"],
+        "normalized_contrast_by_band": contrast.tolist(),
+        "median_normalized_contrast": median_contrast,
+        "stable_band_fraction": stable_fraction,
+        "verified": verified,
+    }
+
+
+def _evaluate_role_hypothesis(
+    selection: dict[str, dict],
+    evidence: dict,
+    config: SeparatorPathConfig,
+) -> dict:
+    paths = [selection[role] for role in ROLE_ORDER]
+    path_metrics = [
+        {
+            "role": role,
+            "candidate_id": path["candidate_id"],
+            "support_fraction": path["support_fraction"],
+            "mean_step_px": path["mean_step_px"],
+        }
+        for role, path in zip(ROLE_ORDER, paths)
+    ]
+    pair_order = [
+        _full_height_pair_order(left, right, config)
+        for left, right in zip(paths, paths[1:])
+    ]
+    basin_evidence = [
+        _dark_basin_evidence(left, right, evidence, config)
+        for left, right in zip(paths, paths[1:])
+    ]
+    center_x = np.asarray(
+        [path["x_at_reference_roi"] for path in paths],
+        dtype=np.float64,
+    )
+    widths = np.asarray(
+        [path["peak_width_px"] for path in paths],
+        dtype=np.float64,
+    )
+    edge_gaps = (
+        np.diff(center_x) - (widths[:-1] + widths[1:]) / 2.0
+    )
+    minimum_edge_gap = float(np.min(edge_gaps))
+    maximum_edge_gap = float(np.max(edge_gaps))
+    edge_gap_ratio = (
+        maximum_edge_gap / minimum_edge_gap
+        if minimum_edge_gap > 0
+        else None
+    )
+
+    rejection_reasons = []
+    crossing = any(
+        pair["crossing_band_indices"] for pair in pair_order
+    )
+    if crossing:
+        rejection_reasons.append("path_crossing_full_height")
+    if any(
+        not pair["stable_full_height_order"]
+        for pair in pair_order
+    ):
+        rejection_reasons.append("path_order_not_stable_full_height")
+    if any(
+        metric["support_fraction"]
+        < config.minimum_role_path_support_fraction
+        for metric in path_metrics
+    ):
+        rejection_reasons.append(
+            "role_path_insufficient_vertical_support"
+        )
+    if any(
+        metric["mean_step_px"]
+        > config.maximum_role_path_mean_step_px
+        for metric in path_metrics
+    ):
+        rejection_reasons.append("role_path_geometry_unstable")
+    if (
+        minimum_edge_gap
+        < config.minimum_dark_basin_edge_gap_px
+    ):
+        rejection_reasons.append("separator_envelopes_overlap")
+    if (
+        edge_gap_ratio is None
+        or edge_gap_ratio
+        > config.maximum_dark_basin_edge_gap_ratio
+    ):
+        rejection_reasons.append(
+            "dark_basin_width_sequence_irregular"
+        )
+    if any(not basin["verified"] for basin in basin_evidence):
+        rejection_reasons.append("dark_basin_sequence_not_verified")
+
+    return {
+        "hypothesis_id": "H01",
+        "type": "clicked_basin_roles",
+        "selection_candidate_ids": {
+            role: selection[role]["candidate_id"]
+            for role in ROLE_ORDER
+        },
+        "path_metrics": path_metrics,
+        "full_height_pair_order": pair_order,
+        "dark_basin_evidence": basin_evidence,
+        "edge_gap_at_reference_px": edge_gaps.tolist(),
+        "edge_gap_ratio": edge_gap_ratio,
+        "rejection_reasons": rejection_reasons,
+        "verified": not rejection_reasons,
+        "crossing": crossing,
+    }
+
+
+def select_clicked_basin_paths(
+    candidates: list[dict],
+    reference_x_roi: float,
+    reference_y_roi: float,
+    evidence: dict,
+    config: SeparatorPathConfig = DEFAULT_CONFIG,
+) -> dict:
+    """Return roles only when reference relation and basin structure are unique."""
+
+    accepted = [path for path in candidates if path["accepted"]]
+    for path in accepted:
+        path["x_at_reference_roi"] = _path_x_at_y(
+            path,
+            reference_y_roi,
+        )
+    accepted.sort(
+        key=lambda path: (
+            path["x_at_reference_roi"],
+            path["candidate_id"],
+        )
+    )
+    if not accepted:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": "no_accepted_separator_paths",
+            "relationship_status": "unavailable",
+            "selection": {},
+            "crossing": False,
+            "competing_explanations": [],
+            "role_hypotheses": [],
+            "rejection_reasons": ["no_accepted_separator_paths"],
+        }
+
+    relationship_candidates = []
+    for path in accepted:
+        distance = abs(
+            path["x_at_reference_roi"] - reference_x_roi
+        )
+        guard = _reference_guard(path, config)
+        if distance <= guard:
+            relation = "reference_on_separator"
+        elif (
+            distance
+            <= guard
+            + config.reference_relationship_uncertainty_px
+        ):
+            relation = "reference_relationship_uncertain"
+        else:
+            continue
+        relationship_candidates.append(
+            {
+                "type": relation,
+                "candidate_id": path["candidate_id"],
+                "distance_px": distance,
+                "separator_guard_px": guard,
+            }
+        )
+
+    definite_separator = [
+        hypothesis
+        for hypothesis in relationship_candidates
+        if hypothesis["type"] == "reference_on_separator"
+    ]
+    uncertain_relationship = [
+        hypothesis
+        for hypothesis in relationship_candidates
+        if hypothesis["type"]
+        == "reference_relationship_uncertain"
+    ]
+    left = [
+        path
+        for path in accepted
+        if path["x_at_reference_roi"] < reference_x_roi
+    ]
+    right = [
+        path
+        for path in accepted
+        if path["x_at_reference_roi"] > reference_x_roi
+    ]
+    role_hypotheses = []
+    candidate_selection = {}
+    if len(left) >= 2 and len(right) >= 2:
+        candidate_selection = {
+            "left_adjacent": left[-2],
+            "left_clicked_boundary": left[-1],
+            "right_clicked_boundary": right[0],
+            "right_adjacent": right[1],
+        }
+        role_hypotheses.append(
+            _evaluate_role_hypothesis(
+                candidate_selection,
+                evidence,
+                config,
+            )
+        )
+
+    competing_explanations = [
+        *relationship_candidates,
+        *[
+            {
+                "type": hypothesis["type"],
+                "hypothesis_id": hypothesis["hypothesis_id"],
+                "selection_candidate_ids": hypothesis[
+                    "selection_candidate_ids"
+                ],
+                "verified": hypothesis["verified"],
+                "rejection_reasons": hypothesis[
+                    "rejection_reasons"
+                ],
+            }
+            for hypothesis in role_hypotheses
+        ],
+    ]
+    crossing = any(
+        hypothesis["crossing"] for hypothesis in role_hypotheses
+    )
+    role_rejection_reasons = sorted(
+        {
+            reason
+            for hypothesis in role_hypotheses
+            for reason in hypothesis["rejection_reasons"]
+        }
+    )
+
+    if crossing:
+        relationship_rejections = [
+            hypothesis["type"]
+            for hypothesis in relationship_candidates
+        ]
+        return {
+            "status": "unavailable",
+            "unavailable_reason": "path_order_conflict",
+            "relationship_status": "conflicted",
+            "selection": {},
+            "crossing": True,
+            "competing_explanations": competing_explanations,
+            "role_hypotheses": role_hypotheses,
+            "rejection_reasons": sorted(
+                set(
+                    role_rejection_reasons
+                    + relationship_rejections
+                )
+            ),
+        }
+    if definite_separator:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": "reference_on_separator",
+            "relationship_status": "reference_on_separator",
+            "selection": {},
+            "crossing": crossing,
+            "competing_explanations": competing_explanations,
+            "role_hypotheses": role_hypotheses,
+            "rejection_reasons": sorted(
+                set(
+                    ["reference_on_separator"]
+                    + role_rejection_reasons
+                )
+            ),
+        }
+    if uncertain_relationship:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": (
+                "ambiguous_reference_relationship"
+            ),
+            "relationship_status": "not_unique",
+            "selection": {},
+            "crossing": crossing,
+            "competing_explanations": competing_explanations,
+            "role_hypotheses": role_hypotheses,
+            "rejection_reasons": sorted(
+                set(
+                    ["ambiguous_reference_relationship"]
+                    + role_rejection_reasons
+                )
+            ),
+        }
+    if not role_hypotheses:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": "insufficient_boundary_paths",
+            "relationship_status": "basin_but_roles_incomplete",
+            "selection": {},
+            "crossing": False,
+            "competing_explanations": competing_explanations,
+            "role_hypotheses": [],
+            "rejection_reasons": ["insufficient_boundary_paths"],
+        }
+
+    verified = [
+        hypothesis
+        for hypothesis in role_hypotheses
+        if hypothesis["verified"]
+    ]
+    if len(verified) > 1:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": "ambiguous_role_hypotheses",
+            "relationship_status": "basin_not_unique",
+            "selection": {},
+            "crossing": crossing,
+            "competing_explanations": competing_explanations,
+            "role_hypotheses": role_hypotheses,
+            "rejection_reasons": ["ambiguous_role_hypotheses"],
+        }
+    if not verified:
+        all_rejections = role_rejection_reasons
+        unavailable_reason = (
+            "path_order_conflict"
+            if any(
+                reason
+                in {
+                    "path_crossing_full_height",
+                    "path_order_not_stable_full_height",
+                }
+                for reason in all_rejections
+            )
+            else "basin_structure_not_verified"
+        )
+        return {
+            "status": "unavailable",
+            "unavailable_reason": unavailable_reason,
+            "relationship_status": "basin_structure_rejected",
+            "selection": {},
+            "crossing": crossing,
+            "competing_explanations": competing_explanations,
+            "role_hypotheses": role_hypotheses,
+            "rejection_reasons": all_rejections,
+        }
+
+    return {
+        "status": "available",
+        "unavailable_reason": None,
+        "relationship_status": "unique_verified_basin",
+        "selection": candidate_selection,
+        "crossing": False,
+        "competing_explanations": competing_explanations,
+        "role_hypotheses": role_hypotheses,
+        "rejection_reasons": [],
+    }
+
+
 def detect_separator_paths(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -672,10 +1138,17 @@ def detect_separator_paths(
     )
     evidence = build_raw_gray_response(directional, config)
     candidates = trace_separator_candidates(evidence, config)
+    v1_arbitration = _select_clicked_basin_paths_v1(
+        candidates,
+        reference_x_roi,
+        reference_y_roi,
+        config,
+    )
     arbitration = select_clicked_basin_paths(
         candidates,
         reference_x_roi,
         reference_y_roi,
+        evidence,
         config,
     )
     return {
@@ -692,6 +1165,17 @@ def detect_separator_paths(
             key: value
             for key, value in arbitration.items()
             if key not in {"status", "unavailable_reason", "selection"}
+        },
+        "v1_arbitration_baseline": {
+            "status": v1_arbitration["status"],
+            "unavailable_reason": v1_arbitration[
+                "unavailable_reason"
+            ],
+            "selection_candidate_ids": {
+                role: path["candidate_id"]
+                for role, path in v1_arbitration["selection"].items()
+            },
+            "crossing": v1_arbitration["crossing"],
         },
         "candidates": candidates,
         "raw_gray_evidence": {
@@ -1050,6 +1534,32 @@ def evaluate_one_annotation(
         ):
             failure_reasons.append(f"unmatched_{role}")
 
+    v1_baseline = detection["v1_arbitration_baseline"]
+    current_selection_ids = {
+        role: path["candidate_id"]
+        for role, path in detection["selection"].items()
+    }
+    if (
+        v1_baseline["status"] == detection["status"]
+        and v1_baseline["selection_candidate_ids"]
+        == current_selection_ids
+        and v1_baseline["unavailable_reason"]
+        == detection["unavailable_reason"]
+    ):
+        transition = "unchanged"
+    elif (
+        v1_baseline["status"] == "available"
+        and detection["status"] == "unavailable"
+    ):
+        transition = "v1_available_to_v1_1_safe_unavailable"
+    elif (
+        v1_baseline["status"] == "unavailable"
+        and detection["status"] == "available"
+    ):
+        transition = "v1_unavailable_to_v1_1_available"
+    else:
+        transition = "decision_changed"
+
     return {
         "sample_id": annotation["sample_id"],
         "image_name": annotation["image_name"],
@@ -1086,8 +1596,24 @@ def evaluate_one_annotation(
         "selected_false_splits": selected_false_splits,
         "crossing": detection["crossing"],
         "failure_reasons": sorted(set(failure_reasons)),
+        "v1_to_v1_1": {
+            "transition": transition,
+            "v1_status": v1_baseline["status"],
+            "v1_unavailable_reason": v1_baseline[
+                "unavailable_reason"
+            ],
+            "v1_selection_candidate_ids": v1_baseline[
+                "selection_candidate_ids"
+            ],
+            "v1_1_status": detection["status"],
+            "v1_1_unavailable_reason": detection[
+                "unavailable_reason"
+            ],
+            "v1_1_selection_candidate_ids": current_selection_ids,
+        },
         "detection_debug": {
             "arbitration": detection["arbitration_debug"],
+            "v1_arbitration_baseline": v1_baseline,
             "raw_gray_evidence": detection["raw_gray_evidence"],
             "candidates": detection["candidates"],
         },
@@ -1266,6 +1792,22 @@ def load_development_document(
     return document
 
 
+def _candidate_output_checksum(evaluations: list[dict]) -> str:
+    payload = [
+        {
+            "sample_id": item["sample_id"],
+            "candidates": item["detection_debug"]["candidates"],
+        }
+        for item in evaluations
+    ]
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _summarize_evaluations(evaluations: list[dict]) -> dict:
     scorable = [
         item
@@ -1300,6 +1842,13 @@ def _summarize_evaluations(evaluations: list[dict]) -> dict:
         for item in evaluations
         if item["gt_reference_ambiguity"]["is_ambiguity_case"]
     ]
+    candidate_checksum = _candidate_output_checksum(evaluations)
+    transition_counts = {}
+    for item in evaluations:
+        transition = item["v1_to_v1_1"]["transition"]
+        transition_counts[transition] = (
+            transition_counts.get(transition, 0) + 1
+        )
     return {
         "sample_count": len(evaluations),
         "scorable_sample_count": len(scorable),
@@ -1331,6 +1880,10 @@ def _summarize_evaluations(evaluations: list[dict]) -> dict:
             for item in evaluations
         ),
         "crossing_count": sum(item["crossing"] for item in evaluations),
+        "crossing_formally_available_count": sum(
+            item["crossing"] and item["status"] == "available"
+            for item in evaluations
+        ),
         "available_sample_count": sum(
             item["status"] == "available" for item in evaluations
         ),
@@ -1352,6 +1905,22 @@ def _summarize_evaluations(evaluations: list[dict]) -> dict:
             item["sample_id"]
             for item in evaluations
             if item["gt_unavailable"] and item["status"] == "available"
+        ],
+        "candidate_output_checksum": candidate_checksum,
+        "candidate_generation_unchanged": (
+            candidate_checksum
+            == FROZEN_DEVELOPMENT_CANDIDATE_OUTPUT_CHECKSUM
+        ),
+        "v1_to_v1_1_transition_counts": dict(
+            sorted(transition_counts.items())
+        ),
+        "v1_to_v1_1_changed_samples": [
+            {
+                "sample_id": item["sample_id"],
+                **item["v1_to_v1_1"],
+            }
+            for item in evaluations
+            if item["v1_to_v1_1"]["transition"] != "unchanged"
         ],
         "failure_reason_counts": dict(sorted(failure_counts.items())),
     }
@@ -1383,6 +1952,9 @@ def _write_sample_summary(
         "selected_path_recalled",
         "false_split_count",
         "crossing",
+        "relationship_status",
+        "arbitration_rejection_reasons",
+        "v1_to_v1_1_transition",
         "failure_reasons",
     )
     with temporary.open("w", encoding="utf-8", newline="") as output_file:
@@ -1415,6 +1987,18 @@ def _write_sample_summary(
                         item["selected_false_splits"]
                     ),
                     "crossing": item["crossing"],
+                    "relationship_status": item[
+                        "detection_debug"
+                    ]["arbitration"].get("relationship_status"),
+                    "arbitration_rejection_reasons": "|".join(
+                        item["detection_debug"]["arbitration"].get(
+                            "rejection_reasons",
+                            [],
+                        )
+                    ),
+                    "v1_to_v1_1_transition": item[
+                        "v1_to_v1_1"
+                    ]["transition"],
                     "failure_reasons": "|".join(
                         item["failure_reasons"]
                     ),

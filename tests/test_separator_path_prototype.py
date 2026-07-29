@@ -1,3 +1,5 @@
+import hashlib
+import inspect
 import json
 from pathlib import Path
 import tempfile
@@ -111,6 +113,75 @@ class SeparatorPathPrototypeTests(unittest.TestCase):
             )
             with self.assertRaises(ValueError):
                 prototype.load_development_document(path)
+
+    def test_candidate_generation_source_is_frozen_from_v1(self):
+        function_names = (
+            "build_raw_gray_response",
+            "_seed_peaks",
+            "_trace_one_seed",
+            "_path_rejection_reason",
+            "_path_x_at_y",
+            "_paths_are_duplicates",
+            "_paths_share_one_bright_ridge",
+            "_profile_positions_share_bright_ridge",
+            "trace_separator_candidates",
+        )
+        payload = "\n".join(
+            inspect.getsource(getattr(prototype, function_name))
+            for function_name in function_names
+        ).encode("utf-8")
+        self.assertEqual(
+            prototype.FROZEN_CANDIDATE_SOURCE_CHECKSUM,
+            hashlib.sha256(payload).hexdigest(),
+        )
+
+    def test_development_arbitration_safety_contract(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            report = prototype.evaluate_development(
+                output_dir=Path(temporary_directory),
+                save_overlays=False,
+            )
+        metrics = report["metrics"]
+        self.assertEqual(66, metrics["candidate_path_recall_count"])
+        self.assertTrue(metrics["candidate_generation_unchanged"])
+        self.assertEqual(0, metrics["false_split_count"])
+        self.assertEqual(
+            0,
+            metrics["crossing_formally_available_count"],
+        )
+        self.assertEqual([], metrics["ambiguous_gt_formally_available"])
+        self.assertEqual([], metrics["unavailable_gt_formally_available"])
+
+        samples = {
+            sample["sample_id"]: sample
+            for sample in report["samples"]
+        }
+        for sample_id in ("D013", "D020", "D024"):
+            self.assertEqual("unavailable", samples[sample_id]["status"])
+            self.assertEqual({}, samples[sample_id]["selection"])
+        self.assertEqual(
+            "path_order_conflict",
+            samples["D018"]["unavailable_reason"],
+        )
+        for sample in report["samples"]:
+            if sample["status"] != "available":
+                continue
+            self.assertEqual(
+                set(prototype.ROLE_ORDER),
+                set(sample["selection"]),
+            )
+            arbitration = sample["detection_debug"]["arbitration"]
+            self.assertEqual(
+                "unique_verified_basin",
+                arbitration["relationship_status"],
+            )
+            self.assertEqual(
+                1,
+                sum(
+                    hypothesis["verified"]
+                    for hypothesis in arbitration["role_hypotheses"]
+                ),
+            )
 
     def test_source_does_not_import_production_or_old_detection(self):
         source = Path(prototype.__file__).read_text(encoding="utf-8")
