@@ -1,0 +1,277 @@
+{
+  "dataset_version": "cross_image_correction_eval_v1",
+  "release_commit": "55b26e6deac5acbb50e3934c03d71e3c5b56b269",
+  "access_policy": {
+    "separator_heldout_allowed": false,
+    "runtime_special_cases_allowed": false
+  },
+  "cross_image": [
+    {
+      "sample_id": "X001",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "reference_global": {"x": 1125, "y": 518}
+    },
+    {
+      "sample_id": "X002",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "reference_global": {"x": 1164, "y": 807}
+    },
+    {
+      "sample_id": "X003",
+      "image_name": "Stripe_01_date20250601_t113239765.bmp",
+      "reference_global": {"x": 858, "y": 779}
+    },
+    {
+      "sample_id": "X004",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "reference_global": {"x": 1040, "y": 775}
+    },
+    {
+      "sample_id": "X005",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "reference_global": {"x": 1515, "y": 1510}
+    },
+    {
+      "sample_id": "X006",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "reference_global": {"x": 1503, "y": 190}
+    },
+    {
+      "sample_id": "X007",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "reference_global": {"x": 498, "y": 439}
+    },
+    {
+      "sample_id": "X008",
+      "image_name": "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+      "reference_global": {"x": 786, "y": 1839}
+    }
+  ],
+  "sample2_issues": [
+    {
+      "sample_id": "I001",
+      "reference_global": {"x": 661, "y": 921},
+      "expected": {"success": false, "unavailable_reason": "basin_structure_not_verified"}
+    },
+    {
+      "sample_id": "I002",
+      "reference_global": {"x": 482, "y": 704},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "I003",
+      "reference_global": {"x": 1044, "y": 581},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "I004",
+      "reference_global": {"x": 1086, "y": 525},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "I005",
+      "reference_global": {"x": 1044, "y": 378},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "I006",
+      "reference_global": {"x": 507, "y": 686},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
+      }
+    },
+    {
+      "sample_id": "I007",
+      "reference_global": {"x": 150, "y": 1829},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C03_C04", "right": "B_C04_C05"},
+        "separator_sequence": ["C03", "C04", "C05"]
+      }
+    },
+    {
+      "sample_id": "I008",
+      "reference_global": {"x": 1143, "y": 1239},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "I009",
+      "reference_global": {"x": 275, "y": 1507},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
+      }
+    },
+    {
+      "sample_id": "I010",
+      "reference_global": {"x": 546, "y": 721},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
+      }
+    }
+  ],
+  "sample2_random": [
+    {
+      "sample_id": "R001",
+      "reference_global": {"x": 1009, "y": 552},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R002",
+      "reference_global": {"x": 1047, "y": 563},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R003",
+      "reference_global": {"x": 464, "y": 686},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
+      }
+    },
+    {
+      "sample_id": "R004",
+      "reference_global": {"x": 325, "y": 554},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
+      }
+    },
+    {
+      "sample_id": "R005",
+      "reference_global": {"x": 307, "y": 1243},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R006",
+      "reference_global": {"x": 593, "y": 1579},
+      "expected": {"success": false, "unavailable_reason": "basin_structure_not_verified"}
+    },
+    {
+      "sample_id": "R007",
+      "reference_global": {"x": 1046, "y": 517},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R008",
+      "reference_global": {"x": 654, "y": 1100},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
+      }
+    },
+    {
+      "sample_id": "R009",
+      "reference_global": {"x": 625, "y": 1104},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R010",
+      "reference_global": {"x": 589, "y": 1275},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
+      }
+    },
+    {
+      "sample_id": "R011",
+      "reference_global": {"x": 1168, "y": 454},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R012",
+      "reference_global": {"x": 1582, "y": 914},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R013",
+      "reference_global": {"x": 1746, "y": 1225},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R014",
+      "reference_global": {"x": 364, "y": 1736},
+      "expected": {"success": false, "unavailable_reason": "ambiguous_reference_relationship"}
+    },
+    {
+      "sample_id": "R015",
+      "reference_global": {"x": 371, "y": 1768},
+      "expected": {"success": false, "unavailable_reason": "reference_separator_basin_safety_conflict"}
+    },
+    {
+      "sample_id": "R016",
+      "reference_global": {"x": 325, "y": 1521},
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"]
+      }
+    },
+    {
+      "sample_id": "R017",
+      "reference_global": {"x": 554, "y": 1693},
+      "expected": {"success": false, "unavailable_reason": "reference_separator_basin_safety_conflict"}
+    }
+  ]
+}
