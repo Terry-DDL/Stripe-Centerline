@@ -163,7 +163,7 @@
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:41:47+08:00",
+      "annotated_at": "2026-07-29T15:52:00+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H001.png"
     },
     "H002": {
@@ -333,7 +333,7 @@
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:42:22+08:00",
+      "annotated_at": "2026-07-29T15:52:00+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H002.png"
     },
     "H003": {
@@ -496,7 +496,7 @@
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:42:59+08:00",
+      "annotated_at": "2026-07-29T15:52:00+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H003.png"
     },
     "H004": {
@@ -659,7 +659,7 @@
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:44:32+08:00",
+      "annotated_at": "2026-07-29T15:52:01+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H004.png"
     },
     "H005": {
@@ -683,7 +683,7 @@
         {
           "role": "left_clicked_boundary",
           "visibility": "unavailable",
-          "confidence": "low",
+          "confidence": "high",
           "notes": "",
           "control_points": [],
           "visible_range": null
@@ -691,72 +691,45 @@
         {
           "role": "right_clicked_boundary",
           "visibility": "partially_visible",
-          "confidence": "low",
+          "confidence": "medium",
           "notes": "",
           "control_points": [
             {
               "order": 1,
-              "x_global": 1028,
-              "y_global": 941,
-              "x_roi": 278,
-              "y_roi": 11
+              "x_global": 1021,
+              "y_global": 932,
+              "x_roi": 271,
+              "y_roi": 2
             },
             {
               "order": 2,
-              "x_global": 1024,
-              "y_global": 1048,
-              "x_roi": 274,
-              "y_roi": 118
+              "x_global": 1021,
+              "y_global": 1047,
+              "x_roi": 271,
+              "y_roi": 117
             },
             {
               "order": 3,
-              "x_global": 1023,
+              "x_global": 1021,
               "y_global": 1167,
-              "x_roi": 273,
+              "x_roi": 271,
               "y_roi": 237
             }
           ],
           "visible_range": {
-            "y0_global": 941,
+            "y0_global": 932,
             "y1_global": 1167,
-            "y0_roi": 11,
+            "y0_roi": 2,
             "y1_roi": 237
           }
         },
         {
           "role": "left_adjacent",
-          "visibility": "partially_visible",
-          "confidence": "low",
+          "visibility": "unavailable",
+          "confidence": "high",
           "notes": "",
-          "control_points": [
-            {
-              "order": 1,
-              "x_global": 925,
-              "y_global": 943,
-              "x_roi": 175,
-              "y_roi": 13
-            },
-            {
-              "order": 2,
-              "x_global": 922,
-              "y_global": 1089,
-              "x_roi": 172,
-              "y_roi": 159
-            },
-            {
-              "order": 3,
-              "x_global": 922,
-              "y_global": 1168,
-              "x_roi": 172,
-              "y_roi": 238
-            }
-          ],
-          "visible_range": {
-            "y0_global": 943,
-            "y1_global": 1168,
-            "y0_roi": 13,
-            "y1_roi": 238
-          }
+          "control_points": [],
+          "visible_range": null
         },
         {
           "role": "right_adjacent",
@@ -767,35 +740,35 @@
             {
               "order": 1,
               "x_global": 1036,
-              "y_global": 941,
+              "y_global": 933,
               "x_roi": 286,
-              "y_roi": 11
+              "y_roi": 3
             },
             {
               "order": 2,
-              "x_global": 1038,
+              "x_global": 1034,
               "y_global": 1051,
-              "x_roi": 288,
+              "x_roi": 284,
               "y_roi": 121
             },
             {
               "order": 3,
-              "x_global": 1034,
-              "y_global": 1163,
-              "x_roi": 284,
-              "y_roi": 233
+              "x_global": 1035,
+              "y_global": 1168,
+              "x_roi": 285,
+              "y_roi": 238
             }
           ],
           "visible_range": {
-            "y0_global": 941,
-            "y1_global": 1163,
-            "y0_roi": 11,
-            "y1_roi": 233
+            "y0_global": 933,
+            "y1_global": 1168,
+            "y0_roi": 3,
+            "y1_roi": 238
           }
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:45:38+08:00",
+      "annotated_at": "2026-07-29T15:55:00+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H005.png"
     },
     "H006": {
@@ -958,7 +931,7 @@
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:46:13+08:00",
+      "annotated_at": "2026-07-29T15:55:03+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H006.png"
     },
     "H007": {
@@ -1087,41 +1060,41 @@
         {
           "role": "right_adjacent",
           "visibility": "fully_visible",
-          "confidence": "medium",
+          "confidence": "high",
           "notes": "",
           "control_points": [
             {
               "order": 1,
-              "x_global": 368,
-              "y_global": 238,
-              "x_roi": 268,
-              "y_roi": 8
+              "x_global": 370,
+              "y_global": 232,
+              "x_roi": 270,
+              "y_roi": 2
             },
             {
               "order": 2,
-              "x_global": 374,
-              "y_global": 350,
-              "x_roi": 274,
-              "y_roi": 120
+              "x_global": 371,
+              "y_global": 354,
+              "x_roi": 271,
+              "y_roi": 124
             },
             {
               "order": 3,
-              "x_global": 372,
-              "y_global": 463,
-              "x_roi": 272,
-              "y_roi": 233
+              "x_global": 370,
+              "y_global": 467,
+              "x_roi": 270,
+              "y_roi": 237
             }
           ],
           "visible_range": {
-            "y0_global": 238,
-            "y1_global": 463,
-            "y0_roi": 8,
-            "y1_roi": 233
+            "y0_global": 232,
+            "y1_global": 467,
+            "y0_roi": 2,
+            "y1_roi": 237
           }
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:46:46+08:00",
+      "annotated_at": "2026-07-29T15:55:27+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H007.png"
     },
     "H008": {
@@ -1319,7 +1292,7 @@
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T13:47:28+08:00",
+      "annotated_at": "2026-07-29T15:55:33+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H008.png"
     },
     "H009": {
@@ -1355,24 +1328,24 @@
             },
             {
               "order": 2,
-              "x_global": 1649,
+              "x_global": 1648,
               "y_global": 1703,
-              "x_roi": 249,
+              "x_roi": 248,
               "y_roi": 123
             },
             {
               "order": 3,
-              "x_global": 1648,
-              "y_global": 1817,
-              "x_roi": 248,
-              "y_roi": 237
+              "x_global": 1647,
+              "y_global": 1818,
+              "x_roi": 247,
+              "y_roi": 238
             }
           ],
           "visible_range": {
             "y0_global": 1582,
-            "y1_global": 1817,
+            "y1_global": 1818,
             "y0_roi": 2,
-            "y1_roi": 237
+            "y1_roi": 238
           }
         },
         {
@@ -1482,7 +1455,7 @@
         }
       ],
       "notes": "",
-      "annotated_at": "2026-07-29T14:13:27+08:00",
+      "annotated_at": "2026-07-29T15:56:12+08:00",
       "preview_path": "outputs/separator_path_gt_v1/previews/H009.png"
     }
   }

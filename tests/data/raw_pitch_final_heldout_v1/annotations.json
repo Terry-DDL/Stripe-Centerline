@@ -6,20 +6,2997 @@
   "frozen_pitch_commit": "41fe2f3b2870ec920ebd443307467e4bc02b1cee",
   "frozen_configuration_checksum": "2a5e234ea21807dabf58d45b5732604e5d95a50c4cd76033a66b96fbc2bb62a3",
   "annotations": {
-    "F001": null,
-    "F002": null,
-    "F003": null,
-    "F004": null,
-    "F005": null,
-    "F006": null,
-    "F007": null,
-    "F008": null,
-    "F009": null,
-    "F010": null,
-    "F011": null,
-    "F012": null,
-    "F013": null,
-    "F014": null,
-    "F015": null
+    "F001": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F001",
+      "split": "held-out",
+      "image_name": "Stripe_02_e0_t105204227_v-41p8_do.bmp",
+      "image_sha256": "1cc0a700b7ad9ba0e060698d140ace0871f5d1d44d18073b79a452aa0eeafac3",
+      "reference_global": {
+        "x": 350,
+        "y": 350
+      },
+      "roi_bounds_global": {
+        "x0": 100,
+        "y0": 250,
+        "x1": 600,
+        "y1": 450
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 110,
+          "x_roi": 10,
+          "clicked_y_global": 429,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 2,
+          "x_global": 124,
+          "x_roi": 24,
+          "clicked_y_global": 428,
+          "clicked_y_roi": 178
+        },
+        {
+          "order": 3,
+          "x_global": 139,
+          "x_roi": 39,
+          "clicked_y_global": 428,
+          "clicked_y_roi": 178
+        },
+        {
+          "order": 4,
+          "x_global": 153,
+          "x_roi": 53,
+          "clicked_y_global": 421,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 5,
+          "x_global": 168,
+          "x_roi": 68,
+          "clicked_y_global": 421,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 6,
+          "x_global": 183,
+          "x_roi": 83,
+          "clicked_y_global": 420,
+          "clicked_y_roi": 170
+        },
+        {
+          "order": 7,
+          "x_global": 197,
+          "x_roi": 97,
+          "clicked_y_global": 420,
+          "clicked_y_roi": 170
+        },
+        {
+          "order": 8,
+          "x_global": 212,
+          "x_roi": 112,
+          "clicked_y_global": 418,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 9,
+          "x_global": 226,
+          "x_roi": 126,
+          "clicked_y_global": 416,
+          "clicked_y_roi": 166
+        },
+        {
+          "order": 10,
+          "x_global": 240,
+          "x_roi": 140,
+          "clicked_y_global": 417,
+          "clicked_y_roi": 167
+        },
+        {
+          "order": 11,
+          "x_global": 254,
+          "x_roi": 154,
+          "clicked_y_global": 417,
+          "clicked_y_roi": 167
+        },
+        {
+          "order": 12,
+          "x_global": 269,
+          "x_roi": 169,
+          "clicked_y_global": 417,
+          "clicked_y_roi": 167
+        },
+        {
+          "order": 13,
+          "x_global": 284,
+          "x_roi": 184,
+          "clicked_y_global": 416,
+          "clicked_y_roi": 166
+        },
+        {
+          "order": 14,
+          "x_global": 298,
+          "x_roi": 198,
+          "clicked_y_global": 414,
+          "clicked_y_roi": 164
+        },
+        {
+          "order": 15,
+          "x_global": 312,
+          "x_roi": 212,
+          "clicked_y_global": 412,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 16,
+          "x_global": 327,
+          "x_roi": 227,
+          "clicked_y_global": 386,
+          "clicked_y_roi": 136
+        },
+        {
+          "order": 17,
+          "x_global": 342,
+          "x_roi": 242,
+          "clicked_y_global": 385,
+          "clicked_y_roi": 135
+        },
+        {
+          "order": 18,
+          "x_global": 356,
+          "x_roi": 256,
+          "clicked_y_global": 384,
+          "clicked_y_roi": 134
+        },
+        {
+          "order": 19,
+          "x_global": 371,
+          "x_roi": 271,
+          "clicked_y_global": 381,
+          "clicked_y_roi": 131
+        },
+        {
+          "order": 20,
+          "x_global": 385,
+          "x_roi": 285,
+          "clicked_y_global": 396,
+          "clicked_y_roi": 146
+        },
+        {
+          "order": 21,
+          "x_global": 400,
+          "x_roi": 300,
+          "clicked_y_global": 394,
+          "clicked_y_roi": 144
+        },
+        {
+          "order": 22,
+          "x_global": 414,
+          "x_roi": 314,
+          "clicked_y_global": 370,
+          "clicked_y_roi": 120
+        },
+        {
+          "order": 23,
+          "x_global": 429,
+          "x_roi": 329,
+          "clicked_y_global": 370,
+          "clicked_y_roi": 120
+        },
+        {
+          "order": 24,
+          "x_global": 443,
+          "x_roi": 343,
+          "clicked_y_global": 370,
+          "clicked_y_roi": 120
+        },
+        {
+          "order": 25,
+          "x_global": 458,
+          "x_roi": 358,
+          "clicked_y_global": 368,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 26,
+          "x_global": 473,
+          "x_roi": 373,
+          "clicked_y_global": 368,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 27,
+          "x_global": 487,
+          "x_roi": 387,
+          "clicked_y_global": 366,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 28,
+          "x_global": 501,
+          "x_roi": 401,
+          "clicked_y_global": 373,
+          "clicked_y_roi": 123
+        },
+        {
+          "order": 29,
+          "x_global": 516,
+          "x_roi": 416,
+          "clicked_y_global": 371,
+          "clicked_y_roi": 121
+        },
+        {
+          "order": 30,
+          "x_global": 531,
+          "x_roi": 431,
+          "clicked_y_global": 382,
+          "clicked_y_roi": 132
+        },
+        {
+          "order": 31,
+          "x_global": 545,
+          "x_roi": 445,
+          "clicked_y_global": 380,
+          "clicked_y_roi": 130
+        },
+        {
+          "order": 32,
+          "x_global": 559,
+          "x_roi": 459,
+          "clicked_y_global": 378,
+          "clicked_y_roi": 128
+        },
+        {
+          "order": 33,
+          "x_global": 574,
+          "x_roi": 474,
+          "clicked_y_global": 376,
+          "clicked_y_roi": 126
+        },
+        {
+          "order": 34,
+          "x_global": 588,
+          "x_roi": 488,
+          "clicked_y_global": 375,
+          "clicked_y_roi": 125
+        }
+      ],
+      "annotated_at": "2026-07-29T00:15:01+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F001.png"
+    },
+    "F002": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F002",
+      "split": "held-out",
+      "image_name": "Stripe_02_e0_t105204227_v-41p8_do.bmp",
+      "image_sha256": "1cc0a700b7ad9ba0e060698d140ace0871f5d1d44d18073b79a452aa0eeafac3",
+      "reference_global": {
+        "x": 1550,
+        "y": 700
+      },
+      "roi_bounds_global": {
+        "x0": 1300,
+        "y0": 600,
+        "x1": 1800,
+        "y1": 800
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 1313,
+          "x_roi": 13,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 2,
+          "x_global": 1327,
+          "x_roi": 27,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 3,
+          "x_global": 1343,
+          "x_roi": 43,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 4,
+          "x_global": 1356,
+          "x_roi": 56,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 5,
+          "x_global": 1372,
+          "x_roi": 72,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 6,
+          "x_global": 1386,
+          "x_roi": 86,
+          "clicked_y_global": 763,
+          "clicked_y_roi": 163
+        },
+        {
+          "order": 7,
+          "x_global": 1401,
+          "x_roi": 101,
+          "clicked_y_global": 759,
+          "clicked_y_roi": 159
+        },
+        {
+          "order": 8,
+          "x_global": 1415,
+          "x_roi": 115,
+          "clicked_y_global": 759,
+          "clicked_y_roi": 159
+        },
+        {
+          "order": 9,
+          "x_global": 1429,
+          "x_roi": 129,
+          "clicked_y_global": 759,
+          "clicked_y_roi": 159
+        },
+        {
+          "order": 10,
+          "x_global": 1444,
+          "x_roi": 144,
+          "clicked_y_global": 754,
+          "clicked_y_roi": 154
+        },
+        {
+          "order": 11,
+          "x_global": 1458,
+          "x_roi": 158,
+          "clicked_y_global": 709,
+          "clicked_y_roi": 109
+        },
+        {
+          "order": 12,
+          "x_global": 1472,
+          "x_roi": 172,
+          "clicked_y_global": 709,
+          "clicked_y_roi": 109
+        },
+        {
+          "order": 13,
+          "x_global": 1486,
+          "x_roi": 186,
+          "clicked_y_global": 708,
+          "clicked_y_roi": 108
+        },
+        {
+          "order": 14,
+          "x_global": 1501,
+          "x_roi": 201,
+          "clicked_y_global": 706,
+          "clicked_y_roi": 106
+        },
+        {
+          "order": 15,
+          "x_global": 1516,
+          "x_roi": 216,
+          "clicked_y_global": 705,
+          "clicked_y_roi": 105
+        },
+        {
+          "order": 16,
+          "x_global": 1530,
+          "x_roi": 230,
+          "clicked_y_global": 702,
+          "clicked_y_roi": 102
+        },
+        {
+          "order": 17,
+          "x_global": 1544,
+          "x_roi": 244,
+          "clicked_y_global": 703,
+          "clicked_y_roi": 103
+        },
+        {
+          "order": 18,
+          "x_global": 1559,
+          "x_roi": 259,
+          "clicked_y_global": 703,
+          "clicked_y_roi": 103
+        },
+        {
+          "order": 19,
+          "x_global": 1574,
+          "x_roi": 274,
+          "clicked_y_global": 704,
+          "clicked_y_roi": 104
+        },
+        {
+          "order": 20,
+          "x_global": 1588,
+          "x_roi": 288,
+          "clicked_y_global": 704,
+          "clicked_y_roi": 104
+        },
+        {
+          "order": 21,
+          "x_global": 1602,
+          "x_roi": 302,
+          "clicked_y_global": 704,
+          "clicked_y_roi": 104
+        },
+        {
+          "order": 22,
+          "x_global": 1618,
+          "x_roi": 318,
+          "clicked_y_global": 705,
+          "clicked_y_roi": 105
+        },
+        {
+          "order": 23,
+          "x_global": 1633,
+          "x_roi": 333,
+          "clicked_y_global": 704,
+          "clicked_y_roi": 104
+        },
+        {
+          "order": 24,
+          "x_global": 1647,
+          "x_roi": 347,
+          "clicked_y_global": 704,
+          "clicked_y_roi": 104
+        },
+        {
+          "order": 25,
+          "x_global": 1662,
+          "x_roi": 362,
+          "clicked_y_global": 703,
+          "clicked_y_roi": 103
+        },
+        {
+          "order": 26,
+          "x_global": 1676,
+          "x_roi": 376,
+          "clicked_y_global": 702,
+          "clicked_y_roi": 102
+        },
+        {
+          "order": 27,
+          "x_global": 1691,
+          "x_roi": 391,
+          "clicked_y_global": 702,
+          "clicked_y_roi": 102
+        },
+        {
+          "order": 28,
+          "x_global": 1705,
+          "x_roi": 405,
+          "clicked_y_global": 702,
+          "clicked_y_roi": 102
+        },
+        {
+          "order": 29,
+          "x_global": 1719,
+          "x_roi": 419,
+          "clicked_y_global": 702,
+          "clicked_y_roi": 102
+        },
+        {
+          "order": 30,
+          "x_global": 1734,
+          "x_roi": 434,
+          "clicked_y_global": 703,
+          "clicked_y_roi": 103
+        },
+        {
+          "order": 31,
+          "x_global": 1748,
+          "x_roi": 448,
+          "clicked_y_global": 711,
+          "clicked_y_roi": 111
+        },
+        {
+          "order": 32,
+          "x_global": 1762,
+          "x_roi": 462,
+          "clicked_y_global": 711,
+          "clicked_y_roi": 111
+        },
+        {
+          "order": 33,
+          "x_global": 1777,
+          "x_roi": 477,
+          "clicked_y_global": 711,
+          "clicked_y_roi": 111
+        },
+        {
+          "order": 34,
+          "x_global": 1792,
+          "x_roi": 492,
+          "clicked_y_global": 712,
+          "clicked_y_roi": 112
+        }
+      ],
+      "annotated_at": "2026-07-29T11:51:15+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F002.png"
+    },
+    "F003": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F003",
+      "split": "held-out",
+      "image_name": "Stripe_02_e0_t105204227_v-41p8_do.bmp",
+      "image_sha256": "1cc0a700b7ad9ba0e060698d140ace0871f5d1d44d18073b79a452aa0eeafac3",
+      "reference_global": {
+        "x": 1000,
+        "y": 1020
+      },
+      "roi_bounds_global": {
+        "x0": 750,
+        "y0": 920,
+        "x1": 1250,
+        "y1": 1120
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 760,
+          "x_roi": 10,
+          "clicked_y_global": 1094,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 2,
+          "x_global": 774,
+          "x_roi": 24,
+          "clicked_y_global": 1094,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 3,
+          "x_global": 789,
+          "x_roi": 39,
+          "clicked_y_global": 1092,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 4,
+          "x_global": 804,
+          "x_roi": 54,
+          "clicked_y_global": 1082,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 5,
+          "x_global": 819,
+          "x_roi": 69,
+          "clicked_y_global": 1082,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 6,
+          "x_global": 834,
+          "x_roi": 84,
+          "clicked_y_global": 1079,
+          "clicked_y_roi": 159
+        },
+        {
+          "order": 7,
+          "x_global": 847,
+          "x_roi": 97,
+          "clicked_y_global": 1036,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 8,
+          "x_global": 861,
+          "x_roi": 111,
+          "clicked_y_global": 1036,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 9,
+          "x_global": 876,
+          "x_roi": 126,
+          "clicked_y_global": 1034,
+          "clicked_y_roi": 114
+        },
+        {
+          "order": 10,
+          "x_global": 891,
+          "x_roi": 141,
+          "clicked_y_global": 1030,
+          "clicked_y_roi": 110
+        },
+        {
+          "order": 11,
+          "x_global": 905,
+          "x_roi": 155,
+          "clicked_y_global": 1033,
+          "clicked_y_roi": 113
+        },
+        {
+          "order": 12,
+          "x_global": 919,
+          "x_roi": 169,
+          "clicked_y_global": 1108,
+          "clicked_y_roi": 188
+        },
+        {
+          "order": 13,
+          "x_global": 1038,
+          "x_roi": 288,
+          "clicked_y_global": 1025,
+          "clicked_y_roi": 105
+        },
+        {
+          "order": 14,
+          "x_global": 1052,
+          "x_roi": 302,
+          "clicked_y_global": 1032,
+          "clicked_y_roi": 112
+        },
+        {
+          "order": 15,
+          "x_global": 1066,
+          "x_roi": 316,
+          "clicked_y_global": 1033,
+          "clicked_y_roi": 113
+        },
+        {
+          "order": 16,
+          "x_global": 1081,
+          "x_roi": 331,
+          "clicked_y_global": 1034,
+          "clicked_y_roi": 114
+        },
+        {
+          "order": 17,
+          "x_global": 1095,
+          "x_roi": 345,
+          "clicked_y_global": 1038,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 18,
+          "x_global": 1110,
+          "x_roi": 360,
+          "clicked_y_global": 1107,
+          "clicked_y_roi": 187
+        },
+        {
+          "order": 19,
+          "x_global": 1124,
+          "x_roi": 374,
+          "clicked_y_global": 1038,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 20,
+          "x_global": 1138,
+          "x_roi": 388,
+          "clicked_y_global": 1039,
+          "clicked_y_roi": 119
+        },
+        {
+          "order": 21,
+          "x_global": 1153,
+          "x_roi": 403,
+          "clicked_y_global": 1039,
+          "clicked_y_roi": 119
+        },
+        {
+          "order": 22,
+          "x_global": 1167,
+          "x_roi": 417,
+          "clicked_y_global": 1039,
+          "clicked_y_roi": 119
+        },
+        {
+          "order": 23,
+          "x_global": 1182,
+          "x_roi": 432,
+          "clicked_y_global": 1037,
+          "clicked_y_roi": 117
+        },
+        {
+          "order": 24,
+          "x_global": 1198,
+          "x_roi": 448,
+          "clicked_y_global": 1038,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 25,
+          "x_global": 1211,
+          "x_roi": 461,
+          "clicked_y_global": 1036,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 26,
+          "x_global": 1226,
+          "x_roi": 476,
+          "clicked_y_global": 1036,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 27,
+          "x_global": 1239,
+          "x_roi": 489,
+          "clicked_y_global": 1036,
+          "clicked_y_roi": 116
+        }
+      ],
+      "annotated_at": "2026-07-29T00:18:48+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F003.png"
+    },
+    "F004": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F004",
+      "split": "held-out",
+      "image_name": "Stripe_06_e0_t160727286_v0p9056_do.bmp",
+      "image_sha256": "ba91ca9177533be6fbc8e29f46989613b5235e9513b570ff91051633b06473fc",
+      "reference_global": {
+        "x": 400,
+        "y": 450
+      },
+      "roi_bounds_global": {
+        "x0": 150,
+        "y0": 350,
+        "x1": 650,
+        "y1": 550
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 156,
+          "x_roi": 6,
+          "clicked_y_global": 501,
+          "clicked_y_roi": 151
+        },
+        {
+          "order": 2,
+          "x_global": 169,
+          "x_roi": 19,
+          "clicked_y_global": 538,
+          "clicked_y_roi": 188
+        },
+        {
+          "order": 3,
+          "x_global": 183,
+          "x_roi": 33,
+          "clicked_y_global": 533,
+          "clicked_y_roi": 183
+        },
+        {
+          "order": 4,
+          "x_global": 198,
+          "x_roi": 48,
+          "clicked_y_global": 531,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 5,
+          "x_global": 212,
+          "x_roi": 62,
+          "clicked_y_global": 529,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 6,
+          "x_global": 227,
+          "x_roi": 77,
+          "clicked_y_global": 529,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 7,
+          "x_global": 241,
+          "x_roi": 91,
+          "clicked_y_global": 529,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 8,
+          "x_global": 257,
+          "x_roi": 107,
+          "clicked_y_global": 528,
+          "clicked_y_roi": 178
+        },
+        {
+          "order": 9,
+          "x_global": 270,
+          "x_roi": 120,
+          "clicked_y_global": 529,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 10,
+          "x_global": 285,
+          "x_roi": 135,
+          "clicked_y_global": 528,
+          "clicked_y_roi": 178
+        },
+        {
+          "order": 11,
+          "x_global": 298,
+          "x_roi": 148,
+          "clicked_y_global": 527,
+          "clicked_y_roi": 177
+        },
+        {
+          "order": 12,
+          "x_global": 312,
+          "x_roi": 162,
+          "clicked_y_global": 522,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 13,
+          "x_global": 328,
+          "x_roi": 178,
+          "clicked_y_global": 524,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 14,
+          "x_global": 344,
+          "x_roi": 194,
+          "clicked_y_global": 524,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 15,
+          "x_global": 359,
+          "x_roi": 209,
+          "clicked_y_global": 523,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 16,
+          "x_global": 373,
+          "x_roi": 223,
+          "clicked_y_global": 521,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 17,
+          "x_global": 387,
+          "x_roi": 237,
+          "clicked_y_global": 521,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 18,
+          "x_global": 401,
+          "x_roi": 251,
+          "clicked_y_global": 520,
+          "clicked_y_roi": 170
+        },
+        {
+          "order": 19,
+          "x_global": 415,
+          "x_roi": 265,
+          "clicked_y_global": 520,
+          "clicked_y_roi": 170
+        },
+        {
+          "order": 20,
+          "x_global": 429,
+          "x_roi": 279,
+          "clicked_y_global": 519,
+          "clicked_y_roi": 169
+        },
+        {
+          "order": 21,
+          "x_global": 444,
+          "x_roi": 294,
+          "clicked_y_global": 518,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 22,
+          "x_global": 459,
+          "x_roi": 309,
+          "clicked_y_global": 518,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 23,
+          "x_global": 473,
+          "x_roi": 323,
+          "clicked_y_global": 517,
+          "clicked_y_roi": 167
+        },
+        {
+          "order": 24,
+          "x_global": 488,
+          "x_roi": 338,
+          "clicked_y_global": 516,
+          "clicked_y_roi": 166
+        },
+        {
+          "order": 25,
+          "x_global": 502,
+          "x_roi": 352,
+          "clicked_y_global": 519,
+          "clicked_y_roi": 169
+        },
+        {
+          "order": 26,
+          "x_global": 516,
+          "x_roi": 366,
+          "clicked_y_global": 521,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 27,
+          "x_global": 529,
+          "x_roi": 379,
+          "clicked_y_global": 525,
+          "clicked_y_roi": 175
+        },
+        {
+          "order": 28,
+          "x_global": 545,
+          "x_roi": 395,
+          "clicked_y_global": 524,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 29,
+          "x_global": 561,
+          "x_roi": 411,
+          "clicked_y_global": 523,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 30,
+          "x_global": 575,
+          "x_roi": 425,
+          "clicked_y_global": 523,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 31,
+          "x_global": 589,
+          "x_roi": 439,
+          "clicked_y_global": 524,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 32,
+          "x_global": 604,
+          "x_roi": 454,
+          "clicked_y_global": 523,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 33,
+          "x_global": 619,
+          "x_roi": 469,
+          "clicked_y_global": 523,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 34,
+          "x_global": 632,
+          "x_roi": 482,
+          "clicked_y_global": 522,
+          "clicked_y_roi": 172
+        }
+      ],
+      "annotated_at": "2026-07-29T00:20:20+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F004.png"
+    },
+    "F005": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F005",
+      "split": "held-out",
+      "image_name": "Stripe_06_e0_t160727286_v0p9056_do.bmp",
+      "image_sha256": "ba91ca9177533be6fbc8e29f46989613b5235e9513b570ff91051633b06473fc",
+      "reference_global": {
+        "x": 1600,
+        "y": 700
+      },
+      "roi_bounds_global": {
+        "x0": 1350,
+        "y0": 600,
+        "x1": 1850,
+        "y1": 800
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 1358,
+          "x_roi": 8,
+          "clicked_y_global": 770,
+          "clicked_y_roi": 170
+        },
+        {
+          "order": 2,
+          "x_global": 1371,
+          "x_roi": 21,
+          "clicked_y_global": 772,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 3,
+          "x_global": 1386,
+          "x_roi": 36,
+          "clicked_y_global": 774,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 4,
+          "x_global": 1400,
+          "x_roi": 50,
+          "clicked_y_global": 773,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 5,
+          "x_global": 1414,
+          "x_roi": 64,
+          "clicked_y_global": 772,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 6,
+          "x_global": 1429,
+          "x_roi": 79,
+          "clicked_y_global": 769,
+          "clicked_y_roi": 169
+        },
+        {
+          "order": 7,
+          "x_global": 1443,
+          "x_roi": 93,
+          "clicked_y_global": 768,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 8,
+          "x_global": 1458,
+          "x_roi": 108,
+          "clicked_y_global": 766,
+          "clicked_y_roi": 166
+        },
+        {
+          "order": 9,
+          "x_global": 1471,
+          "x_roi": 121,
+          "clicked_y_global": 765,
+          "clicked_y_roi": 165
+        },
+        {
+          "order": 10,
+          "x_global": 1485,
+          "x_roi": 135,
+          "clicked_y_global": 764,
+          "clicked_y_roi": 164
+        },
+        {
+          "order": 11,
+          "x_global": 1500,
+          "x_roi": 150,
+          "clicked_y_global": 764,
+          "clicked_y_roi": 164
+        },
+        {
+          "order": 12,
+          "x_global": 1515,
+          "x_roi": 165,
+          "clicked_y_global": 763,
+          "clicked_y_roi": 163
+        },
+        {
+          "order": 13,
+          "x_global": 1530,
+          "x_roi": 180,
+          "clicked_y_global": 763,
+          "clicked_y_roi": 163
+        },
+        {
+          "order": 14,
+          "x_global": 1544,
+          "x_roi": 194,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 15,
+          "x_global": 1557,
+          "x_roi": 207,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 16,
+          "x_global": 1572,
+          "x_roi": 222,
+          "clicked_y_global": 762,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 17,
+          "x_global": 1587,
+          "x_roi": 237,
+          "clicked_y_global": 761,
+          "clicked_y_roi": 161
+        },
+        {
+          "order": 18,
+          "x_global": 1601,
+          "x_roi": 251,
+          "clicked_y_global": 760,
+          "clicked_y_roi": 160
+        },
+        {
+          "order": 19,
+          "x_global": 1615,
+          "x_roi": 265,
+          "clicked_y_global": 759,
+          "clicked_y_roi": 159
+        },
+        {
+          "order": 20,
+          "x_global": 1631,
+          "x_roi": 281,
+          "clicked_y_global": 759,
+          "clicked_y_roi": 159
+        },
+        {
+          "order": 21,
+          "x_global": 1646,
+          "x_roi": 296,
+          "clicked_y_global": 711,
+          "clicked_y_roi": 111
+        },
+        {
+          "order": 22,
+          "x_global": 1662,
+          "x_roi": 312,
+          "clicked_y_global": 712,
+          "clicked_y_roi": 112
+        },
+        {
+          "order": 23,
+          "x_global": 1675,
+          "x_roi": 325,
+          "clicked_y_global": 713,
+          "clicked_y_roi": 113
+        },
+        {
+          "order": 24,
+          "x_global": 1689,
+          "x_roi": 339,
+          "clicked_y_global": 718,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 25,
+          "x_global": 1704,
+          "x_roi": 354,
+          "clicked_y_global": 719,
+          "clicked_y_roi": 119
+        },
+        {
+          "order": 26,
+          "x_global": 1718,
+          "x_roi": 368,
+          "clicked_y_global": 721,
+          "clicked_y_roi": 121
+        },
+        {
+          "order": 27,
+          "x_global": 1733,
+          "x_roi": 383,
+          "clicked_y_global": 722,
+          "clicked_y_roi": 122
+        },
+        {
+          "order": 28,
+          "x_global": 1747,
+          "x_roi": 397,
+          "clicked_y_global": 724,
+          "clicked_y_roi": 124
+        },
+        {
+          "order": 29,
+          "x_global": 1762,
+          "x_roi": 412,
+          "clicked_y_global": 724,
+          "clicked_y_roi": 124
+        },
+        {
+          "order": 30,
+          "x_global": 1776,
+          "x_roi": 426,
+          "clicked_y_global": 723,
+          "clicked_y_roi": 123
+        },
+        {
+          "order": 31,
+          "x_global": 1792,
+          "x_roi": 442,
+          "clicked_y_global": 724,
+          "clicked_y_roi": 124
+        },
+        {
+          "order": 32,
+          "x_global": 1808,
+          "x_roi": 458,
+          "clicked_y_global": 723,
+          "clicked_y_roi": 123
+        },
+        {
+          "order": 33,
+          "x_global": 1821,
+          "x_roi": 471,
+          "clicked_y_global": 724,
+          "clicked_y_roi": 124
+        },
+        {
+          "order": 34,
+          "x_global": 1834,
+          "x_roi": 484,
+          "clicked_y_global": 723,
+          "clicked_y_roi": 123
+        },
+        {
+          "order": 35,
+          "x_global": 1848,
+          "x_roi": 498,
+          "clicked_y_global": 728,
+          "clicked_y_roi": 128
+        }
+      ],
+      "annotated_at": "2026-07-29T00:21:55+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F005.png"
+    },
+    "F006": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F006",
+      "split": "held-out",
+      "image_name": "Stripe_06_e0_t160727286_v0p9056_do.bmp",
+      "image_sha256": "ba91ca9177533be6fbc8e29f46989613b5235e9513b570ff91051633b06473fc",
+      "reference_global": {
+        "x": 1000,
+        "y": 1200
+      },
+      "roi_bounds_global": {
+        "x0": 750,
+        "y0": 1100,
+        "x1": 1250,
+        "y1": 1300
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 758,
+          "x_roi": 8,
+          "clicked_y_global": 1276,
+          "clicked_y_roi": 176
+        },
+        {
+          "order": 2,
+          "x_global": 772,
+          "x_roi": 22,
+          "clicked_y_global": 1274,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 3,
+          "x_global": 786,
+          "x_roi": 36,
+          "clicked_y_global": 1274,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 4,
+          "x_global": 801,
+          "x_roi": 51,
+          "clicked_y_global": 1273,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 5,
+          "x_global": 816,
+          "x_roi": 66,
+          "clicked_y_global": 1272,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 6,
+          "x_global": 832,
+          "x_roi": 82,
+          "clicked_y_global": 1272,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 7,
+          "x_global": 846,
+          "x_roi": 96,
+          "clicked_y_global": 1272,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 8,
+          "x_global": 859,
+          "x_roi": 109,
+          "clicked_y_global": 1272,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 9,
+          "x_global": 874,
+          "x_roi": 124,
+          "clicked_y_global": 1274,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 10,
+          "x_global": 889,
+          "x_roi": 139,
+          "clicked_y_global": 1274,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 11,
+          "x_global": 903,
+          "x_roi": 153,
+          "clicked_y_global": 1272,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 12,
+          "x_global": 919,
+          "x_roi": 169,
+          "clicked_y_global": 1274,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 13,
+          "x_global": 934,
+          "x_roi": 184,
+          "clicked_y_global": 1272,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 14,
+          "x_global": 948,
+          "x_roi": 198,
+          "clicked_y_global": 1272,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 15,
+          "x_global": 1062,
+          "x_roi": 312,
+          "clicked_y_global": 1271,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 16,
+          "x_global": 1078,
+          "x_roi": 328,
+          "clicked_y_global": 1271,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 17,
+          "x_global": 1091,
+          "x_roi": 341,
+          "clicked_y_global": 1271,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 18,
+          "x_global": 1106,
+          "x_roi": 356,
+          "clicked_y_global": 1271,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 19,
+          "x_global": 1121,
+          "x_roi": 371,
+          "clicked_y_global": 1271,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 20,
+          "x_global": 1137,
+          "x_roi": 387,
+          "clicked_y_global": 1271,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 21,
+          "x_global": 1149,
+          "x_roi": 399,
+          "clicked_y_global": 1271,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 22,
+          "x_global": 1164,
+          "x_roi": 414,
+          "clicked_y_global": 1269,
+          "clicked_y_roi": 169
+        },
+        {
+          "order": 23,
+          "x_global": 1178,
+          "x_roi": 428,
+          "clicked_y_global": 1268,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 24,
+          "x_global": 1194,
+          "x_roi": 444,
+          "clicked_y_global": 1268,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 25,
+          "x_global": 1208,
+          "x_roi": 458,
+          "clicked_y_global": 1268,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 26,
+          "x_global": 1221,
+          "x_roi": 471,
+          "clicked_y_global": 1268,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 27,
+          "x_global": 1235,
+          "x_roi": 485,
+          "clicked_y_global": 1268,
+          "clicked_y_roi": 168
+        }
+      ],
+      "annotated_at": "2026-07-29T00:23:02+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F006.png"
+    },
+    "F007": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F007",
+      "split": "held-out",
+      "image_name": "Stripe_07_e0_t160816815_v12p0066_do.bmp",
+      "image_sha256": "b435b54faca10e726c0001cc5666967cca3c078d7d69b7d436a8f928af3d742c",
+      "reference_global": {
+        "x": 350,
+        "y": 500
+      },
+      "roi_bounds_global": {
+        "x0": 100,
+        "y0": 400,
+        "x1": 600,
+        "y1": 600
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 132,
+          "x_roi": 32,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 2,
+          "x_global": 170,
+          "x_roi": 70,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 3,
+          "x_global": 203,
+          "x_roi": 103,
+          "clicked_y_global": 577,
+          "clicked_y_roi": 177
+        },
+        {
+          "order": 4,
+          "x_global": 244,
+          "x_roi": 144,
+          "clicked_y_global": 575,
+          "clicked_y_roi": 175
+        },
+        {
+          "order": 5,
+          "x_global": 281,
+          "x_roi": 181,
+          "clicked_y_global": 574,
+          "clicked_y_roi": 174
+        },
+        {
+          "order": 6,
+          "x_global": 321,
+          "x_roi": 221,
+          "clicked_y_global": 572,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 7,
+          "x_global": 359,
+          "x_roi": 259,
+          "clicked_y_global": 572,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 8,
+          "x_global": 395,
+          "x_roi": 295,
+          "clicked_y_global": 576,
+          "clicked_y_roi": 176
+        },
+        {
+          "order": 9,
+          "x_global": 432,
+          "x_roi": 332,
+          "clicked_y_global": 572,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 10,
+          "x_global": 469,
+          "x_roi": 369,
+          "clicked_y_global": 567,
+          "clicked_y_roi": 167
+        },
+        {
+          "order": 11,
+          "x_global": 509,
+          "x_roi": 409,
+          "clicked_y_global": 561,
+          "clicked_y_roi": 161
+        },
+        {
+          "order": 12,
+          "x_global": 546,
+          "x_roi": 446,
+          "clicked_y_global": 561,
+          "clicked_y_roi": 161
+        },
+        {
+          "order": 13,
+          "x_global": 586,
+          "x_roi": 486,
+          "clicked_y_global": 558,
+          "clicked_y_roi": 158
+        }
+      ],
+      "annotated_at": "2026-07-29T00:23:38+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F007.png"
+    },
+    "F008": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F008",
+      "split": "held-out",
+      "image_name": "Stripe_07_e0_t160816815_v12p0066_do.bmp",
+      "image_sha256": "b435b54faca10e726c0001cc5666967cca3c078d7d69b7d436a8f928af3d742c",
+      "reference_global": {
+        "x": 1500,
+        "y": 900
+      },
+      "roi_bounds_global": {
+        "x0": 1250,
+        "y0": 800,
+        "x1": 1750,
+        "y1": 1000
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 1265,
+          "x_roi": 15,
+          "clicked_y_global": 956,
+          "clicked_y_roi": 156
+        },
+        {
+          "order": 2,
+          "x_global": 1302,
+          "x_roi": 52,
+          "clicked_y_global": 958,
+          "clicked_y_roi": 158
+        },
+        {
+          "order": 3,
+          "x_global": 1341,
+          "x_roi": 91,
+          "clicked_y_global": 958,
+          "clicked_y_roi": 158
+        },
+        {
+          "order": 4,
+          "x_global": 1378,
+          "x_roi": 128,
+          "clicked_y_global": 959,
+          "clicked_y_roi": 159
+        },
+        {
+          "order": 5,
+          "x_global": 1420,
+          "x_roi": 170,
+          "clicked_y_global": 958,
+          "clicked_y_roi": 158
+        },
+        {
+          "order": 6,
+          "x_global": 1452,
+          "x_roi": 202,
+          "clicked_y_global": 958,
+          "clicked_y_roi": 158
+        },
+        {
+          "order": 7,
+          "x_global": 1490,
+          "x_roi": 240,
+          "clicked_y_global": 957,
+          "clicked_y_roi": 157
+        },
+        {
+          "order": 8,
+          "x_global": 1529,
+          "x_roi": 279,
+          "clicked_y_global": 958,
+          "clicked_y_roi": 158
+        },
+        {
+          "order": 9,
+          "x_global": 1567,
+          "x_roi": 317,
+          "clicked_y_global": 958,
+          "clicked_y_roi": 158
+        },
+        {
+          "order": 10,
+          "x_global": 1609,
+          "x_roi": 359,
+          "clicked_y_global": 955,
+          "clicked_y_roi": 155
+        },
+        {
+          "order": 11,
+          "x_global": 1641,
+          "x_roi": 391,
+          "clicked_y_global": 955,
+          "clicked_y_roi": 155
+        },
+        {
+          "order": 12,
+          "x_global": 1679,
+          "x_roi": 429,
+          "clicked_y_global": 956,
+          "clicked_y_roi": 156
+        },
+        {
+          "order": 13,
+          "x_global": 1721,
+          "x_roi": 471,
+          "clicked_y_global": 957,
+          "clicked_y_roi": 157
+        }
+      ],
+      "annotated_at": "2026-07-29T00:24:13+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F008.png"
+    },
+    "F009": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F009",
+      "split": "held-out",
+      "image_name": "Stripe_07_e0_t160816815_v12p0066_do.bmp",
+      "image_sha256": "b435b54faca10e726c0001cc5666967cca3c078d7d69b7d436a8f928af3d742c",
+      "reference_global": {
+        "x": 600,
+        "y": 1650
+      },
+      "roi_bounds_global": {
+        "x0": 350,
+        "y0": 1550,
+        "x1": 850,
+        "y1": 1750
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 359,
+          "x_roi": 9,
+          "clicked_y_global": 1736,
+          "clicked_y_roi": 186
+        },
+        {
+          "order": 2,
+          "x_global": 398,
+          "x_roi": 48,
+          "clicked_y_global": 1739,
+          "clicked_y_roi": 189
+        },
+        {
+          "order": 3,
+          "x_global": 434,
+          "x_roi": 84,
+          "clicked_y_global": 1738,
+          "clicked_y_roi": 188
+        },
+        {
+          "order": 4,
+          "x_global": 469,
+          "x_roi": 119,
+          "clicked_y_global": 1738,
+          "clicked_y_roi": 188
+        },
+        {
+          "order": 5,
+          "x_global": 512,
+          "x_roi": 162,
+          "clicked_y_global": 1740,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 6,
+          "x_global": 545,
+          "x_roi": 195,
+          "clicked_y_global": 1743,
+          "clicked_y_roi": 193
+        },
+        {
+          "order": 7,
+          "x_global": 588,
+          "x_roi": 238,
+          "clicked_y_global": 1745,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 8,
+          "x_global": 628,
+          "x_roi": 278,
+          "clicked_y_global": 1744,
+          "clicked_y_roi": 194
+        },
+        {
+          "order": 9,
+          "x_global": 655,
+          "x_roi": 305,
+          "clicked_y_global": 1747,
+          "clicked_y_roi": 197
+        },
+        {
+          "order": 10,
+          "x_global": 695,
+          "x_roi": 345,
+          "clicked_y_global": 1748,
+          "clicked_y_roi": 198
+        },
+        {
+          "order": 11,
+          "x_global": 736,
+          "x_roi": 386,
+          "clicked_y_global": 1745,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 12,
+          "x_global": 775,
+          "x_roi": 425,
+          "clicked_y_global": 1744,
+          "clicked_y_roi": 194
+        },
+        {
+          "order": 13,
+          "x_global": 814,
+          "x_roi": 464,
+          "clicked_y_global": 1748,
+          "clicked_y_roi": 198
+        },
+        {
+          "order": 14,
+          "x_global": 841,
+          "x_roi": 491,
+          "clicked_y_global": 1749,
+          "clicked_y_roi": 199
+        }
+      ],
+      "annotated_at": "2026-07-29T00:25:02+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F009.png"
+    },
+    "F010": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F010",
+      "split": "held-out",
+      "image_name": "Stripe_08_e0_t160911003_v13p2083_do.bmp",
+      "image_sha256": "37c538d5c5a31d1fea5f94ee30404c6672a557c78a5c69473b85fae196487777",
+      "reference_global": {
+        "x": 450,
+        "y": 650
+      },
+      "roi_bounds_global": {
+        "x0": 200,
+        "y0": 550,
+        "x1": 700,
+        "y1": 750
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 209,
+          "x_roi": 9,
+          "clicked_y_global": 744,
+          "clicked_y_roi": 194
+        },
+        {
+          "order": 2,
+          "x_global": 249,
+          "x_roi": 49,
+          "clicked_y_global": 746,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 3,
+          "x_global": 288,
+          "x_roi": 88,
+          "clicked_y_global": 746,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 4,
+          "x_global": 321,
+          "x_roi": 121,
+          "clicked_y_global": 746,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 5,
+          "x_global": 358,
+          "x_roi": 158,
+          "clicked_y_global": 745,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 6,
+          "x_global": 399,
+          "x_roi": 199,
+          "clicked_y_global": 745,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 7,
+          "x_global": 437,
+          "x_roi": 237,
+          "clicked_y_global": 745,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 8,
+          "x_global": 474,
+          "x_roi": 274,
+          "clicked_y_global": 745,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 9,
+          "x_global": 510,
+          "x_roi": 310,
+          "clicked_y_global": 746,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 10,
+          "x_global": 549,
+          "x_roi": 349,
+          "clicked_y_global": 744,
+          "clicked_y_roi": 194
+        },
+        {
+          "order": 11,
+          "x_global": 585,
+          "x_roi": 385,
+          "clicked_y_global": 739,
+          "clicked_y_roi": 189
+        },
+        {
+          "order": 12,
+          "x_global": 624,
+          "x_roi": 424,
+          "clicked_y_global": 741,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 13,
+          "x_global": 662,
+          "x_roi": 462,
+          "clicked_y_global": 742,
+          "clicked_y_roi": 192
+        }
+      ],
+      "annotated_at": "2026-07-29T00:25:43+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F010.png"
+    },
+    "F011": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F011",
+      "split": "held-out",
+      "image_name": "Stripe_08_e0_t160911003_v13p2083_do.bmp",
+      "image_sha256": "37c538d5c5a31d1fea5f94ee30404c6672a557c78a5c69473b85fae196487777",
+      "reference_global": {
+        "x": 1550,
+        "y": 900
+      },
+      "roi_bounds_global": {
+        "x0": 1300,
+        "y0": 800,
+        "x1": 1800,
+        "y1": 1000
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 1342,
+          "x_roi": 42,
+          "clicked_y_global": 978,
+          "clicked_y_roi": 178
+        },
+        {
+          "order": 2,
+          "x_global": 1384,
+          "x_roi": 84,
+          "clicked_y_global": 991,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 3,
+          "x_global": 1419,
+          "x_roi": 119,
+          "clicked_y_global": 991,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 4,
+          "x_global": 1458,
+          "x_roi": 158,
+          "clicked_y_global": 991,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 5,
+          "x_global": 1496,
+          "x_roi": 196,
+          "clicked_y_global": 990,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 6,
+          "x_global": 1534,
+          "x_roi": 234,
+          "clicked_y_global": 990,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 7,
+          "x_global": 1571,
+          "x_roi": 271,
+          "clicked_y_global": 990,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 8,
+          "x_global": 1609,
+          "x_roi": 309,
+          "clicked_y_global": 990,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 9,
+          "x_global": 1647,
+          "x_roi": 347,
+          "clicked_y_global": 990,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 10,
+          "x_global": 1684,
+          "x_roi": 384,
+          "clicked_y_global": 989,
+          "clicked_y_roi": 189
+        },
+        {
+          "order": 11,
+          "x_global": 1724,
+          "x_roi": 424,
+          "clicked_y_global": 989,
+          "clicked_y_roi": 189
+        },
+        {
+          "order": 12,
+          "x_global": 1761,
+          "x_roi": 461,
+          "clicked_y_global": 990,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 13,
+          "x_global": 1798,
+          "x_roi": 498,
+          "clicked_y_global": 992,
+          "clicked_y_roi": 192
+        }
+      ],
+      "annotated_at": "2026-07-29T00:26:18+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F011.png"
+    },
+    "F012": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F012",
+      "split": "held-out",
+      "image_name": "Stripe_08_e0_t160911003_v13p2083_do.bmp",
+      "image_sha256": "37c538d5c5a31d1fea5f94ee30404c6672a557c78a5c69473b85fae196487777",
+      "reference_global": {
+        "x": 1100,
+        "y": 250
+      },
+      "roi_bounds_global": {
+        "x0": 850,
+        "y0": 150,
+        "x1": 1350,
+        "y1": 350
+      },
+      "label": "ambiguous",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 851,
+          "x_roi": 1,
+          "clicked_y_global": 341,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 2,
+          "x_global": 890,
+          "x_roi": 40,
+          "clicked_y_global": 342,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 3,
+          "x_global": 929,
+          "x_roi": 79,
+          "clicked_y_global": 341,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 4,
+          "x_global": 968,
+          "x_roi": 118,
+          "clicked_y_global": 343,
+          "clicked_y_roi": 193
+        },
+        {
+          "order": 5,
+          "x_global": 1005,
+          "x_roi": 155,
+          "clicked_y_global": 343,
+          "clicked_y_roi": 193
+        },
+        {
+          "order": 6,
+          "x_global": 1043,
+          "x_roi": 193,
+          "clicked_y_global": 342,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 7,
+          "x_global": 1082,
+          "x_roi": 232,
+          "clicked_y_global": 342,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 8,
+          "x_global": 1119,
+          "x_roi": 269,
+          "clicked_y_global": 342,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 9,
+          "x_global": 1156,
+          "x_roi": 306,
+          "clicked_y_global": 343,
+          "clicked_y_roi": 193
+        },
+        {
+          "order": 10,
+          "x_global": 1194,
+          "x_roi": 344,
+          "clicked_y_global": 341,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 11,
+          "x_global": 1231,
+          "x_roi": 381,
+          "clicked_y_global": 340,
+          "clicked_y_roi": 190
+        },
+        {
+          "order": 12,
+          "x_global": 1271,
+          "x_roi": 421,
+          "clicked_y_global": 341,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 13,
+          "x_global": 1309,
+          "x_roi": 459,
+          "clicked_y_global": 342,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 14,
+          "x_global": 1344,
+          "x_roi": 494,
+          "clicked_y_global": 343,
+          "clicked_y_roi": 193
+        }
+      ],
+      "annotated_at": "2026-07-29T00:27:23+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F012.png"
+    },
+    "F013": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F013",
+      "split": "held-out",
+      "image_name": "Stripe_12_e1_t220320710_v7p3386_do.bmp",
+      "image_sha256": "6ea689ad99b221e3568351278b8c1785ad0f6cf5b3c70a9ecfb534b645fb166f",
+      "reference_global": {
+        "x": 350,
+        "y": 500
+      },
+      "roi_bounds_global": {
+        "x0": 100,
+        "y0": 400,
+        "x1": 600,
+        "y1": 600
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 109,
+          "x_roi": 9,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 2,
+          "x_global": 123,
+          "x_roi": 23,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 3,
+          "x_global": 138,
+          "x_roi": 38,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 4,
+          "x_global": 152,
+          "x_roi": 52,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 5,
+          "x_global": 167,
+          "x_roi": 67,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 6,
+          "x_global": 181,
+          "x_roi": 81,
+          "clicked_y_global": 584,
+          "clicked_y_roi": 184
+        },
+        {
+          "order": 7,
+          "x_global": 196,
+          "x_roi": 96,
+          "clicked_y_global": 584,
+          "clicked_y_roi": 184
+        },
+        {
+          "order": 8,
+          "x_global": 209,
+          "x_roi": 109,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 9,
+          "x_global": 222,
+          "x_roi": 122,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 10,
+          "x_global": 238,
+          "x_roi": 138,
+          "clicked_y_global": 578,
+          "clicked_y_roi": 178
+        },
+        {
+          "order": 11,
+          "x_global": 252,
+          "x_roi": 152,
+          "clicked_y_global": 577,
+          "clicked_y_roi": 177
+        },
+        {
+          "order": 12,
+          "x_global": 266,
+          "x_roi": 166,
+          "clicked_y_global": 578,
+          "clicked_y_roi": 178
+        },
+        {
+          "order": 13,
+          "x_global": 281,
+          "x_roi": 181,
+          "clicked_y_global": 579,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 14,
+          "x_global": 295,
+          "x_roi": 195,
+          "clicked_y_global": 579,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 15,
+          "x_global": 309,
+          "x_roi": 209,
+          "clicked_y_global": 579,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 16,
+          "x_global": 324,
+          "x_roi": 224,
+          "clicked_y_global": 579,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 17,
+          "x_global": 339,
+          "x_roi": 239,
+          "clicked_y_global": 579,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 18,
+          "x_global": 353,
+          "x_roi": 253,
+          "clicked_y_global": 579,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 19,
+          "x_global": 368,
+          "x_roi": 268,
+          "clicked_y_global": 579,
+          "clicked_y_roi": 179
+        },
+        {
+          "order": 20,
+          "x_global": 381,
+          "x_roi": 281,
+          "clicked_y_global": 580,
+          "clicked_y_roi": 180
+        },
+        {
+          "order": 21,
+          "x_global": 397,
+          "x_roi": 297,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 22,
+          "x_global": 411,
+          "x_roi": 311,
+          "clicked_y_global": 580,
+          "clicked_y_roi": 180
+        },
+        {
+          "order": 23,
+          "x_global": 424,
+          "x_roi": 324,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 24,
+          "x_global": 440,
+          "x_roi": 340,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 25,
+          "x_global": 454,
+          "x_roi": 354,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 26,
+          "x_global": 468,
+          "x_roi": 368,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 27,
+          "x_global": 482,
+          "x_roi": 382,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 28,
+          "x_global": 497,
+          "x_roi": 397,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 29,
+          "x_global": 512,
+          "x_roi": 412,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 30,
+          "x_global": 525,
+          "x_roi": 425,
+          "clicked_y_global": 581,
+          "clicked_y_roi": 181
+        },
+        {
+          "order": 31,
+          "x_global": 539,
+          "x_roi": 439,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 32,
+          "x_global": 554,
+          "x_roi": 454,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 33,
+          "x_global": 569,
+          "x_roi": 469,
+          "clicked_y_global": 582,
+          "clicked_y_roi": 182
+        },
+        {
+          "order": 34,
+          "x_global": 584,
+          "x_roi": 484,
+          "clicked_y_global": 584,
+          "clicked_y_roi": 184
+        },
+        {
+          "order": 35,
+          "x_global": 598,
+          "x_roi": 498,
+          "clicked_y_global": 584,
+          "clicked_y_roi": 184
+        }
+      ],
+      "annotated_at": "2026-07-29T00:28:43+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F013.png"
+    },
+    "F014": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F014",
+      "split": "held-out",
+      "image_name": "Stripe_12_e1_t220320710_v7p3386_do.bmp",
+      "image_sha256": "6ea689ad99b221e3568351278b8c1785ad0f6cf5b3c70a9ecfb534b645fb166f",
+      "reference_global": {
+        "x": 1550,
+        "y": 1450
+      },
+      "roi_bounds_global": {
+        "x0": 1300,
+        "y0": 1350,
+        "x1": 1800,
+        "y1": 1550
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 1300,
+          "x_roi": 0,
+          "clicked_y_global": 1512,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 2,
+          "x_global": 1314,
+          "x_roi": 14,
+          "clicked_y_global": 1512,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 3,
+          "x_global": 1329,
+          "x_roi": 29,
+          "clicked_y_global": 1512,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 4,
+          "x_global": 1341,
+          "x_roi": 41,
+          "clicked_y_global": 1512,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 5,
+          "x_global": 1353,
+          "x_roi": 53,
+          "clicked_y_global": 1512,
+          "clicked_y_roi": 162
+        },
+        {
+          "order": 6,
+          "x_global": 1367,
+          "x_roi": 67,
+          "clicked_y_global": 1545,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 7,
+          "x_global": 1384,
+          "x_roi": 84,
+          "clicked_y_global": 1543,
+          "clicked_y_roi": 193
+        },
+        {
+          "order": 8,
+          "x_global": 1400,
+          "x_roi": 100,
+          "clicked_y_global": 1465,
+          "clicked_y_roi": 115
+        },
+        {
+          "order": 9,
+          "x_global": 1414,
+          "x_roi": 114,
+          "clicked_y_global": 1465,
+          "clicked_y_roi": 115
+        },
+        {
+          "order": 10,
+          "x_global": 1426,
+          "x_roi": 126,
+          "clicked_y_global": 1465,
+          "clicked_y_roi": 115
+        },
+        {
+          "order": 11,
+          "x_global": 1441,
+          "x_roi": 141,
+          "clicked_y_global": 1464,
+          "clicked_y_roi": 114
+        },
+        {
+          "order": 12,
+          "x_global": 1456,
+          "x_roi": 156,
+          "clicked_y_global": 1464,
+          "clicked_y_roi": 114
+        },
+        {
+          "order": 13,
+          "x_global": 1472,
+          "x_roi": 172,
+          "clicked_y_global": 1464,
+          "clicked_y_roi": 114
+        },
+        {
+          "order": 14,
+          "x_global": 1488,
+          "x_roi": 188,
+          "clicked_y_global": 1466,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 15,
+          "x_global": 1502,
+          "x_roi": 202,
+          "clicked_y_global": 1466,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 16,
+          "x_global": 1516,
+          "x_roi": 216,
+          "clicked_y_global": 1466,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 17,
+          "x_global": 1528,
+          "x_roi": 228,
+          "clicked_y_global": 1466,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 18,
+          "x_global": 1544,
+          "x_roi": 244,
+          "clicked_y_global": 1464,
+          "clicked_y_roi": 114
+        },
+        {
+          "order": 19,
+          "x_global": 1557,
+          "x_roi": 257,
+          "clicked_y_global": 1464,
+          "clicked_y_roi": 114
+        },
+        {
+          "order": 20,
+          "x_global": 1573,
+          "x_roi": 273,
+          "clicked_y_global": 1465,
+          "clicked_y_roi": 115
+        },
+        {
+          "order": 21,
+          "x_global": 1586,
+          "x_roi": 286,
+          "clicked_y_global": 1466,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 22,
+          "x_global": 1598,
+          "x_roi": 298,
+          "clicked_y_global": 1468,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 23,
+          "x_global": 1612,
+          "x_roi": 312,
+          "clicked_y_global": 1467,
+          "clicked_y_roi": 117
+        },
+        {
+          "order": 24,
+          "x_global": 1629,
+          "x_roi": 329,
+          "clicked_y_global": 1468,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 25,
+          "x_global": 1643,
+          "x_roi": 343,
+          "clicked_y_global": 1466,
+          "clicked_y_roi": 116
+        },
+        {
+          "order": 26,
+          "x_global": 1656,
+          "x_roi": 356,
+          "clicked_y_global": 1468,
+          "clicked_y_roi": 118
+        },
+        {
+          "order": 27,
+          "x_global": 1673,
+          "x_roi": 373,
+          "clicked_y_global": 1469,
+          "clicked_y_roi": 119
+        },
+        {
+          "order": 28,
+          "x_global": 1686,
+          "x_roi": 386,
+          "clicked_y_global": 1476,
+          "clicked_y_roi": 126
+        },
+        {
+          "order": 29,
+          "x_global": 1701,
+          "x_roi": 401,
+          "clicked_y_global": 1486,
+          "clicked_y_roi": 136
+        },
+        {
+          "order": 30,
+          "x_global": 1714,
+          "x_roi": 414,
+          "clicked_y_global": 1482,
+          "clicked_y_roi": 132
+        },
+        {
+          "order": 31,
+          "x_global": 1730,
+          "x_roi": 430,
+          "clicked_y_global": 1483,
+          "clicked_y_roi": 133
+        },
+        {
+          "order": 32,
+          "x_global": 1743,
+          "x_roi": 443,
+          "clicked_y_global": 1487,
+          "clicked_y_roi": 137
+        },
+        {
+          "order": 33,
+          "x_global": 1759,
+          "x_roi": 459,
+          "clicked_y_global": 1488,
+          "clicked_y_roi": 138
+        },
+        {
+          "order": 34,
+          "x_global": 1775,
+          "x_roi": 475,
+          "clicked_y_global": 1491,
+          "clicked_y_roi": 141
+        },
+        {
+          "order": 35,
+          "x_global": 1789,
+          "x_roi": 489,
+          "clicked_y_global": 1465,
+          "clicked_y_roi": 115
+        }
+      ],
+      "annotated_at": "2026-07-29T00:30:22+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F014.png"
+    },
+    "F015": {
+      "dataset_version": "raw_pitch_final_heldout_v1",
+      "sample_id": "F015",
+      "split": "held-out",
+      "image_name": "Stripe_12_e1_t220320710_v7p3386_do.bmp",
+      "image_sha256": "6ea689ad99b221e3568351278b8c1785ad0f6cf5b3c70a9ecfb534b645fb166f",
+      "reference_global": {
+        "x": 1000,
+        "y": 1000
+      },
+      "roi_bounds_global": {
+        "x0": 750,
+        "y0": 900,
+        "x1": 1250,
+        "y1": 1100
+      },
+      "label": "valid",
+      "confidence": "high",
+      "notes": "",
+      "centers": [
+        {
+          "order": 1,
+          "x_global": 754,
+          "x_roi": 4,
+          "clicked_y_global": 1068,
+          "clicked_y_roi": 168
+        },
+        {
+          "order": 2,
+          "x_global": 769,
+          "x_roi": 19,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 3,
+          "x_global": 784,
+          "x_roi": 34,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 4,
+          "x_global": 799,
+          "x_roi": 49,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 5,
+          "x_global": 814,
+          "x_roi": 64,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 6,
+          "x_global": 829,
+          "x_roi": 79,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 7,
+          "x_global": 840,
+          "x_roi": 90,
+          "clicked_y_global": 1072,
+          "clicked_y_roi": 172
+        },
+        {
+          "order": 8,
+          "x_global": 855,
+          "x_roi": 105,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 9,
+          "x_global": 870,
+          "x_roi": 120,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 10,
+          "x_global": 885,
+          "x_roi": 135,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 11,
+          "x_global": 898,
+          "x_roi": 148,
+          "clicked_y_global": 1069,
+          "clicked_y_roi": 169
+        },
+        {
+          "order": 12,
+          "x_global": 912,
+          "x_roi": 162,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 13,
+          "x_global": 926,
+          "x_roi": 176,
+          "clicked_y_global": 1069,
+          "clicked_y_roi": 169
+        },
+        {
+          "order": 14,
+          "x_global": 939,
+          "x_roi": 189,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 15,
+          "x_global": 954,
+          "x_roi": 204,
+          "clicked_y_global": 1071,
+          "clicked_y_roi": 171
+        },
+        {
+          "order": 16,
+          "x_global": 974,
+          "x_roi": 224,
+          "clicked_y_global": 1073,
+          "clicked_y_roi": 173
+        },
+        {
+          "order": 17,
+          "x_global": 990,
+          "x_roi": 240,
+          "clicked_y_global": 1096,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 18,
+          "x_global": 1001,
+          "x_roi": 251,
+          "clicked_y_global": 1096,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 19,
+          "x_global": 1014,
+          "x_roi": 264,
+          "clicked_y_global": 1094,
+          "clicked_y_roi": 194
+        },
+        {
+          "order": 20,
+          "x_global": 1027,
+          "x_roi": 277,
+          "clicked_y_global": 1093,
+          "clicked_y_roi": 193
+        },
+        {
+          "order": 21,
+          "x_global": 1041,
+          "x_roi": 291,
+          "clicked_y_global": 1092,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 22,
+          "x_global": 1056,
+          "x_roi": 306,
+          "clicked_y_global": 1092,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 23,
+          "x_global": 1070,
+          "x_roi": 320,
+          "clicked_y_global": 1092,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 24,
+          "x_global": 1086,
+          "x_roi": 336,
+          "clicked_y_global": 1091,
+          "clicked_y_roi": 191
+        },
+        {
+          "order": 25,
+          "x_global": 1100,
+          "x_roi": 350,
+          "clicked_y_global": 1092,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 26,
+          "x_global": 1115,
+          "x_roi": 365,
+          "clicked_y_global": 1092,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 27,
+          "x_global": 1129,
+          "x_roi": 379,
+          "clicked_y_global": 1092,
+          "clicked_y_roi": 192
+        },
+        {
+          "order": 28,
+          "x_global": 1143,
+          "x_roi": 393,
+          "clicked_y_global": 1094,
+          "clicked_y_roi": 194
+        },
+        {
+          "order": 29,
+          "x_global": 1158,
+          "x_roi": 408,
+          "clicked_y_global": 1096,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 30,
+          "x_global": 1171,
+          "x_roi": 421,
+          "clicked_y_global": 1097,
+          "clicked_y_roi": 197
+        },
+        {
+          "order": 31,
+          "x_global": 1187,
+          "x_roi": 437,
+          "clicked_y_global": 1096,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 32,
+          "x_global": 1200,
+          "x_roi": 450,
+          "clicked_y_global": 1096,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 33,
+          "x_global": 1214,
+          "x_roi": 464,
+          "clicked_y_global": 1096,
+          "clicked_y_roi": 196
+        },
+        {
+          "order": 34,
+          "x_global": 1229,
+          "x_roi": 479,
+          "clicked_y_global": 1095,
+          "clicked_y_roi": 195
+        },
+        {
+          "order": 35,
+          "x_global": 1245,
+          "x_roi": 495,
+          "clicked_y_global": 1095,
+          "clicked_y_roi": 195
+        }
+      ],
+      "annotated_at": "2026-07-29T00:31:48+08:00",
+      "preview_path": "outputs/raw_pitch_final_heldout_v1/previews/F015.png"
+    }
   }
 }
