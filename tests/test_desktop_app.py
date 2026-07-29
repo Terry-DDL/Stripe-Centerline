@@ -13,6 +13,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from tools.desktop_app import (  # noqa: E402
     DesktopSelectionState,
+    basin_table_rows,
     build_output_dir,
     calculate_display_size,
     create_failure_result_overlay,
@@ -235,6 +236,29 @@ class DesktopAppHelperTests(unittest.TestCase):
             (("Reference point", "(662, 1065)", ""),),
         )
 
+    def test_stage3_metrics_show_only_frozen_pitch_evidence(self):
+        values = result_metric_values(
+            {"x_global": 270, "y_global": 100},
+            {
+                "result_source": "stage3_1",
+                "success": True,
+                "left": {"distance_to_click_px": 30.0},
+                "right": {"distance_to_click_px": 30.0},
+                "stripe_spacing_px": 60.0,
+                "pitch_evidence": {
+                    "confidence": "medium",
+                    "success_eligible": False,
+                    "diagnostic_pitch_px": 59.0,
+                    "usable_pitch_px": None,
+                    "harmonic_ambiguity": {"detected": False},
+                },
+            },
+        )
+
+        self.assertEqual("Raw pitch evidence", values[-1][0])
+        self.assertEqual("Medium · diagnostics only", values[-1][1])
+        self.assertIn("59", values[-1][2])
+
     def test_failed_result_overlay_has_roi_and_click_but_no_centerlines(self):
         image = np.full((30, 40), 128, dtype=np.uint8)
         result = type(
@@ -323,6 +347,23 @@ class DesktopAppHelperTests(unittest.TestCase):
         self.assertEqual(rows[0]["center_x_global"], 100.5)
         self.assertEqual(rows[1]["side"], "right")
         self.assertEqual(rows[1]["center_x_global"], "")
+
+    def test_basin_table_rows_do_not_claim_legacy_track_support(self):
+        rows = basin_table_rows(
+            {
+                "left": {
+                    "center_x_global": 240.0,
+                    "distance_to_click_px": 30.0,
+                    "basin_width_px": 40.0,
+                    "evidence_status": "verified",
+                },
+                "right": None,
+            }
+        )
+
+        self.assertEqual("verified", rows[0]["evidence_status"])
+        self.assertEqual(40.0, rows[0]["basin_width_px"])
+        self.assertEqual("", rows[1]["center_x_global"])
 
     def test_pitch_reference_is_built_once_per_image(self):
         calls = []

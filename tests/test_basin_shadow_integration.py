@@ -439,14 +439,20 @@ class BasinShadowIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(formal_before, formal.report)
 
-    def test_desktop_worker_keeps_formal_result_when_shadow_wrapper_raises(self):
+    def test_desktop_worker_never_falls_back_when_legacy_logging_raises(self):
         application = desktop_app.StripeDesktopApp.__new__(
             desktop_app.StripeDesktopApp
         )
         application.pitch_reference_cache = {}
+        application.pitch_reference_lock = __import__("threading").Lock()
         application.analysis_queue = __import__("queue").Queue()
         image = np.zeros((200, 500), dtype=np.uint8)
-        formal = production_result()
+        legacy = production_result()
+        logged = __import__("threading").Event()
+
+        def failing_log(*args, **kwargs):
+            logged.set()
+            raise RuntimeError("log unavailable")
 
         with (
             patch.object(
@@ -457,12 +463,25 @@ class BasinShadowIntegrationTests(unittest.TestCase):
             patch.object(
                 desktop_app,
                 "run_interactive_case",
-                return_value=formal,
+                return_value=legacy,
+            ),
+            patch.object(
+                desktop_app,
+                "run_frozen_stage3",
+                return_value=unavailable_shadow_result(),
+            ),
+            patch.object(
+                desktop_app,
+                "persist_formal_result",
             ),
             patch.object(
                 desktop_app,
                 "run_shadow_and_log",
-                side_effect=RuntimeError("log unavailable"),
+                side_effect=failing_log,
+            ),
+            patch.object(
+                desktop_app,
+                "update_timing",
             ),
         ):
             application._run_analysis_worker(
@@ -473,12 +492,71 @@ class BasinShadowIntegrationTests(unittest.TestCase):
                 100,
                 Path("/tmp/shadow-integration-test"),
             )
+            self.assertTrue(logged.wait(timeout=2.0))
 
-        _key, queued_result, error, _pitch_map = (
-            application.analysis_queue.get_nowait()
+        completion = application.analysis_queue.get_nowait()
+        self.assertIsNone(completion.error)
+        self.assertIsNot(legacy, completion.result)
+        self.assertEqual(
+            desktop_app.STAGE3_RESULT_SOURCE,
+            completion.result.report["result_source"],
         )
-        self.assertIs(formal, queued_result)
-        self.assertIsNone(error)
+        self.assertFalse(
+            completion.result.report["interactive_result"]["success"]
+        )
+
+    def test_legacy_detector_failure_cannot_replace_stage3_result(self):
+        application = desktop_app.StripeDesktopApp.__new__(
+            desktop_app.StripeDesktopApp
+        )
+        application.pitch_reference_cache = {}
+        application.pitch_reference_lock = __import__("threading").Lock()
+        application.analysis_queue = __import__("queue").Queue()
+        image = np.zeros((200, 500), dtype=np.uint8)
+        legacy_attempted = __import__("threading").Event()
+
+        def failing_legacy(*args, **kwargs):
+            legacy_attempted.set()
+            raise RuntimeError("legacy unavailable")
+
+        with (
+            patch.object(
+                desktop_app,
+                "get_or_build_pitch_reference",
+                return_value=object(),
+            ),
+            patch.object(
+                desktop_app,
+                "run_interactive_case",
+                side_effect=failing_legacy,
+            ),
+            patch.object(
+                desktop_app,
+                "run_frozen_stage3",
+                return_value=available_shadow_result(),
+            ),
+            patch.object(desktop_app, "persist_formal_result"),
+            patch.object(desktop_app, "update_timing"),
+        ):
+            application._run_analysis_worker(
+                ("image-id", (270, 100)),
+                image,
+                "synthetic.bmp",
+                270,
+                100,
+                Path("/tmp/stage3-no-fallback-test"),
+            )
+            self.assertTrue(legacy_attempted.wait(timeout=2.0))
+
+        completion = application.analysis_queue.get_nowait()
+        self.assertIsNone(completion.error)
+        self.assertTrue(
+            completion.result.report["interactive_result"]["success"]
+        )
+        self.assertEqual(
+            desktop_app.STAGE3_RESULT_SOURCE,
+            completion.result.report["result_source"],
+        )
 
     def test_shadow_source_does_not_read_heldout_or_formal_detectors(self):
         source = "\n".join(

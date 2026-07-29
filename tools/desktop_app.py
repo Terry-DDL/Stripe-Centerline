@@ -7,8 +7,10 @@ import queue
 import re
 import sys
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+import uuid
 
 import cv2
 import numpy as np
@@ -21,10 +23,24 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SRC_DIR))
 
 from config import CONFIG, INTERACTIVE_CONFIG  # noqa: E402
-from interactive_pipeline import run_interactive_case  # noqa: E402
+from interactive_pipeline import (  # noqa: E402
+    calculate_interactive_roi_bounds,
+    run_interactive_case,
+)
 from pitch_reference import build_pitch_reference_map  # noqa: E402
 from tools.basin_shadow_integration import (  # noqa: E402
     run_shadow_and_log,
+)
+from tools.desktop_performance import (  # noqa: E402
+    DEFAULT_LOG_ROOT as PERFORMANCE_LOG_ROOT,
+    elapsed_ms,
+    update_timing,
+)
+from tools.stage3_desktop_runtime import (  # noqa: E402
+    RESULT_SOURCE as STAGE3_RESULT_SOURCE,
+    build_desktop_result,
+    persist_formal_result,
+    run_frozen_stage3,
 )
 
 
@@ -59,6 +75,19 @@ class DesktopSelectionState:
         self.zoom_center = point
         self.click_point = point
         self.result = None
+
+
+@dataclass(frozen=True)
+class AnalysisCompletion:
+    """One formal Stage 3.1 worker result returned to the Tk thread."""
+
+    analysis_key: tuple
+    result: object | None
+    error: Exception | None
+    run_id: str
+    click_started_ns: int
+    output_dir: Path
+    performance_metadata: dict
 
 
 def project_image_paths() -> list[Path]:
@@ -475,6 +504,61 @@ def track_table_rows(result_report: dict) -> list[dict]:
     return rows
 
 
+def basin_table_rows(result_report: dict) -> list[dict]:
+    """Return Stage 3.1 basin geometry without legacy track evidence."""
+
+    rows = []
+    for side in ("left", "right"):
+        side_result = result_report.get(side)
+        if side_result is None:
+            rows.append(
+                {
+                    "side": side,
+                    "center_x_global": "",
+                    "distance_to_click_px": "",
+                    "basin_width_px": "",
+                    "evidence_status": "",
+                }
+            )
+        else:
+            rows.append(
+                {
+                    "side": side,
+                    "center_x_global": side_result["center_x_global"],
+                    "distance_to_click_px": side_result[
+                        "distance_to_click_px"
+                    ],
+                    "basin_width_px": side_result["basin_width_px"],
+                    "evidence_status": side_result["evidence_status"],
+                }
+            )
+    return rows
+
+
+def raw_pitch_evidence_text(pitch: dict) -> tuple[str, str]:
+    """Describe frozen raw pitch without promoting diagnostics to success."""
+
+    ambiguity = pitch.get("harmonic_ambiguity") or {}
+    confidence = pitch.get("confidence", "unavailable")
+    usable = pitch.get("usable_pitch_px")
+    diagnostic = pitch.get("diagnostic_pitch_px")
+    if (
+        confidence == "high"
+        and pitch.get("success_eligible")
+        and not ambiguity.get("detected")
+        and usable is not None
+    ):
+        return "High-confidence", f"Usable local pitch: {usable:g} px"
+    if ambiguity.get("detected"):
+        return "Harmonic ambiguous", "Diagnostics only"
+    if diagnostic is not None:
+        return (
+            f"{confidence.capitalize()} · diagnostics only",
+            f"Diagnostic pitch: {diagnostic:g} px",
+        )
+    return "Unavailable", "No formal pitch evidence"
+
+
 def result_metric_values(click: dict, interactive_result: dict) -> tuple:
     """Return only measurements that are safe for the formal result."""
 
@@ -494,9 +578,16 @@ def result_metric_values(click: dict, interactive_result: dict) -> tuple:
         return f"{side_result['distance_to_click_px']:g} px"
 
     spacing = interactive_result["stripe_spacing_px"]
-    pitch_status, pitch_details = pitch_safety_text(
-        interactive_result["pitch_guard"]
-    )
+    if interactive_result.get("result_source") == STAGE3_RESULT_SOURCE:
+        evidence_title = "Raw pitch evidence"
+        pitch_status, pitch_details = raw_pitch_evidence_text(
+            interactive_result["pitch_evidence"]
+        )
+    else:
+        evidence_title = "Pitch safety"
+        pitch_status, pitch_details = pitch_safety_text(
+            interactive_result["pitch_guard"]
+        )
     values.extend(
         (
             (
@@ -514,7 +605,7 @@ def result_metric_values(click: dict, interactive_result: dict) -> tuple:
                 "unavailable" if spacing is None else f"{spacing:g} px",
                 "",
             ),
-            ("Pitch safety", pitch_status, pitch_details),
+            (evidence_title, pitch_status, pitch_details),
         )
     )
     return tuple(values)
@@ -724,6 +815,7 @@ class StripeDesktopApp:
         self.analysis_queue = queue.Queue()
         self.analysis_running = False
         self.pitch_reference_cache = {}
+        self.pitch_reference_lock = threading.Lock()
 
         self._configure_window()
         self._build_controls()
@@ -1204,6 +1296,8 @@ class StripeDesktopApp:
             or self.state.click_point is None
         ):
             return
+        click_started_ns = time.perf_counter_ns()
+        run_id = uuid.uuid4().hex
         output_dir = build_output_dir(
             self.image_name,
             self.image_bytes,
@@ -1229,6 +1323,8 @@ class StripeDesktopApp:
                 click_x,
                 click_y,
                 output_dir,
+                run_id,
+                click_started_ns,
             ),
             daemon=True,
         )
@@ -1243,54 +1339,223 @@ class StripeDesktopApp:
         click_x: int,
         click_y: int,
         output_dir: Path,
+        run_id: str | None = None,
+        click_started_ns: int | None = None,
     ) -> None:
-        pitch_reference_map = None
+        run_id = run_id or uuid.uuid4().hex
+        click_started_ns = (
+            click_started_ns
+            if click_started_ns is not None
+            else time.perf_counter_ns()
+        )
+        metadata = {
+            "image_name": image_name,
+            "reference_global": {"x": click_x, "y": click_y},
+            "result_source": STAGE3_RESULT_SOURCE,
+        }
+        stage3_result = None
+        stage3_ms = None
+        result_write_ms = None
+        phase = "roi"
         try:
-            pitch_reference_map = get_or_build_pitch_reference(
-                self.pitch_reference_cache,
-                analysis_key[0],
-                image_gray,
+            bounds = calculate_interactive_roi_bounds(
+                image_gray.shape,
+                click_x,
+                click_y,
+                INTERACTIVE_CONFIG,
             )
-            result = run_interactive_case(
+            reference_global = {"x": click_x, "y": click_y}
+            phase = "stage3"
+            stage3_started_ns = time.perf_counter_ns()
+            try:
+                stage3_result = run_frozen_stage3(
+                    image_gray,
+                    reference_global,
+                    bounds,
+                )
+            finally:
+                stage3_ms = elapsed_ms(
+                    stage3_started_ns,
+                    time.perf_counter_ns(),
+                )
+            phase = "adapter"
+            result = build_desktop_result(
+                image_gray,
+                image_name,
+                reference_global,
+                bounds,
+                stage3_result,
+                output_dir,
+            )
+            phase = "result_write"
+            write_started_ns = time.perf_counter_ns()
+            try:
+                persist_formal_result(result)
+            finally:
+                result_write_ms = elapsed_ms(
+                    write_started_ns,
+                    time.perf_counter_ns(),
+                )
+            error = None
+        except Exception as caught_error:
+            result = None
+            error = caught_error
+        measurements = {
+            "stage3_algorithm_ms": stage3_ms,
+            "result_write_ms": result_write_ms,
+        }
+        if error is not None and phase in {"stage3", "adapter"}:
+            measurements["stage3_error"] = (
+                f"{type(error).__name__}: {error}"
+            )
+        if error is not None and phase == "result_write":
+            measurements["result_write_error"] = (
+                f"{type(error).__name__}: {error}"
+            )
+        self._record_performance(
+            output_dir,
+            run_id,
+            metadata,
+            measurements,
+        )
+        self.analysis_queue.put(
+            AnalysisCompletion(
+                analysis_key=analysis_key,
+                result=result,
+                error=error,
+                run_id=run_id,
+                click_started_ns=click_started_ns,
+                output_dir=output_dir,
+                performance_metadata=metadata,
+            )
+        )
+        if result is not None and stage3_result is not None:
+            diagnostic_worker = threading.Thread(
+                target=self._run_legacy_diagnostic_worker,
+                args=(
+                    analysis_key[0],
+                    image_gray,
+                    image_name,
+                    click_x,
+                    click_y,
+                    output_dir,
+                    stage3_result,
+                    run_id,
+                    metadata,
+                ),
+                daemon=True,
+            )
+            diagnostic_worker.start()
+
+    def _run_legacy_diagnostic_worker(
+        self,
+        image_identity: str,
+        image_gray,
+        image_name: str,
+        click_x: int,
+        click_y: int,
+        output_dir: Path,
+        stage3_result: dict,
+        run_id: str,
+        metadata: dict,
+    ) -> None:
+        """Run the former detector for diagnostics without touching the UI."""
+
+        legacy_started_ns = time.perf_counter_ns()
+        legacy_result = None
+        legacy_error = None
+        legacy_output_dir = output_dir / "legacy_diagnostic"
+        try:
+            lock = getattr(self, "pitch_reference_lock", None)
+            if lock is None:
+                pitch_reference_map = get_or_build_pitch_reference(
+                    self.pitch_reference_cache,
+                    image_identity,
+                    image_gray,
+                )
+            else:
+                with lock:
+                    pitch_reference_map = get_or_build_pitch_reference(
+                        self.pitch_reference_cache,
+                        image_identity,
+                        image_gray,
+                    )
+            legacy_result = run_interactive_case(
                 image_gray,
                 click_x,
                 click_y,
-                output_dir,
+                legacy_output_dir,
                 CONFIG,
                 INTERACTIVE_CONFIG,
                 image_name=image_name,
                 pitch_reference_map=pitch_reference_map,
             )
-            error = None
-        except (OSError, ValueError, cv2.error) as caught_error:
-            result = None
-            error = caught_error
-        if result is not None:
+        except Exception as caught_error:
+            legacy_error = caught_error
+        legacy_ms = elapsed_ms(
+            legacy_started_ns,
+            time.perf_counter_ns(),
+        )
+        if legacy_result is not None:
             try:
                 run_shadow_and_log(
                     image_gray,
                     image_name,
-                    result,
-                    output_dir,
+                    legacy_result,
+                    legacy_output_dir,
+                    shadow_runner=lambda *_args: stage3_result,
                 )
-            except Exception as shadow_error:
+            except Exception as comparison_error:
                 print(
-                    "Basin shadow logging failed: "
-                    f"{type(shadow_error).__name__}: {shadow_error}",
+                    "Legacy diagnostic comparison logging failed: "
+                    f"{type(comparison_error).__name__}: "
+                    f"{comparison_error}",
                     file=sys.stderr,
                 )
-        self.analysis_queue.put(
-            (analysis_key, result, error, pitch_reference_map)
+        measurements = {"legacy_algorithm_ms": legacy_ms}
+        if legacy_error is not None:
+            measurements["legacy_diagnostic_error"] = (
+                f"{type(legacy_error).__name__}: {legacy_error}"
+            )
+            print(
+                "Legacy diagnostic failed: "
+                f"{measurements['legacy_diagnostic_error']}",
+                file=sys.stderr,
+            )
+        self._record_performance(
+            output_dir,
+            run_id,
+            metadata,
+            measurements,
         )
+
+    @staticmethod
+    def _record_performance(
+        output_dir: Path,
+        run_id: str,
+        metadata: dict,
+        measurements: dict,
+    ) -> None:
+        """Keep instrumentation failures outside the detection contract."""
+
+        try:
+            update_timing(
+                PERFORMANCE_LOG_ROOT,
+                output_dir,
+                run_id,
+                metadata,
+                measurements,
+            )
+        except Exception as timing_error:
+            print(
+                "Performance timing write failed: "
+                f"{type(timing_error).__name__}: {timing_error}",
+                file=sys.stderr,
+            )
 
     def _poll_analysis(self) -> None:
         try:
-            (
-                analysis_key,
-                result,
-                error,
-                _pitch_reference_map,
-            ) = self.analysis_queue.get_nowait()
+            completion = self.analysis_queue.get_nowait()
         except queue.Empty:
             if self.analysis_running:
                 self.root.after(50, self._poll_analysis)
@@ -1302,23 +1567,41 @@ class StripeDesktopApp:
             self.state.image_identity,
             self.state.click_point,
         )
-        if analysis_key != current_key:
+        if completion.analysis_key != current_key:
             self.status_label.configure(
                 text="Previous analysis ignored after selection changed"
             )
             return
-        if error is not None:
+        if completion.error is not None:
             self.status_label.configure(text="Analysis failed")
             messagebox.showerror(
                 "Analysis failed",
-                str(error),
+                str(completion.error),
                 parent=self.root,
             )
             return
 
-        self.state.result = result
+        self.state.result = completion.result
         self.status_label.configure(text="Analysis complete")
-        self._show_result(result)
+        ui_started_ns = time.perf_counter_ns()
+        self._show_result(completion.result)
+        self.root.update_idletasks()
+        displayed_ns = time.perf_counter_ns()
+        self._record_performance(
+            completion.output_dir,
+            completion.run_id,
+            completion.performance_metadata,
+            {
+                "ui_draw_ms": elapsed_ms(
+                    ui_started_ns,
+                    displayed_ns,
+                ),
+                "click_to_display_ms": elapsed_ms(
+                    completion.click_started_ns,
+                    displayed_ns,
+                ),
+            },
+        )
 
     def _show_selection_view(self) -> None:
         """Return to point selection inside the same application window."""
@@ -1360,13 +1643,24 @@ class StripeDesktopApp:
         interactive_result = report["interactive_result"]
         click = report["click"]
         success = interactive_result["success"]
+        stage3_formal = (
+            report.get("result_source") == STAGE3_RESULT_SOURCE
+        )
 
         header = ttk.Frame(content)
         header.grid(row=0, column=0, sticky="ew", pady=(0, 8))
         header.columnconfigure(0, weight=1)
         ttk.Label(
             header,
-            text="Detection successful" if success else "Detection failed",
+            text=(
+                "Detection successful"
+                if success
+                else (
+                    "Unable to determine reliably"
+                    if stage3_formal
+                    else "Detection failed"
+                )
+            ),
             style="Title.TLabel",
         ).grid(row=0, column=0, sticky="w")
         ttk.Button(
@@ -1380,7 +1674,7 @@ class StripeDesktopApp:
             text=self.image_name,
         ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(2, 0))
 
-        pitch_guard = interactive_result["pitch_guard"]
+        pitch_guard = interactive_result.get("pitch_guard", {})
         values = result_metric_values(click, interactive_result)
         metrics = ttk.Frame(content)
         metrics.grid(row=1, column=0, sticky="ew", pady=(0, 8))
@@ -1408,23 +1702,41 @@ class StripeDesktopApp:
 
         warning_flags = [
             flag
-            for flag in interactive_result["warning_flags"]
+            for flag in interactive_result.get("warning_flags", [])
             if not flag.startswith("whole_image_pitch_")
         ]
         notes = []
         if not success:
             failure_reasons = interactive_result["failure_reasons"]
-            notes.append(
-                "Detection failed: "
-                + (
-                    " | ".join(failure_reasons)
-                    if failure_reasons
-                    else "immediate neighbors were not verified"
+            if stage3_formal:
+                internal_reason = interactive_result.get(
+                    "unavailable_reason"
                 )
-            )
+                notes.append(
+                    "Unable to determine reliably."
+                    + (
+                        " Diagnostic reason: "
+                        + internal_reason.replace("_", " ")
+                        if internal_reason
+                        else ""
+                    )
+                )
+            else:
+                notes.append(
+                    "Detection failed: "
+                    + (
+                        " | ".join(failure_reasons)
+                        if failure_reasons
+                        else "immediate neighbors were not verified"
+                    )
+                )
         if warning_flags:
             notes.append("Detection note: " + " | ".join(warning_flags))
-        pitch_note = pitch_safety_note(pitch_guard) if success else None
+        pitch_note = (
+            pitch_safety_note(pitch_guard)
+            if success and not stage3_formal
+            else None
+        )
         if pitch_note is not None:
             notes.append(pitch_note)
         if notes:
@@ -1506,20 +1818,41 @@ class StripeDesktopApp:
         ).pack(anchor="w", pady=(6, 0))
 
     def _add_track_table(self, parent, interactive_result: dict) -> None:
-        columns = (
-            "side",
-            "center_x_global",
-            "distance_to_click_px",
-            "median_width_px",
-            "valid_row_ratio",
-        )
-        headings = (
-            "Side",
-            "Center X",
-            "Distance",
-            "Width",
-            "Row support",
-        )
+        if (
+            interactive_result.get("result_source")
+            == STAGE3_RESULT_SOURCE
+        ):
+            columns = (
+                "side",
+                "center_x_global",
+                "distance_to_click_px",
+                "basin_width_px",
+                "evidence_status",
+            )
+            headings = (
+                "Side",
+                "Center X",
+                "Distance",
+                "Basin width",
+                "Evidence",
+            )
+            rows = basin_table_rows(interactive_result)
+        else:
+            columns = (
+                "side",
+                "center_x_global",
+                "distance_to_click_px",
+                "median_width_px",
+                "valid_row_ratio",
+            )
+            headings = (
+                "Side",
+                "Center X",
+                "Distance",
+                "Width",
+                "Row support",
+            )
+            rows = track_table_rows(interactive_result)
         table = ttk.Treeview(
             parent,
             columns=columns,
@@ -1530,7 +1863,7 @@ class StripeDesktopApp:
         for column, heading, width in zip(columns, headings, widths):
             table.heading(column, text=heading)
             table.column(column, width=width, anchor="center")
-        for row in track_table_rows(interactive_result):
+        for row in rows:
             table.insert("", "end", values=[row[column] for column in columns])
         table.pack(fill="x")
 
