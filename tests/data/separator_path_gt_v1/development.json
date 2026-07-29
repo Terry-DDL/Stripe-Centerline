@@ -3,31 +3,4083 @@
   "split": "development",
   "access_policy": "available_during_separator_method_design",
   "annotations": {
-    "D001": null,
-    "D002": null,
-    "D003": null,
-    "D004": null,
-    "D005": null,
-    "D006": null,
-    "D007": null,
-    "D008": null,
-    "D009": null,
-    "D010": null,
-    "D011": null,
-    "D012": null,
-    "D013": null,
-    "D014": null,
-    "D015": null,
-    "D016": null,
-    "D017": null,
-    "D018": null,
-    "D019": null,
-    "D020": null,
-    "D021": null,
-    "D022": null,
-    "D023": null,
-    "D024": null,
-    "D025": null,
-    "D026": null
+    "D001": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D001",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 661,
+        "y": 921
+      },
+      "roi_bounds_global": {
+        "x0": 411,
+        "y0": 801,
+        "x1": 911,
+        "y1": 1041
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 641,
+              "y_global": 802,
+              "x_roi": 230,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 642,
+              "y_global": 848,
+              "x_roi": 231,
+              "y_roi": 47
+            },
+            {
+              "order": 3,
+              "x_global": 640,
+              "y_global": 898,
+              "x_roi": 229,
+              "y_roi": 97
+            },
+            {
+              "order": 4,
+              "x_global": 640,
+              "y_global": 963,
+              "x_roi": 229,
+              "y_roi": 162
+            },
+            {
+              "order": 5,
+              "x_global": 639,
+              "y_global": 1038,
+              "x_roi": 228,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 802,
+            "y1_global": 1038,
+            "y0_roi": 1,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 682,
+              "y_global": 803,
+              "x_roi": 271,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 683,
+              "y_global": 936,
+              "x_roi": 272,
+              "y_roi": 135
+            },
+            {
+              "order": 3,
+              "x_global": 683,
+              "y_global": 964,
+              "x_roi": 272,
+              "y_roi": 163
+            },
+            {
+              "order": 4,
+              "x_global": 683,
+              "y_global": 1022,
+              "x_roi": 272,
+              "y_roi": 221
+            },
+            {
+              "order": 5,
+              "x_global": 683,
+              "y_global": 1039,
+              "x_roi": 272,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 803,
+            "y1_global": 1039,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 608,
+              "y_global": 803,
+              "x_roi": 197,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 608,
+              "y_global": 870,
+              "x_roi": 197,
+              "y_roi": 69
+            },
+            {
+              "order": 3,
+              "x_global": 608,
+              "y_global": 951,
+              "x_roi": 197,
+              "y_roi": 150
+            },
+            {
+              "order": 4,
+              "x_global": 609,
+              "y_global": 1039,
+              "x_roi": 198,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 803,
+            "y1_global": 1039,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 720,
+              "y_global": 802,
+              "x_roi": 309,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 721,
+              "y_global": 869,
+              "x_roi": 310,
+              "y_roi": 68
+            },
+            {
+              "order": 3,
+              "x_global": 720,
+              "y_global": 946,
+              "x_roi": 309,
+              "y_roi": 145
+            },
+            {
+              "order": 4,
+              "x_global": 720,
+              "y_global": 1039,
+              "x_roi": 309,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 802,
+            "y1_global": 1039,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:18:55+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D001.png"
+    },
+    "D002": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D002",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 482,
+        "y": 704
+      },
+      "roi_bounds_global": {
+        "x0": 232,
+        "y0": 584,
+        "x1": 732,
+        "y1": 824
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 456,
+              "y_global": 585,
+              "x_roi": 224,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 455,
+              "y_global": 676,
+              "x_roi": 223,
+              "y_roi": 92
+            },
+            {
+              "order": 3,
+              "x_global": 454,
+              "y_global": 821,
+              "x_roi": 222,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 585,
+            "y1_global": 821,
+            "y0_roi": 1,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 495,
+              "y_global": 585,
+              "x_roi": 263,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 495,
+              "y_global": 672,
+              "x_roi": 263,
+              "y_roi": 88
+            },
+            {
+              "order": 3,
+              "x_global": 496,
+              "y_global": 760,
+              "x_roi": 264,
+              "y_roi": 176
+            },
+            {
+              "order": 4,
+              "x_global": 496,
+              "y_global": 823,
+              "x_roi": 264,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 585,
+            "y1_global": 823,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 419,
+              "y_global": 585,
+              "x_roi": 187,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 420,
+              "y_global": 693,
+              "x_roi": 188,
+              "y_roi": 109
+            },
+            {
+              "order": 3,
+              "x_global": 421,
+              "y_global": 823,
+              "x_roi": 189,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 585,
+            "y1_global": 823,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 534,
+              "y_global": 584,
+              "x_roi": 302,
+              "y_roi": 0
+            },
+            {
+              "order": 2,
+              "x_global": 533,
+              "y_global": 702,
+              "x_roi": 301,
+              "y_roi": 118
+            },
+            {
+              "order": 3,
+              "x_global": 532,
+              "y_global": 823,
+              "x_roi": 300,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 584,
+            "y1_global": 823,
+            "y0_roi": 0,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:22:19+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D002.png"
+    },
+    "D003": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D003",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 1044,
+        "y": 581
+      },
+      "roi_bounds_global": {
+        "x0": 794,
+        "y0": 461,
+        "x1": 1294,
+        "y1": 701
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1025,
+              "y_global": 462,
+              "x_roi": 231,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1027,
+              "y_global": 585,
+              "x_roi": 233,
+              "y_roi": 124
+            },
+            {
+              "order": 3,
+              "x_global": 1028,
+              "y_global": 698,
+              "x_roi": 234,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 462,
+            "y1_global": 698,
+            "y0_roi": 1,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1063,
+              "y_global": 462,
+              "x_roi": 269,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1063,
+              "y_global": 609,
+              "x_roi": 269,
+              "y_roi": 148
+            },
+            {
+              "order": 3,
+              "x_global": 1062,
+              "y_global": 699,
+              "x_roi": 268,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 462,
+            "y1_global": 699,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 985,
+              "y_global": 462,
+              "x_roi": 191,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 986,
+              "y_global": 636,
+              "x_roi": 192,
+              "y_roi": 175
+            },
+            {
+              "order": 3,
+              "x_global": 984,
+              "y_global": 700,
+              "x_roi": 190,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 462,
+            "y1_global": 700,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1103,
+              "y_global": 462,
+              "x_roi": 309,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1103,
+              "y_global": 597,
+              "x_roi": 309,
+              "y_roi": 136
+            },
+            {
+              "order": 3,
+              "x_global": 1105,
+              "y_global": 699,
+              "x_roi": 311,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 462,
+            "y1_global": 699,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:23:31+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D003.png"
+    },
+    "D004": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D004",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 1086,
+        "y": 525
+      },
+      "roi_bounds_global": {
+        "x0": 836,
+        "y0": 405,
+        "x1": 1336,
+        "y1": 645
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1062,
+              "y_global": 406,
+              "x_roi": 226,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1063,
+              "y_global": 579,
+              "x_roi": 227,
+              "y_roi": 174
+            },
+            {
+              "order": 3,
+              "x_global": 1062,
+              "y_global": 643,
+              "x_roi": 226,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 406,
+            "y1_global": 643,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1102,
+              "y_global": 407,
+              "x_roi": 266,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 1103,
+              "y_global": 583,
+              "x_roi": 267,
+              "y_roi": 178
+            },
+            {
+              "order": 3,
+              "x_global": 1105,
+              "y_global": 644,
+              "x_roi": 269,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 407,
+            "y1_global": 644,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1027,
+              "y_global": 406,
+              "x_roi": 191,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1028,
+              "y_global": 590,
+              "x_roi": 192,
+              "y_roi": 185
+            },
+            {
+              "order": 3,
+              "x_global": 1029,
+              "y_global": 643,
+              "x_roi": 193,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 406,
+            "y1_global": 643,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1139,
+              "y_global": 406,
+              "x_roi": 303,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1140,
+              "y_global": 569,
+              "x_roi": 304,
+              "y_roi": 164
+            },
+            {
+              "order": 3,
+              "x_global": 1141,
+              "y_global": 643,
+              "x_roi": 305,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 406,
+            "y1_global": 643,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:24:11+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D004.png"
+    },
+    "D005": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D005",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 1044,
+        "y": 378
+      },
+      "roi_bounds_global": {
+        "x0": 794,
+        "y0": 258,
+        "x1": 1294,
+        "y1": 498
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1023,
+              "y_global": 260,
+              "x_roi": 229,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 1026,
+              "y_global": 410,
+              "x_roi": 232,
+              "y_roi": 152
+            },
+            {
+              "order": 3,
+              "x_global": 1028,
+              "y_global": 496,
+              "x_roi": 234,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 260,
+            "y1_global": 496,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1063,
+              "y_global": 259,
+              "x_roi": 269,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1063,
+              "y_global": 368,
+              "x_roi": 269,
+              "y_roi": 110
+            },
+            {
+              "order": 3,
+              "x_global": 1063,
+              "y_global": 424,
+              "x_roi": 269,
+              "y_roi": 166
+            },
+            {
+              "order": 4,
+              "x_global": 1062,
+              "y_global": 496,
+              "x_roi": 268,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 259,
+            "y1_global": 496,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 986,
+              "y_global": 260,
+              "x_roi": 192,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 986,
+              "y_global": 335,
+              "x_roi": 192,
+              "y_roi": 77
+            },
+            {
+              "order": 3,
+              "x_global": 985,
+              "y_global": 497,
+              "x_roi": 191,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 260,
+            "y1_global": 497,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1102,
+              "y_global": 258,
+              "x_roi": 308,
+              "y_roi": 0
+            },
+            {
+              "order": 2,
+              "x_global": 1103,
+              "y_global": 417,
+              "x_roi": 309,
+              "y_roi": 159
+            },
+            {
+              "order": 3,
+              "x_global": 1103,
+              "y_global": 497,
+              "x_roi": 309,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 258,
+            "y1_global": 497,
+            "y0_roi": 0,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:25:04+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D005.png"
+    },
+    "D006": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D006",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 507,
+        "y": 686
+      },
+      "roi_bounds_global": {
+        "x0": 257,
+        "y0": 566,
+        "x1": 757,
+        "y1": 806
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 495,
+              "y_global": 569,
+              "x_roi": 238,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 496,
+              "y_global": 674,
+              "x_roi": 239,
+              "y_roi": 108
+            },
+            {
+              "order": 3,
+              "x_global": 496,
+              "y_global": 804,
+              "x_roi": 239,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 569,
+            "y1_global": 804,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 531,
+              "y_global": 566,
+              "x_roi": 274,
+              "y_roi": 0
+            },
+            {
+              "order": 2,
+              "x_global": 533,
+              "y_global": 734,
+              "x_roi": 276,
+              "y_roi": 168
+            },
+            {
+              "order": 3,
+              "x_global": 532,
+              "y_global": 805,
+              "x_roi": 275,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 566,
+            "y1_global": 805,
+            "y0_roi": 0,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 455,
+              "y_global": 567,
+              "x_roi": 198,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 455,
+              "y_global": 699,
+              "x_roi": 198,
+              "y_roi": 133
+            },
+            {
+              "order": 3,
+              "x_global": 454,
+              "y_global": 805,
+              "x_roi": 197,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 567,
+            "y1_global": 805,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 565,
+              "y_global": 567,
+              "x_roi": 308,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 564,
+              "y_global": 683,
+              "x_roi": 307,
+              "y_roi": 117
+            },
+            {
+              "order": 3,
+              "x_global": 563,
+              "y_global": 805,
+              "x_roi": 306,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 567,
+            "y1_global": 805,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:26:13+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D006.png"
+    },
+    "D007": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D007",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 150,
+        "y": 1829
+      },
+      "roi_bounds_global": {
+        "x0": 0,
+        "y0": 1709,
+        "x1": 500,
+        "y1": 1949
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 149,
+              "y_global": 1709,
+              "x_roi": 149,
+              "y_roi": 0
+            },
+            {
+              "order": 2,
+              "x_global": 147,
+              "y_global": 1833,
+              "x_roi": 147,
+              "y_roi": 124
+            },
+            {
+              "order": 3,
+              "x_global": 149,
+              "y_global": 1947,
+              "x_roi": 149,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1709,
+            "y1_global": 1947,
+            "y0_roi": 0,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 192,
+              "y_global": 1711,
+              "x_roi": 192,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 192,
+              "y_global": 1831,
+              "x_roi": 192,
+              "y_roi": 122
+            },
+            {
+              "order": 3,
+              "x_global": 192,
+              "y_global": 1948,
+              "x_roi": 192,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1711,
+            "y1_global": 1948,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 126,
+              "y_global": 1711,
+              "x_roi": 126,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 125,
+              "y_global": 1841,
+              "x_roi": 125,
+              "y_roi": 132
+            },
+            {
+              "order": 3,
+              "x_global": 127,
+              "y_global": 1948,
+              "x_roi": 127,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1711,
+            "y1_global": 1948,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 238,
+              "y_global": 1712,
+              "x_roi": 238,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 237,
+              "y_global": 1825,
+              "x_roi": 237,
+              "y_roi": 116
+            },
+            {
+              "order": 3,
+              "x_global": 237,
+              "y_global": 1947,
+              "x_roi": 237,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1712,
+            "y1_global": 1947,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:27:05+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D007.png"
+    },
+    "D008": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D008",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 1143,
+        "y": 1239
+      },
+      "roi_bounds_global": {
+        "x0": 893,
+        "y0": 1119,
+        "x1": 1393,
+        "y1": 1359
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1140,
+              "y_global": 1120,
+              "x_roi": 247,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1140,
+              "y_global": 1240,
+              "x_roi": 247,
+              "y_roi": 121
+            },
+            {
+              "order": 3,
+              "x_global": 1141,
+              "y_global": 1358,
+              "x_roi": 248,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1120,
+            "y1_global": 1358,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1167,
+              "y_global": 1120,
+              "x_roi": 274,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1167,
+              "y_global": 1242,
+              "x_roi": 274,
+              "y_roi": 123
+            },
+            {
+              "order": 3,
+              "x_global": 1165,
+              "y_global": 1358,
+              "x_roi": 272,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1120,
+            "y1_global": 1358,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1107,
+              "y_global": 1120,
+              "x_roi": 214,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1110,
+              "y_global": 1248,
+              "x_roi": 217,
+              "y_roi": 129
+            },
+            {
+              "order": 3,
+              "x_global": 1110,
+              "y_global": 1358,
+              "x_roi": 217,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1120,
+            "y1_global": 1358,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1218,
+              "y_global": 1125,
+              "x_roi": 325,
+              "y_roi": 6
+            },
+            {
+              "order": 2,
+              "x_global": 1219,
+              "y_global": 1245,
+              "x_roi": 326,
+              "y_roi": 126
+            },
+            {
+              "order": 3,
+              "x_global": 1219,
+              "y_global": 1357,
+              "x_roi": 326,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1125,
+            "y1_global": 1357,
+            "y0_roi": 6,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:27:53+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D008.png"
+    },
+    "D009": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D009",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 275,
+        "y": 1507
+      },
+      "roi_bounds_global": {
+        "x0": 25,
+        "y0": 1387,
+        "x1": 525,
+        "y1": 1627
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 262,
+              "y_global": 1388,
+              "x_roi": 237,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 261,
+              "y_global": 1517,
+              "x_roi": 236,
+              "y_roi": 130
+            },
+            {
+              "order": 3,
+              "x_global": 261,
+              "y_global": 1626,
+              "x_roi": 236,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1388,
+            "y1_global": 1626,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 314,
+              "y_global": 1389,
+              "x_roi": 289,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 318,
+              "y_global": 1520,
+              "x_roi": 293,
+              "y_roi": 133
+            },
+            {
+              "order": 3,
+              "x_global": 317,
+              "y_global": 1625,
+              "x_roi": 292,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1389,
+            "y1_global": 1625,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 234,
+              "y_global": 1388,
+              "x_roi": 209,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 237,
+              "y_global": 1543,
+              "x_roi": 212,
+              "y_roi": 156
+            },
+            {
+              "order": 3,
+              "x_global": 236,
+              "y_global": 1626,
+              "x_roi": 211,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1388,
+            "y1_global": 1626,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 347,
+              "y_global": 1389,
+              "x_roi": 322,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 346,
+              "y_global": 1515,
+              "x_roi": 321,
+              "y_roi": 128
+            },
+            {
+              "order": 3,
+              "x_global": 346,
+              "y_global": 1625,
+              "x_roi": 321,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1389,
+            "y1_global": 1625,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:28:34+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D009.png"
+    },
+    "D010": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D010",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 546,
+        "y": 721
+      },
+      "roi_bounds_global": {
+        "x0": 296,
+        "y0": 601,
+        "x1": 796,
+        "y1": 841
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 533,
+              "y_global": 602,
+              "x_roi": 237,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 533,
+              "y_global": 721,
+              "x_roi": 237,
+              "y_roi": 120
+            },
+            {
+              "order": 3,
+              "x_global": 533,
+              "y_global": 840,
+              "x_roi": 237,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 602,
+            "y1_global": 840,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 565,
+              "y_global": 602,
+              "x_roi": 269,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 564,
+              "y_global": 729,
+              "x_roi": 268,
+              "y_roi": 128
+            },
+            {
+              "order": 3,
+              "x_global": 563,
+              "y_global": 840,
+              "x_roi": 267,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 602,
+            "y1_global": 840,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 496,
+              "y_global": 602,
+              "x_roi": 200,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 496,
+              "y_global": 758,
+              "x_roi": 200,
+              "y_roi": 157
+            },
+            {
+              "order": 3,
+              "x_global": 497,
+              "y_global": 840,
+              "x_roi": 201,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 602,
+            "y1_global": 840,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 607,
+              "y_global": 602,
+              "x_roi": 311,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 608,
+              "y_global": 762,
+              "x_roi": 312,
+              "y_roi": 161
+            },
+            {
+              "order": 3,
+              "x_global": 610,
+              "y_global": 839,
+              "x_roi": 314,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 602,
+            "y1_global": 839,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:29:15+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D010.png"
+    },
+    "D011": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D011",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {
+        "x": 1150,
+        "y": 1180
+      },
+      "roi_bounds_global": {
+        "x0": 900,
+        "y0": 1060,
+        "x1": 1400,
+        "y1": 1300
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1142,
+              "y_global": 1063,
+              "x_roi": 242,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 1142,
+              "y_global": 1180,
+              "x_roi": 242,
+              "y_roi": 120
+            },
+            {
+              "order": 3,
+              "x_global": 1142,
+              "y_global": 1299,
+              "x_roi": 242,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1063,
+            "y1_global": 1299,
+            "y0_roi": 3,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1168,
+              "y_global": 1061,
+              "x_roi": 268,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1167,
+              "y_global": 1192,
+              "x_roi": 267,
+              "y_roi": 132
+            },
+            {
+              "order": 3,
+              "x_global": 1167,
+              "y_global": 1298,
+              "x_roi": 267,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1061,
+            "y1_global": 1298,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1109,
+              "y_global": 1060,
+              "x_roi": 209,
+              "y_roi": 0
+            },
+            {
+              "order": 2,
+              "x_global": 1108,
+              "y_global": 1194,
+              "x_roi": 208,
+              "y_roi": 134
+            },
+            {
+              "order": 3,
+              "x_global": 1110,
+              "y_global": 1298,
+              "x_roi": 210,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1060,
+            "y1_global": 1298,
+            "y0_roi": 0,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1217,
+              "y_global": 1062,
+              "x_roi": 317,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 1217,
+              "y_global": 1188,
+              "x_roi": 317,
+              "y_roi": 128
+            },
+            {
+              "order": 3,
+              "x_global": 1219,
+              "y_global": 1299,
+              "x_roi": 319,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1062,
+            "y1_global": 1299,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:30:01+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D011.png"
+    },
+    "D012": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D012",
+      "split": "development",
+      "image_name": "Stripe_01_date20250601_t113239765.bmp",
+      "image_sha256": "71711d6bf4e3303b93788c6cba3fb522300fd49e1b9160bfe578fb7361069a45",
+      "reference_global": {
+        "x": 400,
+        "y": 720
+      },
+      "roi_bounds_global": {
+        "x0": 150,
+        "y0": 600,
+        "x1": 650,
+        "y1": 840
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 396,
+              "y_global": 686,
+              "x_roi": 246,
+              "y_roi": 86
+            },
+            {
+              "order": 2,
+              "x_global": 397,
+              "y_global": 800,
+              "x_roi": 247,
+              "y_roi": 200
+            },
+            {
+              "order": 3,
+              "x_global": 397,
+              "y_global": 839,
+              "x_roi": 247,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 686,
+            "y1_global": 839,
+            "y0_roi": 86,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 414,
+              "y_global": 686,
+              "x_roi": 264,
+              "y_roi": 86
+            },
+            {
+              "order": 2,
+              "x_global": 418,
+              "y_global": 795,
+              "x_roi": 268,
+              "y_roi": 195
+            },
+            {
+              "order": 3,
+              "x_global": 418,
+              "y_global": 839,
+              "x_roi": 268,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 686,
+            "y1_global": 839,
+            "y0_roi": 86,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "partially_visible",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 379,
+              "y_global": 685,
+              "x_roi": 229,
+              "y_roi": 85
+            },
+            {
+              "order": 2,
+              "x_global": 385,
+              "y_global": 831,
+              "x_roi": 235,
+              "y_roi": 231
+            },
+            {
+              "order": 3,
+              "x_global": 384,
+              "y_global": 839,
+              "x_roi": 234,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 685,
+            "y1_global": 839,
+            "y0_roi": 85,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 433,
+              "y_global": 684,
+              "x_roi": 283,
+              "y_roi": 84
+            },
+            {
+              "order": 2,
+              "x_global": 432,
+              "y_global": 830,
+              "x_roi": 282,
+              "y_roi": 230
+            },
+            {
+              "order": 3,
+              "x_global": 432,
+              "y_global": 839,
+              "x_roi": 282,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 684,
+            "y1_global": 839,
+            "y0_roi": 84,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:31:01+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D012.png"
+    },
+    "D013": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D013",
+      "split": "development",
+      "image_name": "Stripe_01_date20250601_t113239765.bmp",
+      "image_sha256": "71711d6bf4e3303b93788c6cba3fb522300fd49e1b9160bfe578fb7361069a45",
+      "reference_global": {
+        "x": 1500,
+        "y": 1550
+      },
+      "roi_bounds_global": {
+        "x0": 1250,
+        "y0": 1430,
+        "x1": 1750,
+        "y1": 1670
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1471,
+              "y_global": 1432,
+              "x_roi": 221,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 1470,
+              "y_global": 1660,
+              "x_roi": 220,
+              "y_roi": 230
+            },
+            {
+              "order": 3,
+              "x_global": 1470,
+              "y_global": 1668,
+              "x_roi": 220,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1432,
+            "y1_global": 1668,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1504,
+              "y_global": 1431,
+              "x_roi": 254,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1508,
+              "y_global": 1658,
+              "x_roi": 258,
+              "y_roi": 228
+            },
+            {
+              "order": 3,
+              "x_global": 1508,
+              "y_global": 1666,
+              "x_roi": 258,
+              "y_roi": 236
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1431,
+            "y1_global": 1666,
+            "y0_roi": 1,
+            "y1_roi": 236
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1458,
+              "y_global": 1431,
+              "x_roi": 208,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1457,
+              "y_global": 1662,
+              "x_roi": 207,
+              "y_roi": 232
+            },
+            {
+              "order": 3,
+              "x_global": 1457,
+              "y_global": 1669,
+              "x_roi": 207,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1431,
+            "y1_global": 1669,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1516,
+              "y_global": 1432,
+              "x_roi": 266,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 1518,
+              "y_global": 1656,
+              "x_roi": 268,
+              "y_roi": 226
+            },
+            {
+              "order": 3,
+              "x_global": 1518,
+              "y_global": 1669,
+              "x_roi": 268,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1432,
+            "y1_global": 1669,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:31:56+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D013.png"
+    },
+    "D014": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D014",
+      "split": "development",
+      "image_name": "Stripe_01_date20250601_t113239765.bmp",
+      "image_sha256": "71711d6bf4e3303b93788c6cba3fb522300fd49e1b9160bfe578fb7361069a45",
+      "reference_global": {
+        "x": 2150,
+        "y": 1900
+      },
+      "roi_bounds_global": {
+        "x0": 1900,
+        "y0": 1780,
+        "x1": 2400,
+        "y1": 2020
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2143,
+              "y_global": 1783,
+              "x_roi": 243,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 2144,
+              "y_global": 1994,
+              "x_roi": 244,
+              "y_roi": 214
+            },
+            {
+              "order": 3,
+              "x_global": 2144,
+              "y_global": 2019,
+              "x_roi": 244,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1783,
+            "y1_global": 2019,
+            "y0_roi": 3,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2159,
+              "y_global": 1783,
+              "x_roi": 259,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 2160,
+              "y_global": 2001,
+              "x_roi": 260,
+              "y_roi": 221
+            },
+            {
+              "order": 3,
+              "x_global": 2159,
+              "y_global": 2019,
+              "x_roi": 259,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1783,
+            "y1_global": 2019,
+            "y0_roi": 3,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2122,
+              "y_global": 1782,
+              "x_roi": 222,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 2127,
+              "y_global": 2008,
+              "x_roi": 227,
+              "y_roi": 228
+            },
+            {
+              "order": 3,
+              "x_global": 2127,
+              "y_global": 2019,
+              "x_roi": 227,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1782,
+            "y1_global": 2019,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2168,
+              "y_global": 1783,
+              "x_roi": 268,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 2171,
+              "y_global": 2004,
+              "x_roi": 271,
+              "y_roi": 224
+            },
+            {
+              "order": 3,
+              "x_global": 2171,
+              "y_global": 2018,
+              "x_roi": 271,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1783,
+            "y1_global": 2018,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:32:55+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D014.png"
+    },
+    "D015": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D015",
+      "split": "development",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "image_sha256": "dbb8c6a1fa86884dd83f0b6adb3092845e6d6fa6648a1c381664c5d6ee132e54",
+      "reference_global": {
+        "x": 350,
+        "y": 250
+      },
+      "roi_bounds_global": {
+        "x0": 100,
+        "y0": 130,
+        "x1": 600,
+        "y1": 370
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 322,
+              "y_global": 131,
+              "x_roi": 222,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 322,
+              "y_global": 348,
+              "x_roi": 222,
+              "y_roi": 218
+            },
+            {
+              "order": 3,
+              "x_global": 322,
+              "y_global": 368,
+              "x_roi": 222,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 131,
+            "y1_global": 368,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 383,
+              "y_global": 131,
+              "x_roi": 283,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 389,
+              "y_global": 338,
+              "x_roi": 289,
+              "y_roi": 208
+            },
+            {
+              "order": 3,
+              "x_global": 388,
+              "y_global": 366,
+              "x_roi": 288,
+              "y_roi": 236
+            }
+          ],
+          "visible_range": {
+            "y0_global": 131,
+            "y1_global": 366,
+            "y0_roi": 1,
+            "y1_roi": 236
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 256,
+              "y_global": 132,
+              "x_roi": 156,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 259,
+              "y_global": 346,
+              "x_roi": 159,
+              "y_roi": 216
+            },
+            {
+              "order": 3,
+              "x_global": 259,
+              "y_global": 368,
+              "x_roi": 159,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 132,
+            "y1_global": 368,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 451,
+              "y_global": 132,
+              "x_roi": 351,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 455,
+              "y_global": 342,
+              "x_roi": 355,
+              "y_roi": 212
+            },
+            {
+              "order": 3,
+              "x_global": 454,
+              "y_global": 369,
+              "x_roi": 354,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 132,
+            "y1_global": 369,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:34:03+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D015.png"
+    },
+    "D016": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D016",
+      "split": "development",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "image_sha256": "dbb8c6a1fa86884dd83f0b6adb3092845e6d6fa6648a1c381664c5d6ee132e54",
+      "reference_global": {
+        "x": 1000,
+        "y": 1000
+      },
+      "roi_bounds_global": {
+        "x0": 750,
+        "y0": 880,
+        "x1": 1250,
+        "y1": 1120
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 976,
+              "y_global": 882,
+              "x_roi": 226,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 974,
+              "y_global": 1089,
+              "x_roi": 224,
+              "y_roi": 209
+            },
+            {
+              "order": 3,
+              "x_global": 976,
+              "y_global": 1118,
+              "x_roi": 226,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 882,
+            "y1_global": 1118,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1041,
+              "y_global": 881,
+              "x_roi": 291,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1042,
+              "y_global": 1067,
+              "x_roi": 292,
+              "y_roi": 187
+            },
+            {
+              "order": 3,
+              "x_global": 1043,
+              "y_global": 1119,
+              "x_roi": 293,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 881,
+            "y1_global": 1119,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 911,
+              "y_global": 882,
+              "x_roi": 161,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 913,
+              "y_global": 1041,
+              "x_roi": 163,
+              "y_roi": 161
+            },
+            {
+              "order": 3,
+              "x_global": 914,
+              "y_global": 1118,
+              "x_roi": 164,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 882,
+            "y1_global": 1118,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1106,
+              "y_global": 882,
+              "x_roi": 356,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 1106,
+              "y_global": 1051,
+              "x_roi": 356,
+              "y_roi": 171
+            },
+            {
+              "order": 3,
+              "x_global": 1105,
+              "y_global": 1117,
+              "x_roi": 355,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 882,
+            "y1_global": 1117,
+            "y0_roi": 2,
+            "y1_roi": 237
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:34:33+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D016.png"
+    },
+    "D017": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D017",
+      "split": "development",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "image_sha256": "dbb8c6a1fa86884dd83f0b6adb3092845e6d6fa6648a1c381664c5d6ee132e54",
+      "reference_global": {
+        "x": 1750,
+        "y": 1750
+      },
+      "roi_bounds_global": {
+        "x0": 1500,
+        "y0": 1630,
+        "x1": 2000,
+        "y1": 1870
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1693,
+              "y_global": 1631,
+              "x_roi": 193,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1698,
+              "y_global": 1846,
+              "x_roi": 198,
+              "y_roi": 216
+            },
+            {
+              "order": 3,
+              "x_global": 1698,
+              "y_global": 1867,
+              "x_roi": 198,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1631,
+            "y1_global": 1867,
+            "y0_roi": 1,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1821,
+              "y_global": 1631,
+              "x_roi": 321,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1823,
+              "y_global": 1808,
+              "x_roi": 323,
+              "y_roi": 178
+            },
+            {
+              "order": 3,
+              "x_global": 1823,
+              "y_global": 1868,
+              "x_roi": 323,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1631,
+            "y1_global": 1868,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1628,
+              "y_global": 1633,
+              "x_roi": 128,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 1631,
+              "y_global": 1831,
+              "x_roi": 131,
+              "y_roi": 201
+            },
+            {
+              "order": 3,
+              "x_global": 1630,
+              "y_global": 1868,
+              "x_roi": 130,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1633,
+            "y1_global": 1868,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1888,
+              "y_global": 1631,
+              "x_roi": 388,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1888,
+              "y_global": 1824,
+              "x_roi": 388,
+              "y_roi": 194
+            },
+            {
+              "order": 3,
+              "x_global": 1888,
+              "y_global": 1866,
+              "x_roi": 388,
+              "y_roi": 236
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1631,
+            "y1_global": 1866,
+            "y0_roi": 1,
+            "y1_roi": 236
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:35:11+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D017.png"
+    },
+    "D018": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D018",
+      "split": "development",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "image_sha256": "e757c6771c19c858273457a8ffc56b9612e49fc28925218943718c00009236a1",
+      "reference_global": {
+        "x": 400,
+        "y": 650
+      },
+      "roi_bounds_global": {
+        "x0": 150,
+        "y0": 530,
+        "x1": 650,
+        "y1": 770
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 392,
+              "y_global": 662,
+              "x_roi": 242,
+              "y_roi": 132
+            },
+            {
+              "order": 2,
+              "x_global": 389,
+              "y_global": 733,
+              "x_roi": 239,
+              "y_roi": 203
+            },
+            {
+              "order": 3,
+              "x_global": 389,
+              "y_global": 768,
+              "x_roi": 239,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 662,
+            "y1_global": 768,
+            "y0_roi": 132,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 409,
+              "y_global": 663,
+              "x_roi": 259,
+              "y_roi": 133
+            },
+            {
+              "order": 2,
+              "x_global": 413,
+              "y_global": 737,
+              "x_roi": 263,
+              "y_roi": 207
+            },
+            {
+              "order": 3,
+              "x_global": 413,
+              "y_global": 768,
+              "x_roi": 263,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 663,
+            "y1_global": 768,
+            "y0_roi": 133,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 374,
+              "y_global": 665,
+              "x_roi": 224,
+              "y_roi": 135
+            },
+            {
+              "order": 2,
+              "x_global": 374,
+              "y_global": 728,
+              "x_roi": 224,
+              "y_roi": 198
+            },
+            {
+              "order": 3,
+              "x_global": 374,
+              "y_global": 768,
+              "x_roi": 224,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 665,
+            "y1_global": 768,
+            "y0_roi": 135,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "partially_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 426,
+              "y_global": 661,
+              "x_roi": 276,
+              "y_roi": 131
+            },
+            {
+              "order": 2,
+              "x_global": 426,
+              "y_global": 721,
+              "x_roi": 276,
+              "y_roi": 191
+            },
+            {
+              "order": 3,
+              "x_global": 427,
+              "y_global": 768,
+              "x_roi": 277,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 661,
+            "y1_global": 768,
+            "y0_roi": 131,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:35:53+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D018.png"
+    },
+    "D019": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D019",
+      "split": "development",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "image_sha256": "e757c6771c19c858273457a8ffc56b9612e49fc28925218943718c00009236a1",
+      "reference_global": {
+        "x": 1550,
+        "y": 1550
+      },
+      "roi_bounds_global": {
+        "x0": 1300,
+        "y0": 1430,
+        "x1": 1800,
+        "y1": 1670
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1542,
+              "y_global": 1433,
+              "x_roi": 242,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 1543,
+              "y_global": 1612,
+              "x_roi": 243,
+              "y_roi": 182
+            },
+            {
+              "order": 3,
+              "x_global": 1544,
+              "y_global": 1667,
+              "x_roi": 244,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1433,
+            "y1_global": 1667,
+            "y0_roi": 3,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1571,
+              "y_global": 1433,
+              "x_roi": 271,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 1571,
+              "y_global": 1577,
+              "x_roi": 271,
+              "y_roi": 147
+            },
+            {
+              "order": 3,
+              "x_global": 1571,
+              "y_global": 1668,
+              "x_roi": 271,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1433,
+            "y1_global": 1668,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1532,
+              "y_global": 1434,
+              "x_roi": 232,
+              "y_roi": 4
+            },
+            {
+              "order": 2,
+              "x_global": 1532,
+              "y_global": 1643,
+              "x_roi": 232,
+              "y_roi": 213
+            },
+            {
+              "order": 3,
+              "x_global": 1531,
+              "y_global": 1668,
+              "x_roi": 231,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1434,
+            "y1_global": 1668,
+            "y0_roi": 4,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1584,
+              "y_global": 1435,
+              "x_roi": 284,
+              "y_roi": 5
+            },
+            {
+              "order": 2,
+              "x_global": 1584,
+              "y_global": 1597,
+              "x_roi": 284,
+              "y_roi": 167
+            },
+            {
+              "order": 3,
+              "x_global": 1584,
+              "y_global": 1667,
+              "x_roi": 284,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1435,
+            "y1_global": 1667,
+            "y0_roi": 5,
+            "y1_roi": 237
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:36:39+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D019.png"
+    },
+    "D020": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D020",
+      "split": "development",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "image_sha256": "e757c6771c19c858273457a8ffc56b9612e49fc28925218943718c00009236a1",
+      "reference_global": {
+        "x": 2150,
+        "y": 1900
+      },
+      "roi_bounds_global": {
+        "x0": 1900,
+        "y0": 1780,
+        "x1": 2400,
+        "y1": 2020
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2147,
+              "y_global": 1787,
+              "x_roi": 247,
+              "y_roi": 7
+            },
+            {
+              "order": 2,
+              "x_global": 2147,
+              "y_global": 1959,
+              "x_roi": 247,
+              "y_roi": 179
+            },
+            {
+              "order": 3,
+              "x_global": 2148,
+              "y_global": 2018,
+              "x_roi": 248,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1787,
+            "y1_global": 2018,
+            "y0_roi": 7,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2174,
+              "y_global": 1781,
+              "x_roi": 274,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 2174,
+              "y_global": 1934,
+              "x_roi": 274,
+              "y_roi": 154
+            },
+            {
+              "order": 3,
+              "x_global": 2174,
+              "y_global": 2018,
+              "x_roi": 274,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1781,
+            "y1_global": 2018,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2136,
+              "y_global": 1782,
+              "x_roi": 236,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 2136,
+              "y_global": 1983,
+              "x_roi": 236,
+              "y_roi": 203
+            },
+            {
+              "order": 3,
+              "x_global": 2138,
+              "y_global": 2017,
+              "x_roi": 238,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1782,
+            "y1_global": 2017,
+            "y0_roi": 2,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "ambiguous",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2188,
+              "y_global": 1784,
+              "x_roi": 288,
+              "y_roi": 4
+            },
+            {
+              "order": 2,
+              "x_global": 2185,
+              "y_global": 1982,
+              "x_roi": 285,
+              "y_roi": 202
+            },
+            {
+              "order": 3,
+              "x_global": 2186,
+              "y_global": 2017,
+              "x_roi": 286,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1784,
+            "y1_global": 2017,
+            "y0_roi": 4,
+            "y1_roi": 237
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:37:19+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D020.png"
+    },
+    "D021": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D021",
+      "split": "development",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "image_sha256": "0c7588f5bf1f4571a0b43528e5713873ec33fda03b892d9771bdbf9120ea7646",
+      "reference_global": {
+        "x": 400,
+        "y": 250
+      },
+      "roi_bounds_global": {
+        "x0": 150,
+        "y0": 130,
+        "x1": 650,
+        "y1": 370
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 397,
+              "y_global": 132,
+              "x_roi": 247,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 393,
+              "y_global": 305,
+              "x_roi": 243,
+              "y_roi": 175
+            },
+            {
+              "order": 3,
+              "x_global": 394,
+              "y_global": 368,
+              "x_roi": 244,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 132,
+            "y1_global": 368,
+            "y0_roi": 2,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 411,
+              "y_global": 133,
+              "x_roi": 261,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 409,
+              "y_global": 311,
+              "x_roi": 259,
+              "y_roi": 181
+            },
+            {
+              "order": 3,
+              "x_global": 407,
+              "y_global": 367,
+              "x_roi": 257,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 133,
+            "y1_global": 367,
+            "y0_roi": 3,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 382,
+              "y_global": 133,
+              "x_roi": 232,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 378,
+              "y_global": 346,
+              "x_roi": 228,
+              "y_roi": 216
+            },
+            {
+              "order": 3,
+              "x_global": 378,
+              "y_global": 368,
+              "x_roi": 228,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 133,
+            "y1_global": 368,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 423,
+              "y_global": 132,
+              "x_roi": 273,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 422,
+              "y_global": 324,
+              "x_roi": 272,
+              "y_roi": 194
+            },
+            {
+              "order": 3,
+              "x_global": 422,
+              "y_global": 369,
+              "x_roi": 272,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 132,
+            "y1_global": 369,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:37:58+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D021.png"
+    },
+    "D022": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D022",
+      "split": "development",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "image_sha256": "0c7588f5bf1f4571a0b43528e5713873ec33fda03b892d9771bdbf9120ea7646",
+      "reference_global": {
+        "x": 1450,
+        "y": 1350
+      },
+      "roi_bounds_global": {
+        "x0": 1200,
+        "y0": 1230,
+        "x1": 1700,
+        "y1": 1470
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1437,
+              "y_global": 1232,
+              "x_roi": 237,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 1434,
+              "y_global": 1459,
+              "x_roi": 234,
+              "y_roi": 229
+            },
+            {
+              "order": 3,
+              "x_global": 1434,
+              "y_global": 1469,
+              "x_roi": 234,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1232,
+            "y1_global": 1469,
+            "y0_roi": 2,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1468,
+              "y_global": 1233,
+              "x_roi": 268,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 1462,
+              "y_global": 1436,
+              "x_roi": 262,
+              "y_roi": 206
+            },
+            {
+              "order": 3,
+              "x_global": 1463,
+              "y_global": 1468,
+              "x_roi": 263,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1233,
+            "y1_global": 1468,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "medium",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1422,
+              "y_global": 1231,
+              "x_roi": 222,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1421,
+              "y_global": 1409,
+              "x_roi": 221,
+              "y_roi": 179
+            },
+            {
+              "order": 3,
+              "x_global": 1420,
+              "y_global": 1468,
+              "x_roi": 220,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1231,
+            "y1_global": 1468,
+            "y0_roi": 1,
+            "y1_roi": 238
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1478,
+              "y_global": 1231,
+              "x_roi": 278,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1479,
+              "y_global": 1385,
+              "x_roi": 279,
+              "y_roi": 155
+            },
+            {
+              "order": 3,
+              "x_global": 1479,
+              "y_global": 1469,
+              "x_roi": 279,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1231,
+            "y1_global": 1469,
+            "y0_roi": 1,
+            "y1_roi": 239
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:38:50+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D022.png"
+    },
+    "D023": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D023",
+      "split": "development",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "image_sha256": "0c7588f5bf1f4571a0b43528e5713873ec33fda03b892d9771bdbf9120ea7646",
+      "reference_global": {
+        "x": 2150,
+        "y": 1800
+      },
+      "roi_bounds_global": {
+        "x0": 1900,
+        "y0": 1680,
+        "x1": 2400,
+        "y1": 1920
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2142,
+              "y_global": 1682,
+              "x_roi": 242,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 2139,
+              "y_global": 1867,
+              "x_roi": 239,
+              "y_roi": 187
+            },
+            {
+              "order": 3,
+              "x_global": 2138,
+              "y_global": 1914,
+              "x_roi": 238,
+              "y_roi": 234
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1682,
+            "y1_global": 1914,
+            "y0_roi": 2,
+            "y1_roi": 234
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2157,
+              "y_global": 1682,
+              "x_roi": 257,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 2154,
+              "y_global": 1844,
+              "x_roi": 254,
+              "y_roi": 164
+            },
+            {
+              "order": 3,
+              "x_global": 2154,
+              "y_global": 1916,
+              "x_roi": 254,
+              "y_roi": 236
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1682,
+            "y1_global": 1916,
+            "y0_roi": 2,
+            "y1_roi": 236
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2124,
+              "y_global": 1682,
+              "x_roi": 224,
+              "y_roi": 2
+            },
+            {
+              "order": 2,
+              "x_global": 2124,
+              "y_global": 1885,
+              "x_roi": 224,
+              "y_roi": 205
+            },
+            {
+              "order": 3,
+              "x_global": 2122,
+              "y_global": 1917,
+              "x_roi": 222,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1682,
+            "y1_global": 1917,
+            "y0_roi": 2,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 2171,
+              "y_global": 1681,
+              "x_roi": 271,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 2168,
+              "y_global": 1883,
+              "x_roi": 268,
+              "y_roi": 203
+            },
+            {
+              "order": 3,
+              "x_global": 2168,
+              "y_global": 1917,
+              "x_roi": 268,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1681,
+            "y1_global": 1917,
+            "y0_roi": 1,
+            "y1_roi": 237
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:39:21+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D023.png"
+    },
+    "D024": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D024",
+      "split": "development",
+      "image_name": "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+      "image_sha256": "ea49faabd18d25248a21819c3b528b2b918014b7c134b9e34e9103f71eeaee88",
+      "reference_global": {
+        "x": 400,
+        "y": 180
+      },
+      "roi_bounds_global": {
+        "x0": 150,
+        "y0": 60,
+        "x1": 650,
+        "y1": 300
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:40:14+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D024.png"
+    },
+    "D025": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D025",
+      "split": "development",
+      "image_name": "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+      "image_sha256": "ea49faabd18d25248a21819c3b528b2b918014b7c134b9e34e9103f71eeaee88",
+      "reference_global": {
+        "x": 1450,
+        "y": 900
+      },
+      "roi_bounds_global": {
+        "x0": 1200,
+        "y0": 780,
+        "x1": 1700,
+        "y1": 1020
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "unavailable",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [],
+          "visible_range": null
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:40:39+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D025.png"
+    },
+    "D026": {
+      "dataset_version": "separator_path_gt_v1",
+      "sample_id": "D026",
+      "split": "development",
+      "image_name": "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+      "image_sha256": "ea49faabd18d25248a21819c3b528b2b918014b7c134b9e34e9103f71eeaee88",
+      "reference_global": {
+        "x": 1600,
+        "y": 1780
+      },
+      "roi_bounds_global": {
+        "x0": 1350,
+        "y0": 1660,
+        "x1": 1850,
+        "y1": 1900
+      },
+      "direction": "vertical",
+      "separators": [
+        {
+          "role": "left_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1587,
+              "y_global": 1663,
+              "x_roi": 237,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 1585,
+              "y_global": 1797,
+              "x_roi": 235,
+              "y_roi": 137
+            },
+            {
+              "order": 3,
+              "x_global": 1585,
+              "y_global": 1899,
+              "x_roi": 235,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1663,
+            "y1_global": 1899,
+            "y0_roi": 3,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_clicked_boundary",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1608,
+              "y_global": 1661,
+              "x_roi": 258,
+              "y_roi": 1
+            },
+            {
+              "order": 2,
+              "x_global": 1609,
+              "y_global": 1809,
+              "x_roi": 259,
+              "y_roi": 149
+            },
+            {
+              "order": 3,
+              "x_global": 1611,
+              "y_global": 1897,
+              "x_roi": 261,
+              "y_roi": 237
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1661,
+            "y1_global": 1897,
+            "y0_roi": 1,
+            "y1_roi": 237
+          }
+        },
+        {
+          "role": "left_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1563,
+              "y_global": 1664,
+              "x_roi": 213,
+              "y_roi": 4
+            },
+            {
+              "order": 2,
+              "x_global": 1559,
+              "y_global": 1816,
+              "x_roi": 209,
+              "y_roi": 156
+            },
+            {
+              "order": 3,
+              "x_global": 1562,
+              "y_global": 1899,
+              "x_roi": 212,
+              "y_roi": 239
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1664,
+            "y1_global": 1899,
+            "y0_roi": 4,
+            "y1_roi": 239
+          }
+        },
+        {
+          "role": "right_adjacent",
+          "visibility": "fully_visible",
+          "confidence": "high",
+          "notes": "",
+          "control_points": [
+            {
+              "order": 1,
+              "x_global": 1638,
+              "y_global": 1663,
+              "x_roi": 288,
+              "y_roi": 3
+            },
+            {
+              "order": 2,
+              "x_global": 1636,
+              "y_global": 1820,
+              "x_roi": 286,
+              "y_roi": 160
+            },
+            {
+              "order": 3,
+              "x_global": 1638,
+              "y_global": 1898,
+              "x_roi": 288,
+              "y_roi": 238
+            }
+          ],
+          "visible_range": {
+            "y0_global": 1663,
+            "y1_global": 1898,
+            "y0_roi": 3,
+            "y1_roi": 238
+          }
+        }
+      ],
+      "notes": "",
+      "annotated_at": "2026-07-29T13:41:13+08:00",
+      "preview_path": "outputs/separator_path_gt_v1/previews/D026.png"
+    }
   }
 }
