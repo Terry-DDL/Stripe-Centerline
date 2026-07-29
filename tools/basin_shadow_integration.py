@@ -25,6 +25,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools import basin_graph_joint_prototype as joint  # noqa: E402
+from tools import basin_shadow_artifacts as artifacts  # noqa: E402
 
 
 INTEGRATION_REVISION = "basin_shadow_integration_v1"
@@ -34,6 +35,11 @@ DEFAULT_LOG_ROOT = (
 PER_CLICK_FILENAME = "basin_shadow_result.json"
 JSONL_FILENAME = "click_comparisons.jsonl"
 CSV_FILENAME = "click_comparisons.csv"
+SHADOW_OVERLAY_FILENAME = artifacts.SHADOW_OVERLAY_FILENAME
+ACCEPTANCE_GEOMETRY_REVISION = artifacts.ACCEPTANCE_GEOMETRY_REVISION
+_acceptance_geometry = artifacts.build_acceptance_geometry
+_draw_shadow_overlay = artifacts.draw_shadow_overlay
+_atomic_write_png = artifacts.atomic_write_png
 _LOG_LOCK = threading.Lock()
 
 
@@ -368,6 +374,12 @@ def run_shadow_and_log(
         "input_contract": input_contract,
         "production": _production_summary(production_result),
         "shadow": None,
+        "shadow_overlay": {
+            "status": "not_generated",
+            "filename": SHADOW_OVERLAY_FILENAME,
+            "path": None,
+            "error": None,
+        },
         "integration_status": "pending",
         "integration_error": None,
     }
@@ -395,6 +407,33 @@ def run_shadow_and_log(
                 roi_bounds_global,
             )
             record["integration_status"] = "completed"
+            try:
+                acceptance = _acceptance_geometry(
+                    shadow_result,
+                    reference_global,
+                    roi_bounds_global,
+                    record["shadow"]["geometry"],
+                )
+                record["shadow"][
+                    "acceptance_geometry"
+                ] = acceptance
+                overlay_path = output_dir / SHADOW_OVERLAY_FILENAME
+                _atomic_write_png(
+                    overlay_path,
+                    _draw_shadow_overlay(image_gray, acceptance),
+                )
+                record["shadow_overlay"] = {
+                    "status": "written",
+                    "filename": SHADOW_OVERLAY_FILENAME,
+                    "path": str(overlay_path),
+                    "error": None,
+                }
+            except Exception as caught_error:
+                record["shadow_overlay"]["status"] = "artifact_error"
+                record["shadow_overlay"]["error"] = {
+                    "type": type(caught_error).__name__,
+                    "message": str(caught_error),
+                }
         except Exception as caught_error:  # Shadow must never break formal UI.
             record["integration_status"] = "shadow_error"
             record["integration_error"] = {

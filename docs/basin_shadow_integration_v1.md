@@ -16,6 +16,8 @@ Shadow comparison files:
 
 - Per click: the existing interactive point output directory contains
   `basin_shadow_result.json`.
+- Per-click acceptance overlay: the same directory contains
+  `basin_shadow_overlay.png`.
 - Cumulative JSONL:
   `outputs/basin_shadow_integration_v1/desktop/click_comparisons.jsonl`.
 - Human-friendly cumulative CSV:
@@ -25,6 +27,14 @@ The CSV includes formal and shadow success, shadow rejection reason,
 reference relation, left/right basin centers and distances, basin/separator
 IDs, and raw-pitch confidence and provenance. Re-running the same point
 replaces its per-click JSON and appends another timestamped comparison row.
+
+The per-click JSON additionally stores `shadow.acceptance_geometry`. For a
+successful shadow result this is the exact atomic hypothesis: the used
+separator paths and band coordinates, basin boundary paths, final centers,
+and distances. For an unavailable result it stores all existing separator
+candidates with their accepted/rejected state, the rejection reason, and no
+final geometry. Overlay or artifact-write errors are recorded under
+`shadow_overlay` and never change the formal desktop result.
 
 The fixed ten-point Sample 2 integration check is:
 

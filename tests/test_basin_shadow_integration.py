@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import cv2
 import numpy as np
 
 from tools import basin_shadow_integration as shadow
@@ -42,6 +43,41 @@ def production_result(
     )
 
 
+def separator_candidate(
+    candidate_id: str,
+    x_by_band_roi: list[float],
+    accepted: bool = True,
+) -> dict:
+    return {
+        "candidate_id": candidate_id,
+        "accepted": accepted,
+        "rejection_reason": None if accepted else "weak_path",
+        "band_centers_y_roi": [20.0, 90.0, 160.0],
+        "x_by_band_roi": x_by_band_roi,
+        "x_at_reference_roi": x_by_band_roi[1],
+    }
+
+
+def basin(
+    basin_id: str,
+    left_separator_id: str,
+    right_separator_id: str,
+    left_x: float,
+    right_x: float,
+) -> dict:
+    return {
+        "basin_id": basin_id,
+        "left_separator_id": left_separator_id,
+        "right_separator_id": right_separator_id,
+        "band_centers_y_roi": [20.0, 90.0, 160.0],
+        "left_x_by_band_roi": [left_x] * 3,
+        "right_x_by_band_roi": [right_x] * 3,
+        "center_x_by_band_roi": [(left_x + right_x) / 2.0] * 3,
+        "center_x_at_reference_roi": (left_x + right_x) / 2.0,
+        "width_at_reference_px": right_x - left_x,
+    }
+
+
 def unavailable_shadow_result() -> dict:
     return {
         "algorithm_revision": "stage3_1",
@@ -51,6 +87,18 @@ def unavailable_shadow_result() -> dict:
         "unavailable_reason": "basin_structure_not_verified",
         "final_hypothesis": None,
         "debug": {
+            "separator_result": {
+                "reference_y_roi": 90.0,
+                "candidates": [
+                    separator_candidate("C01", [200.0] * 3),
+                    separator_candidate("C02", [240.0] * 3),
+                    separator_candidate(
+                        "C03",
+                        [320.0] * 3,
+                        accepted=False,
+                    ),
+                ],
+            },
             "reference_relation": {
                 "status": "unavailable",
                 "relation": None,
@@ -131,6 +179,13 @@ def available_shadow_result() -> dict:
         "relation": "on_separator",
         "unavailable_reason": None,
     }
+    result["debug"]["separator_result"]["candidates"][-1] = (
+        separator_candidate("C03", [320.0] * 3)
+    )
+    result["debug"]["basin_graph"]["verified_basins"] = [
+        basin("B_C01_C02", "C01", "C02", 200.0, 240.0),
+        basin("B_C02_C03", "C02", "C03", 240.0, 320.0),
+    ]
     return result
 
 
@@ -191,6 +246,30 @@ class BasinShadowIntegrationTests(unittest.TestCase):
             self.assertTrue(
                 (root / "logs" / shadow.CSV_FILENAME).exists()
             )
+            acceptance = record["shadow"]["acceptance_geometry"]
+            self.assertEqual(
+                "unavailable_candidates",
+                acceptance["mode"],
+            )
+            self.assertEqual(
+                ["C01", "C02", "C03"],
+                [
+                    path["separator_id"]
+                    for path in acceptance["separator_paths"]
+                ],
+            )
+            self.assertIsNone(acceptance["final_geometry"])
+            self.assertEqual(
+                "basin_structure_not_verified",
+                acceptance["rejection_reason"],
+            )
+            self.assertEqual(
+                "written",
+                record["shadow_overlay"]["status"],
+            )
+            self.assertTrue(
+                (root / "point" / shadow.SHADOW_OVERLAY_FILENAME).exists()
+            )
 
     def test_available_shadow_log_contains_atomic_geometry_and_pitch(self):
         image = np.zeros((200, 500), dtype=np.uint8)
@@ -221,6 +300,66 @@ class BasinShadowIntegrationTests(unittest.TestCase):
                 record["shadow"]["pitch_provenance"][
                     "configuration_checksum"
                 ],
+            )
+            acceptance = record["shadow"]["acceptance_geometry"]
+            self.assertEqual("final_hypothesis", acceptance["mode"])
+            self.assertEqual(
+                ["C01", "C02", "C03"],
+                [
+                    path["separator_id"]
+                    for path in acceptance["separator_paths"]
+                ],
+            )
+            self.assertEqual(
+                [20.0, 90.0, 160.0],
+                acceptance["separator_paths"][0][
+                    "band_centers_y_roi"
+                ],
+            )
+            self.assertEqual(
+                ["B_C01_C02", "B_C02_C03"],
+                [item["basin_id"] for item in acceptance["basins"]],
+            )
+            self.assertEqual(
+                [200.0, 200.0, 200.0],
+                acceptance["basins"][0][
+                    "left_boundary_x_by_band_roi"
+                ],
+            )
+            self.assertEqual(
+                240.0,
+                acceptance["final_geometry"]["left_center_x_global"],
+            )
+            self.assertEqual(
+                30.0,
+                acceptance["final_geometry"]["left_distance_px"],
+            )
+            overlay_path = (
+                root / "point" / shadow.SHADOW_OVERLAY_FILENAME
+            )
+            overlay = cv2.imread(str(overlay_path))
+            self.assertIsNotNone(overlay)
+            self.assertEqual((432, 920, 3), overlay.shape)
+            self.assertGreater(
+                np.count_nonzero(
+                    (overlay[:, :, 2] > 220)
+                    & (overlay[:, :, 1] < 80)
+                    & (overlay[:, :, 0] < 80)
+                ),
+                0,
+            )
+            saved = json.loads(
+                (
+                    root / "point" / shadow.PER_CLICK_FILENAME
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                acceptance,
+                saved["shadow"]["acceptance_geometry"],
+            )
+            self.assertEqual(
+                "written",
+                saved["shadow_overlay"]["status"],
             )
 
             with (root / "logs" / shadow.CSV_FILENAME).open(
@@ -257,6 +396,47 @@ class BasinShadowIntegrationTests(unittest.TestCase):
             )
         self.assertEqual("shadow_error", record["integration_status"])
         self.assertEqual("RuntimeError", saved["integration_error"]["type"])
+        self.assertEqual(formal_before, formal.report)
+
+    def test_overlay_error_is_logged_without_changing_shadow_or_formal_result(
+        self,
+    ):
+        image = np.zeros((200, 500), dtype=np.uint8)
+        formal = production_result()
+        formal_before = copy.deepcopy(formal.report)
+        with (
+            tempfile.TemporaryDirectory() as temporary_directory,
+            patch.object(
+                shadow,
+                "_atomic_write_png",
+                side_effect=OSError("overlay unavailable"),
+            ),
+        ):
+            root = Path(temporary_directory)
+            record = shadow.run_shadow_and_log(
+                image,
+                "synthetic.bmp",
+                formal,
+                root / "point",
+                shadow.ShadowLogConfig(log_root=root / "logs"),
+                shadow_runner=lambda *args: available_shadow_result(),
+            )
+            saved = json.loads(
+                (
+                    root / "point" / shadow.PER_CLICK_FILENAME
+                ).read_text(encoding="utf-8")
+            )
+
+        self.assertEqual("completed", record["integration_status"])
+        self.assertTrue(record["shadow"]["success"])
+        self.assertEqual(
+            "artifact_error",
+            record["shadow_overlay"]["status"],
+        )
+        self.assertEqual(
+            "OSError",
+            saved["shadow_overlay"]["error"]["type"],
+        )
         self.assertEqual(formal_before, formal.report)
 
     def test_desktop_worker_keeps_formal_result_when_shadow_wrapper_raises(self):
@@ -301,7 +481,14 @@ class BasinShadowIntegrationTests(unittest.TestCase):
         self.assertIsNone(error)
 
     def test_shadow_source_does_not_read_heldout_or_formal_detectors(self):
-        source = Path(shadow.__file__).read_text(encoding="utf-8")
+        source = "\n".join(
+            (
+                Path(shadow.__file__).read_text(encoding="utf-8"),
+                Path(shadow.artifacts.__file__).read_text(
+                    encoding="utf-8"
+                ),
+            )
+        )
         for forbidden in (
             "heldout.json",
             "interactive_pipeline",
