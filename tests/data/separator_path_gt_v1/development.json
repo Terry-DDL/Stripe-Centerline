@@ -1,0 +1,33 @@
+{
+  "dataset_version": "separator_path_gt_v1",
+  "split": "development",
+  "access_policy": "available_during_separator_method_design",
+  "annotations": {
+    "D001": null,
+    "D002": null,
+    "D003": null,
+    "D004": null,
+    "D005": null,
+    "D006": null,
+    "D007": null,
+    "D008": null,
+    "D009": null,
+    "D010": null,
+    "D011": null,
+    "D012": null,
+    "D013": null,
+    "D014": null,
+    "D015": null,
+    "D016": null,
+    "D017": null,
+    "D018": null,
+    "D019": null,
+    "D020": null,
+    "D021": null,
+    "D022": null,
+    "D023": null,
+    "D024": null,
+    "D025": null,
+    "D026": null
+  }
+}

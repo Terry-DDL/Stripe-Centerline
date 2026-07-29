@@ -1,0 +1,16 @@
+{
+  "dataset_version": "separator_path_gt_v1",
+  "split": "held-out",
+  "access_policy": "evaluation_only_after_separator_method_and_parameters_freeze",
+  "annotations": {
+    "H001": null,
+    "H002": null,
+    "H003": null,
+    "H004": null,
+    "H005": null,
+    "H006": null,
+    "H007": null,
+    "H008": null,
+    "H009": null
+  }
+}

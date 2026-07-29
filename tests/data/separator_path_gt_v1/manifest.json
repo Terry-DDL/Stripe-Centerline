@@ -1,0 +1,389 @@
+{
+  "dataset_version": "separator_path_gt_v1",
+  "status": "frozen_before_annotation",
+  "sampling_frozen_at": "2026-07-29",
+  "task": "manual_separator_paths_near_clicked_basin",
+  "algorithm_blind_sampling": true,
+  "coordinate_convention": {
+    "reference_global": "zero-based source-image pixel coordinate",
+    "roi_bounds_global": "half-open [x0, x1) x [y0, y1)",
+    "control_points": "zero-based pixel centers ordered from top to bottom",
+    "visible_range": "inclusive y endpoints derived from first and last control point"
+  },
+  "annotation_scope": {
+    "required_roles": [
+      "left_clicked_boundary",
+      "right_clicked_boundary"
+    ],
+    "optional_roles": [
+      "left_adjacent",
+      "right_adjacent"
+    ],
+    "visibility_labels": [
+      "fully_visible",
+      "partially_visible",
+      "unavailable",
+      "ambiguous"
+    ],
+    "points_per_visible_path": {
+      "minimum": 3,
+      "maximum": 7
+    }
+  },
+  "development_count": 26,
+  "heldout_count": 9,
+  "heldout_policy": "evaluation_only_after_separator_method_and_parameters_freeze",
+  "heldout_excludes_final_pitch_images": true,
+  "samples": [
+    {
+      "sample_id": "D001",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 661, "y": 921},
+      "roi_bounds_global": {"x0": 411, "y0": 801, "x1": 911, "y1": 1041},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "middle", "weak_separator"]
+    },
+    {
+      "sample_id": "D002",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 482, "y": 704},
+      "roi_bounds_global": {"x0": 232, "y0": 584, "x1": 732, "y1": 824},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "upper_left", "band_consensus_failure"]
+    },
+    {
+      "sample_id": "D003",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 1044, "y": 581},
+      "roi_bounds_global": {"x0": 794, "y0": 461, "x1": 1294, "y1": 701},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "upper_center", "wide_or_merged"]
+    },
+    {
+      "sample_id": "D004",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 1086, "y": 525},
+      "roi_bounds_global": {"x0": 836, "y0": 405, "x1": 1336, "y1": 645},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "upper_center", "wide_left_neighbor"]
+    },
+    {
+      "sample_id": "D005",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 1044, "y": 378},
+      "roi_bounds_global": {"x0": 794, "y0": 258, "x1": 1294, "y1": 498},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "top_center", "low_visibility"]
+    },
+    {
+      "sample_id": "D006",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 507, "y": 686},
+      "roi_bounds_global": {"x0": 257, "y0": 566, "x1": 757, "y1": 806},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "upper_left", "merged_region"]
+    },
+    {
+      "sample_id": "D007",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 150, "y": 1829},
+      "roi_bounds_global": {"x0": 0, "y0": 1709, "x1": 500, "y1": 1949},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "bottom_edge", "left_boundary"]
+    },
+    {
+      "sample_id": "D008",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 1143, "y": 1239},
+      "roi_bounds_global": {"x0": 893, "y0": 1119, "x1": 1393, "y1": 1359},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "middle_right", "broken"]
+    },
+    {
+      "sample_id": "D009",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 275, "y": 1507},
+      "roi_bounds_global": {"x0": 25, "y0": 1387, "x1": 525, "y1": 1627},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "lower_left", "width_variation"]
+    },
+    {
+      "sample_id": "D010",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 546, "y": 721},
+      "roi_bounds_global": {"x0": 296, "y0": 601, "x1": 796, "y1": 841},
+      "direction": "vertical",
+      "strata": ["known_manual_issue", "upper_left", "weak_separator"]
+    },
+    {
+      "sample_id": "D011",
+      "split": "development",
+      "image_name": "Sample 2.bmp",
+      "image_sha256": "d5f56b7dac3f99cb1f236066bf004e007d375f89cf64ced5651fe9314fe56c15",
+      "reference_global": {"x": 1150, "y": 1180},
+      "roi_bounds_global": {"x0": 900, "y0": 1060, "x1": 1400, "y1": 1300},
+      "direction": "vertical",
+      "strata": ["control", "middle_right", "clearer"]
+    },
+    {
+      "sample_id": "D012",
+      "split": "development",
+      "image_name": "Stripe_01_date20250601_t113239765.bmp",
+      "image_sha256": "71711d6bf4e3303b93788c6cba3fb522300fd49e1b9160bfe578fb7361069a45",
+      "reference_global": {"x": 400, "y": 720},
+      "roi_bounds_global": {"x0": 150, "y0": 600, "x1": 650, "y1": 840},
+      "direction": "vertical",
+      "strata": ["transition", "upper_left", "low_contrast"]
+    },
+    {
+      "sample_id": "D013",
+      "split": "development",
+      "image_name": "Stripe_01_date20250601_t113239765.bmp",
+      "image_sha256": "71711d6bf4e3303b93788c6cba3fb522300fd49e1b9160bfe578fb7361069a45",
+      "reference_global": {"x": 1500, "y": 1550},
+      "roi_bounds_global": {"x0": 1250, "y0": 1430, "x1": 1750, "y1": 1670},
+      "direction": "vertical",
+      "strata": ["lower_center", "texture", "width_variation"]
+    },
+    {
+      "sample_id": "D014",
+      "split": "development",
+      "image_name": "Stripe_01_date20250601_t113239765.bmp",
+      "image_sha256": "71711d6bf4e3303b93788c6cba3fb522300fd49e1b9160bfe578fb7361069a45",
+      "reference_global": {"x": 2150, "y": 1900},
+      "roi_bounds_global": {"x0": 1900, "y0": 1780, "x1": 2400, "y1": 2020},
+      "direction": "vertical",
+      "strata": ["bottom_right", "texture", "clearer"]
+    },
+    {
+      "sample_id": "D015",
+      "split": "development",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "image_sha256": "dbb8c6a1fa86884dd83f0b6adb3092845e6d6fa6648a1c381664c5d6ee132e54",
+      "reference_global": {"x": 350, "y": 250},
+      "roi_bounds_global": {"x0": 100, "y0": 130, "x1": 600, "y1": 370},
+      "direction": "vertical",
+      "strata": ["top_left", "high_contrast", "wide_pitch"]
+    },
+    {
+      "sample_id": "D016",
+      "split": "development",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "image_sha256": "dbb8c6a1fa86884dd83f0b6adb3092845e6d6fa6648a1c381664c5d6ee132e54",
+      "reference_global": {"x": 1000, "y": 1000},
+      "roi_bounds_global": {"x0": 750, "y0": 880, "x1": 1250, "y1": 1120},
+      "direction": "vertical",
+      "strata": ["center", "high_contrast", "drift"]
+    },
+    {
+      "sample_id": "D017",
+      "split": "development",
+      "image_name": "Stripe_05_e0_t145409670_v0p10745_do.bmp",
+      "image_sha256": "dbb8c6a1fa86884dd83f0b6adb3092845e6d6fa6648a1c381664c5d6ee132e54",
+      "reference_global": {"x": 1750, "y": 1750},
+      "roi_bounds_global": {"x0": 1500, "y0": 1630, "x1": 2000, "y1": 1870},
+      "direction": "vertical",
+      "strata": ["bottom_right", "high_contrast", "width_variation"]
+    },
+    {
+      "sample_id": "D018",
+      "split": "development",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "image_sha256": "e757c6771c19c858273457a8ffc56b9612e49fc28925218943718c00009236a1",
+      "reference_global": {"x": 400, "y": 650},
+      "roi_bounds_global": {"x0": 150, "y0": 530, "x1": 650, "y1": 770},
+      "direction": "vertical",
+      "strata": ["transition", "upper_left", "low_contrast"]
+    },
+    {
+      "sample_id": "D019",
+      "split": "development",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "image_sha256": "e757c6771c19c858273457a8ffc56b9612e49fc28925218943718c00009236a1",
+      "reference_global": {"x": 1550, "y": 1550},
+      "roi_bounds_global": {"x0": 1300, "y0": 1430, "x1": 1800, "y1": 1670},
+      "direction": "vertical",
+      "strata": ["lower_center", "bright_texture", "fine_pitch"]
+    },
+    {
+      "sample_id": "D020",
+      "split": "development",
+      "image_name": "Stripe_09_e0_t200229235_v3p02565_do.bmp",
+      "image_sha256": "e757c6771c19c858273457a8ffc56b9612e49fc28925218943718c00009236a1",
+      "reference_global": {"x": 2150, "y": 1900},
+      "roi_bounds_global": {"x0": 1900, "y0": 1780, "x1": 2400, "y1": 2020},
+      "direction": "vertical",
+      "strata": ["bottom_right", "bright_texture", "fine_pitch"]
+    },
+    {
+      "sample_id": "D021",
+      "split": "development",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "image_sha256": "0c7588f5bf1f4571a0b43528e5713873ec33fda03b892d9771bdbf9120ea7646",
+      "reference_global": {"x": 400, "y": 250},
+      "roi_bounds_global": {"x0": 150, "y0": 130, "x1": 650, "y1": 370},
+      "direction": "vertical",
+      "strata": ["top_left", "narrow_pitch", "clear"]
+    },
+    {
+      "sample_id": "D022",
+      "split": "development",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "image_sha256": "0c7588f5bf1f4571a0b43528e5713873ec33fda03b892d9771bdbf9120ea7646",
+      "reference_global": {"x": 1450, "y": 1350},
+      "roi_bounds_global": {"x0": 1200, "y0": 1230, "x1": 1700, "y1": 1470},
+      "direction": "vertical",
+      "strata": ["lower_center", "occlusion", "width_variation"]
+    },
+    {
+      "sample_id": "D023",
+      "split": "development",
+      "image_name": "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+      "image_sha256": "0c7588f5bf1f4571a0b43528e5713873ec33fda03b892d9771bdbf9120ea7646",
+      "reference_global": {"x": 2150, "y": 1800},
+      "roi_bounds_global": {"x0": 1900, "y0": 1680, "x1": 2400, "y1": 1920},
+      "direction": "vertical",
+      "strata": ["bottom_right", "narrow_pitch", "darker"]
+    },
+    {
+      "sample_id": "D024",
+      "split": "development",
+      "image_name": "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+      "image_sha256": "ea49faabd18d25248a21819c3b528b2b918014b7c134b9e34e9103f71eeaee88",
+      "reference_global": {"x": 400, "y": 180},
+      "roi_bounds_global": {"x0": 150, "y0": 60, "x1": 650, "y1": 300},
+      "direction": "vertical",
+      "strata": ["top_left", "severe_interference", "low_visibility"]
+    },
+    {
+      "sample_id": "D025",
+      "split": "development",
+      "image_name": "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+      "image_sha256": "ea49faabd18d25248a21819c3b528b2b918014b7c134b9e34e9103f71eeaee88",
+      "reference_global": {"x": 1450, "y": 900},
+      "roi_bounds_global": {"x0": 1200, "y0": 780, "x1": 1700, "y1": 1020},
+      "direction": "vertical",
+      "strata": ["middle_right", "severe_interference", "unavailable_candidate"]
+    },
+    {
+      "sample_id": "D026",
+      "split": "development",
+      "image_name": "Stripe_11_e0_t225623761_v5p9823_do.bmp",
+      "image_sha256": "ea49faabd18d25248a21819c3b528b2b918014b7c134b9e34e9103f71eeaee88",
+      "reference_global": {"x": 1600, "y": 1780},
+      "roi_bounds_global": {"x0": 1350, "y0": 1660, "x1": 1850, "y1": 1900},
+      "direction": "vertical",
+      "strata": ["bottom_right", "broken", "occluded"]
+    },
+    {
+      "sample_id": "H001",
+      "split": "held-out",
+      "image_name": "Sample 1.bmp",
+      "image_sha256": "3c70fd52281dc418b400ed0ded1ddc9a60dfc321e045f58fa89a9cb3ec72fee3",
+      "reference_global": {"x": 350, "y": 350},
+      "roi_bounds_global": {"x0": 100, "y0": 230, "x1": 600, "y1": 470},
+      "direction": "vertical",
+      "strata": ["heldout", "top_left", "fine_pitch"]
+    },
+    {
+      "sample_id": "H002",
+      "split": "held-out",
+      "image_name": "Sample 1.bmp",
+      "image_sha256": "3c70fd52281dc418b400ed0ded1ddc9a60dfc321e045f58fa89a9cb3ec72fee3",
+      "reference_global": {"x": 1000, "y": 1000},
+      "roi_bounds_global": {"x0": 750, "y0": 880, "x1": 1250, "y1": 1120},
+      "direction": "vertical",
+      "strata": ["heldout", "center", "occlusion"]
+    },
+    {
+      "sample_id": "H003",
+      "split": "held-out",
+      "image_name": "Sample 1.bmp",
+      "image_sha256": "3c70fd52281dc418b400ed0ded1ddc9a60dfc321e045f58fa89a9cb3ec72fee3",
+      "reference_global": {"x": 1650, "y": 1700},
+      "roi_bounds_global": {"x0": 1400, "y0": 1580, "x1": 1900, "y1": 1820},
+      "direction": "vertical",
+      "strata": ["heldout", "bottom_right", "fine_pitch"]
+    },
+    {
+      "sample_id": "H004",
+      "split": "held-out",
+      "image_name": "Stripe_03_e0_t105348300_v-41p8_do.bmp",
+      "image_sha256": "aef523a43abf68234a3c3433747d0b54b2852668d145fd330ff72c6e1daf18ba",
+      "reference_global": {"x": 350, "y": 500},
+      "roi_bounds_global": {"x0": 100, "y0": 380, "x1": 600, "y1": 620},
+      "direction": "vertical",
+      "strata": ["heldout", "upper_left", "low_contrast"]
+    },
+    {
+      "sample_id": "H005",
+      "split": "held-out",
+      "image_name": "Stripe_03_e0_t105348300_v-41p8_do.bmp",
+      "image_sha256": "aef523a43abf68234a3c3433747d0b54b2852668d145fd330ff72c6e1daf18ba",
+      "reference_global": {"x": 1000, "y": 1050},
+      "roi_bounds_global": {"x0": 750, "y0": 930, "x1": 1250, "y1": 1170},
+      "direction": "vertical",
+      "strata": ["heldout", "center", "occlusion"]
+    },
+    {
+      "sample_id": "H006",
+      "split": "held-out",
+      "image_name": "Stripe_03_e0_t105348300_v-41p8_do.bmp",
+      "image_sha256": "aef523a43abf68234a3c3433747d0b54b2852668d145fd330ff72c6e1daf18ba",
+      "reference_global": {"x": 1650, "y": 1650},
+      "roi_bounds_global": {"x0": 1400, "y0": 1530, "x1": 1900, "y1": 1770},
+      "direction": "vertical",
+      "strata": ["heldout", "bottom_right", "low_contrast"]
+    },
+    {
+      "sample_id": "H007",
+      "split": "held-out",
+      "image_name": "Stripe_04_e0_t105403334_v7p8651_do.bmp",
+      "image_sha256": "124a60f597319447014b4fc7ce3a2279b32a09c9db7ca5ce97392af3a4a35b68",
+      "reference_global": {"x": 350, "y": 350},
+      "roi_bounds_global": {"x0": 100, "y0": 230, "x1": 600, "y1": 470},
+      "direction": "vertical",
+      "strata": ["heldout", "top_left", "fine_pitch"]
+    },
+    {
+      "sample_id": "H008",
+      "split": "held-out",
+      "image_name": "Stripe_04_e0_t105403334_v7p8651_do.bmp",
+      "image_sha256": "124a60f597319447014b4fc7ce3a2279b32a09c9db7ca5ce97392af3a4a35b68",
+      "reference_global": {"x": 1000, "y": 1000},
+      "roi_bounds_global": {"x0": 750, "y0": 880, "x1": 1250, "y1": 1120},
+      "direction": "vertical",
+      "strata": ["heldout", "center", "occlusion"]
+    },
+    {
+      "sample_id": "H009",
+      "split": "held-out",
+      "image_name": "Stripe_04_e0_t105403334_v7p8651_do.bmp",
+      "image_sha256": "124a60f597319447014b4fc7ce3a2279b32a09c9db7ca5ce97392af3a4a35b68",
+      "reference_global": {"x": 1650, "y": 1700},
+      "roi_bounds_global": {"x0": 1400, "y0": 1580, "x1": 1900, "y1": 1820},
+      "direction": "vertical",
+      "strata": ["heldout", "bottom_right", "fine_pitch"]
+    }
+  ]
+}
