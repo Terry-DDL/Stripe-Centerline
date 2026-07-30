@@ -1,0 +1,24 @@
+{
+  "freeze_revision": "cross_image_correction_v1_1_phase0",
+  "experiment_start_commit": "0f6300a0ab40dd68af7a6425f27cbb7ca9e1a484",
+  "experiment_start_configuration_checksum": "3b43fcced82be3b92b37f847a83337d228236a26c9297812cf8661d6516e9ed2",
+  "release_commit": "55b26e6deac5acbb50e3934c03d71e3c5b56b269",
+  "release_tree": "d695f70fb31c8614502c1e0239c1d2e6b008e704",
+  "separator_heldout_allowed": false,
+  "runtime_gt_allowed": false,
+  "release_file_sha256": {
+    "src/candidate_quality.py": "b311026c59d0358b60ed51931a9362d7f7dc1ecac51b09ffc9241cd100bd144c",
+    "src/config.py": "9baaf16830ac84b59ffe2a6a8dff66bec84114f23461ac68b89a721063b0352f",
+    "src/grayscale_topology.py": "8bec1607d3bc3b3cc9416dbeea2fda3eec5320cd9543fb1339c9fd56bca31930",
+    "src/ground_truth_evaluation.py": "1ca8f320775df6bc3ff2af76b2e3d317b669d736488ee613867a3659f2696020",
+    "src/image_processing.py": "8476127afdd61aea4f339193165cdfbabe6d339e6f6cc00966424dd4039d08d2",
+    "src/interactive_analysis.py": "6df6628a24daba74b48cddbcbf410674217f4295a2e7c5825f0c89caa26fa073",
+    "src/interactive_pipeline.py": "bc3a3c07b8133d06284a71a0defd0de8b135f7ca189f2f86a6a889fb71150fc7",
+    "src/main.py": "fd89751c735d934a543dc27a153382eeacf93413a03421b92fbf5181fd14563a",
+    "src/pipeline.py": "4837dc8ae49806399996de5c693f8016ff37c38d5c6703b6091d08d3dd498b50",
+    "src/pitch_reference.py": "210523dc7b2448c5d5c89791263bfd521308ae4edeb0aa3cf1bb1fb18a37b140",
+    "src/ref_sweep.py": "6f444cc4b33269e140e65ac8329ce2398ffd7d32cb48d59bedbe611bb2672007",
+    "src/stripe_analysis.py": "72d6e7fad0aead6264c27f4e50430e48cc344dc2c1dc0debfc667b69d58b4494",
+    "tools/desktop_app.py": "12e4e126d4db2af2239a2c5262b0daa0150394673119902cf7a8ec4befc3ed5f"
+  }
+}
