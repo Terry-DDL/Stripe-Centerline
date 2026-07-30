@@ -21,6 +21,7 @@ from tools.desktop_app import (  # noqa: E402
     create_failure_result_overlay,
     create_result_roi_crop,
     create_magnifier_display,
+    cross_image_experiment_enabled,
     desktop_debug_enabled,
     extract_centered_region,
     get_or_build_pitch_reference,
@@ -51,6 +52,12 @@ class DesktopAppHelperTests(unittest.TestCase):
         self.assertTrue(desktop_debug_enabled(True, ""))
         self.assertTrue(desktop_debug_enabled(False, "true"))
         self.assertTrue(parse_desktop_arguments(["--debug"]).debug)
+
+    def test_cross_image_experiment_is_default_off_and_explicit_only(self):
+        self.assertFalse(cross_image_experiment_enabled(""))
+        self.assertFalse(cross_image_experiment_enabled("0"))
+        self.assertTrue(cross_image_experiment_enabled("1"))
+        self.assertTrue(cross_image_experiment_enabled("true"))
 
     def test_old_macos_tk_is_rejected(self):
         self.assertFalse(reliable_tk_runtime("8.6.12", "darwin"))

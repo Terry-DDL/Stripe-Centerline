@@ -56,7 +56,11 @@ SUPPORTED_SUFFIXES = {".bmp", ".png", ".jpg", ".jpeg"}
 MINIMUM_RELIABLE_MACOS_TK = (8, 6, 13)
 MOUSE_WHEEL_SCROLL_PIXELS = 54
 DEBUG_ENVIRONMENT_VARIABLE = "STRIPE_CENTERLINE_DEBUG"
+CROSS_IMAGE_EXPERIMENT_ENVIRONMENT_VARIABLE = (
+    "STRIPE_CENTERLINE_CROSS_IMAGE_EXPERIMENT"
+)
 DEBUG_TRUE_VALUES = {"1", "true", "yes", "on"}
+CROSS_IMAGE_EXPERIMENT_START_DELAY_SECONDS = 0.25
 
 
 @dataclass
@@ -111,6 +115,19 @@ def desktop_debug_enabled(
         return True
     if environment_value is None:
         environment_value = os.environ.get(DEBUG_ENVIRONMENT_VARIABLE, "")
+    return environment_value.strip().lower() in DEBUG_TRUE_VALUES
+
+
+def cross_image_experiment_enabled(
+    environment_value: str | None = None,
+) -> bool:
+    """Enable the isolated v1.1 shadow only through its explicit switch."""
+
+    if environment_value is None:
+        environment_value = os.environ.get(
+            CROSS_IMAGE_EXPERIMENT_ENVIRONMENT_VARIABLE,
+            "",
+        )
     return environment_value.strip().lower() in DEBUG_TRUE_VALUES
 
 
@@ -1472,6 +1489,7 @@ class StripeDesktopApp:
             "result_source": STAGE3_RESULT_SOURCE,
         }
         stage3_result = None
+        bounds = None
         stage3_ms = None
         result_write_ms = None
         phase = "roi"
@@ -1549,6 +1567,26 @@ class StripeDesktopApp:
             )
         )
         if (
+            cross_image_experiment_enabled()
+            and bounds is not None
+        ):
+            experiment_worker = threading.Timer(
+                CROSS_IMAGE_EXPERIMENT_START_DELAY_SECONDS,
+                self._run_cross_image_experiment_worker,
+                args=(
+                    image_gray,
+                    image_name,
+                    click_x,
+                    click_y,
+                    bounds,
+                    output_dir,
+                    stage3_result,
+                    run_id,
+                ),
+            )
+            experiment_worker.daemon = True
+            experiment_worker.start()
+        if (
             self.debug_enabled
             and result is not None
             and stage3_result is not None
@@ -1569,6 +1607,41 @@ class StripeDesktopApp:
                 daemon=True,
             )
             diagnostic_worker.start()
+
+    def _run_cross_image_experiment_worker(
+        self,
+        image_gray,
+        image_name: str,
+        click_x: int,
+        click_y: int,
+        bounds,
+        output_dir: Path,
+        stage3_result: dict | None,
+        run_id: str,
+    ) -> None:
+        """Run the default-off v1.1 shadow outside the formal result path."""
+
+        try:
+            from tools.cross_image_correction_shadow_v1_1 import (
+                run_cross_image_experiment_shadow,
+            )
+
+            run_cross_image_experiment_shadow(
+                image_gray,
+                image_name,
+                {"x": click_x, "y": click_y},
+                bounds,
+                output_dir / "cross_image_correction_v1_1_shadow",
+                run_id,
+                stage3_result,
+            )
+        except Exception as experiment_error:
+            print(
+                "Cross-image correction v1.1 shadow failed: "
+                f"{type(experiment_error).__name__}: "
+                f"{experiment_error}",
+                file=sys.stderr,
+            )
 
     def _run_legacy_diagnostic_worker(
         self,
