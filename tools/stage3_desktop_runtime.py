@@ -1,8 +1,8 @@
-"""Desktop result adapter for the frozen Stage 3.1 detector.
+"""Desktop result adapter for the frozen cross-image v1.1 detector.
 
-This module does not alter separator, basin, or raw-pitch decisions.  It only
-maps one frozen Stage 3.1 result into the compact data contract consumed by
-the Tk desktop result page.
+This module does not alter separator, basin, center, or raw-pitch decisions.
+It only selects the frozen v1.1 runner and maps its result into the compact
+data contract consumed by the Tk desktop result page.
 """
 
 from __future__ import annotations
@@ -16,9 +16,10 @@ import cv2
 import numpy as np
 
 from tools import basin_graph_joint_prototype as joint
+from tools import cross_image_correction_prototype_v1_1 as cross_image_v1_1
 
 
-RESULT_SOURCE = "stage3_1"
+RESULT_SOURCE = "cross_image_correction_v1_1"
 UNAVAILABLE_REASON = "unable_to_determine_reliably"
 FORMAL_REPORT_FILENAME = "interactive_results.json"
 FORMAL_OVERLAY_FILENAME = "original_interactive_result.png"
@@ -48,13 +49,28 @@ def bounds_to_dict(bounds) -> dict:
     }
 
 
+def _run_cross_image_v1_1(
+    image_gray,
+    reference_global,
+    roi_bounds_global,
+    direction,
+    _config,
+):
+    return cross_image_v1_1.run_joint_case_v1_1(
+        image_gray,
+        reference_global,
+        roi_bounds_global,
+        direction,
+    )
+
+
 def run_frozen_stage3(
     image_gray: np.ndarray,
     reference_global: dict,
     bounds,
-    runner: Callable = joint.run_joint_case,
+    runner: Callable = _run_cross_image_v1_1,
 ) -> dict:
-    """Run the frozen detector with the desktop image, point, and ROI."""
+    """Run frozen cross-image v1.1 with the desktop image, point, and ROI."""
 
     return runner(
         image_gray,
