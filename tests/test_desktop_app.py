@@ -14,6 +14,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from tools.desktop_app import (  # noqa: E402
     AnalysisCompletion,
     DesktopSelectionState,
+    STAGE3_RESULT_SOURCE,
     basin_table_rows,
     build_output_dir,
     calculate_display_size,
@@ -261,7 +262,7 @@ class DesktopAppHelperTests(unittest.TestCase):
         values = result_metric_values(
             {"x_global": 270, "y_global": 100},
             {
-                "result_source": "stage3_1",
+                "result_source": STAGE3_RESULT_SOURCE,
                 "success": True,
                 "left": {"distance_to_click_px": 30.0},
                 "right": {"distance_to_click_px": 30.0},

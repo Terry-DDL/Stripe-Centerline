@@ -37,7 +37,10 @@ EXPERIMENT_START_COMMIT = (
     "0f6300a0ab40dd68af7a6425f27cbb7ca9e1a484"
 )
 RELEASE_COMMIT = "55b26e6deac5acbb50e3934c03d71e3c5b56b269"
-ALGORITHM_REVISION = "cross_image_correction_offline_v1_1"
+ALGORITHM_REVISION = (
+    "cross_image_correction_offline_v1_1_local_valley_recovery"
+)
+MINIMUM_RAW_GRAY_DYNAMIC = 8.0
 FREEZE_PATH = (
     PROJECT_ROOT
     / "tests"
@@ -136,6 +139,28 @@ def configuration_document() -> dict:
                 .maximum_role_path_mean_step_px
             ),
             "replacement_center_allowed": False,
+        },
+        "local_dark_valley_recovery": {
+            "scope": "inside_basin_with_multiple_verified_clicked_valleys",
+            "identity_source": "ordered_raw_gray_valley_paths",
+            "center_source": "shared_dark_weighted_basin_center",
+            "minimum_gray_dynamic": MINIMUM_RAW_GRAY_DYNAMIC,
+            "minimum_band_fraction": (
+                separator.DEFAULT_CONFIG
+                .minimum_dark_basin_band_fraction
+            ),
+            "minimum_row_fraction": (
+                separator.DEFAULT_CONFIG
+                .minimum_dark_basin_band_fraction
+            ),
+            "maximum_mean_band_step_px": (
+                separator.DEFAULT_CONFIG
+                .maximum_role_path_mean_step_px
+            ),
+            "path_match_tolerance_px": (
+                separator.DEFAULT_CONFIG.match_tolerance_px
+            ),
+            "coordinate_or_image_special_cases": False,
         },
         "center_refinement": {
             "source": "cross_image_correction_v1_frozen",
@@ -1322,6 +1347,55 @@ def run_joint_case_v1_1(
         hypothesis,
     )
     debug["intermediate_dark_basin_evidence"] = intermediate_dark
+    local_recovery = _recover_local_dark_valley_sequence(
+        image_gray,
+        roi_bounds_global,
+        direction,
+        separator_result,
+        graph,
+        hypothesis,
+    )
+    debug["local_dark_valley_recovery"] = local_recovery
+    if local_recovery["triggered"]:
+        if local_recovery["success"]:
+            recovered_hypothesis = local_recovery["hypothesis"]
+            graph["verified_basins"].extend(
+                local_recovery["selected_basins"]
+            )
+            debug["joint_hypotheses"] = [recovered_hypothesis]
+            if not frozen_result["success"]:
+                debug["release_unavailable_audit"] = {
+                    "reason": "release_unavailable_cannot_become_success",
+                    "release_unavailable_reason": frozen_result[
+                        "unavailable_reason"
+                    ],
+                    "hard_veto_applied": False,
+                    "accepted_hypothesis": recovered_hypothesis,
+                }
+            return {
+                **base,
+                "status": "available",
+                "success": True,
+                "unavailable_reason": None,
+                "final_hypothesis": recovered_hypothesis,
+            }
+        debug["intermediate_dark_basin_veto"] = {
+            "reason": "intermediate_dark_basin_present",
+            "triggered_sides": [
+                item
+                for item in intermediate_dark["sides"]
+                if item["verified"]
+            ],
+            "recovery_failure": local_recovery["reason"],
+            "rejected_hypothesis": hypothesis,
+        }
+        return {
+            **base,
+            "status": "unavailable",
+            "success": False,
+            "unavailable_reason": "intermediate_dark_basin_present",
+            "final_hypothesis": None,
+        }
     triggered = [
         item
         for item in intermediate_dark["sides"]
@@ -1358,6 +1432,600 @@ def run_joint_case_v1_1(
     }
 
 
+def _raw_dark_valleys_in_interval(
+    profile: np.ndarray,
+    left_x: float,
+    right_x: float,
+) -> list[dict]:
+    """Return dark valleys bounded by consecutive raw-gray ridges."""
+
+    left = int(np.clip(round(left_x), 0, profile.size - 1))
+    right = int(np.clip(round(right_x), 0, profile.size - 1))
+    if right - left < separator.DEFAULT_CONFIG.seed_minimum_distance_px:
+        return []
+    maxima = [left]
+    maxima.extend(
+        index
+        for index in range(left + 1, right)
+        if (
+            profile[index] >= profile[index - 1]
+            and profile[index] >= profile[index + 1]
+        )
+    )
+    maxima.append(right)
+    valleys = []
+    for left_peak, right_peak in zip(maxima, maxima[1:]):
+        if (
+            right_peak - left_peak
+            < separator.DEFAULT_CONFIG.seed_minimum_distance_px
+        ):
+            continue
+        local = profile[left_peak : right_peak + 1]
+        dark_x = left_peak + int(np.argmin(local))
+        dark_gray = float(profile[dark_x])
+        flank_gray = min(
+            float(profile[left_peak]),
+            float(profile[right_peak]),
+        )
+        gray_dynamic = flank_gray - dark_gray
+        if gray_dynamic < MINIMUM_RAW_GRAY_DYNAMIC:
+            continue
+        valleys.append(
+            {
+                "left_x_roi": float(left_peak),
+                "right_x_roi": float(right_peak),
+                "minimum_x_roi": float(dark_x),
+                "dark_gray": dark_gray,
+                "flank_gray": flank_gray,
+                "gray_dynamic": float(gray_dynamic),
+            }
+        )
+    return valleys
+
+
+def _match_valley_observations(
+    observations_by_band: list[list[dict]],
+) -> list[dict]:
+    """Join band observations into ordered, vertically stable paths."""
+
+    tracks: list[dict] = []
+    tolerance = separator.DEFAULT_CONFIG.match_tolerance_px
+    for band_index, observations in enumerate(observations_by_band):
+        available_tracks = set(range(len(tracks)))
+        available_observations = set(range(len(observations)))
+        pairs = []
+        for track_index, track in enumerate(tracks):
+            expected = float(
+                np.median(
+                    [
+                        item["minimum_x_roi"]
+                        for item in track["observations"].values()
+                    ]
+                )
+            )
+            for observation_index, observation in enumerate(observations):
+                distance = abs(
+                    observation["minimum_x_roi"] - expected
+                )
+                if distance <= tolerance:
+                    pairs.append(
+                        (distance, track_index, observation_index)
+                    )
+        for _distance, track_index, observation_index in sorted(pairs):
+            if (
+                track_index not in available_tracks
+                or observation_index not in available_observations
+            ):
+                continue
+            tracks[track_index]["observations"][band_index] = (
+                observations[observation_index]
+            )
+            available_tracks.remove(track_index)
+            available_observations.remove(observation_index)
+        for observation_index in sorted(available_observations):
+            tracks.append(
+                {
+                    "observations": {
+                        band_index: observations[observation_index]
+                    }
+                }
+            )
+    return tracks
+
+
+def _interpolated_track_values(
+    track: dict,
+    key: str,
+    band_count: int,
+) -> np.ndarray:
+    indices = np.asarray(sorted(track["observations"]), dtype=np.float64)
+    values = np.asarray(
+        [track["observations"][int(index)][key] for index in indices],
+        dtype=np.float64,
+    )
+    return np.interp(np.arange(band_count), indices, values)
+
+
+def _ordered_local_valley_tracks(
+    directional: np.ndarray,
+    band_centers_y: np.ndarray,
+    outer_left_by_band: np.ndarray,
+    outer_right_by_band: np.ndarray,
+) -> tuple[list[dict], list[np.ndarray]]:
+    """Build multi-band and row-supported dark-valley tracks."""
+
+    band_bounds = separator._band_bounds(  # noqa: SLF001
+        directional.shape[0],
+        separator.DEFAULT_CONFIG.band_count,
+    )
+    band_profiles = []
+    observations_by_band = []
+    for band_index, (y0, y1) in enumerate(band_bounds):
+        profile = separator._smooth_profile(  # noqa: SLF001
+            np.median(
+                directional[y0:y1].astype(np.float64),
+                axis=0,
+            ),
+            separator.DEFAULT_CONFIG.profile_smoothing_sigma_px,
+        )
+        band_profiles.append(profile)
+        observations_by_band.append(
+            _raw_dark_valleys_in_interval(
+                profile,
+                outer_left_by_band[band_index],
+                outer_right_by_band[band_index],
+            )
+        )
+
+    minimum_fraction = (
+        separator.DEFAULT_CONFIG.minimum_dark_basin_band_fraction
+    )
+    candidates = []
+    for track in _match_valley_observations(observations_by_band):
+        support = len(track["observations"]) / len(band_bounds)
+        if support < minimum_fraction:
+            continue
+        center_path = _interpolated_track_values(
+            track, "minimum_x_roi", len(band_bounds)
+        )
+        mean_step = float(
+            np.mean(np.abs(np.diff(center_path)))
+        )
+        if (
+            mean_step
+            > separator.DEFAULT_CONFIG.maximum_role_path_mean_step_px
+        ):
+            continue
+        candidates.append(
+            {
+                **track,
+                "band_support": support,
+                "mean_band_step_px": mean_step,
+                "minimum_x_by_band_roi": center_path,
+                "left_x_by_band_roi": _interpolated_track_values(
+                    track, "left_x_roi", len(band_bounds)
+                ),
+                "right_x_by_band_roi": _interpolated_track_values(
+                    track, "right_x_roi", len(band_bounds)
+                ),
+            }
+        )
+
+    row_matches = [0] * len(candidates)
+    tolerance = separator.DEFAULT_CONFIG.match_tolerance_px
+    for row_index in range(directional.shape[0]):
+        profile = separator._smooth_profile(  # noqa: SLF001
+            directional[row_index].astype(np.float64),
+            separator.DEFAULT_CONFIG.profile_smoothing_sigma_px,
+        )
+        left_x = float(
+            np.interp(
+                row_index, band_centers_y, outer_left_by_band
+            )
+        )
+        right_x = float(
+            np.interp(
+                row_index, band_centers_y, outer_right_by_band
+            )
+        )
+        observations = _raw_dark_valleys_in_interval(
+            profile, left_x, right_x
+        )
+        pairs = []
+        for track_index, track in enumerate(candidates):
+            expected = float(
+                np.interp(
+                    row_index,
+                    band_centers_y,
+                    track["minimum_x_by_band_roi"],
+                )
+            )
+            for observation_index, observation in enumerate(observations):
+                distance = abs(
+                    observation["minimum_x_roi"] - expected
+                )
+                if distance <= tolerance:
+                    pairs.append(
+                        (distance, track_index, observation_index)
+                    )
+        used_tracks = set()
+        used_observations = set()
+        for _distance, track_index, observation_index in sorted(pairs):
+            if (
+                track_index in used_tracks
+                or observation_index in used_observations
+            ):
+                continue
+            row_matches[track_index] += 1
+            used_tracks.add(track_index)
+            used_observations.add(observation_index)
+
+    verified = []
+    for track, match_count in zip(candidates, row_matches):
+        row_support = match_count / directional.shape[0]
+        if row_support < minimum_fraction:
+            continue
+        verified.append({**track, "row_support": row_support})
+    verified.sort(
+        key=lambda item: float(
+            np.median(item["minimum_x_by_band_roi"])
+        )
+    )
+    return verified, band_profiles
+
+
+def _calculate_local_valley_basin(
+    track: dict,
+    track_index: int,
+    band_centers_y: np.ndarray,
+    band_profiles: list[np.ndarray],
+    reference_y_roi: float,
+) -> tuple[dict | None, dict]:
+    """Calculate one center after the physical valley identity is fixed."""
+
+    left_path = track["left_x_by_band_roi"]
+    right_path = track["right_x_by_band_roi"]
+    midpoint_path = (left_path + right_path) / 2.0
+    basin_id = f"LVB{track_index + 1:02d}"
+    provisional = {
+        "basin_id": basin_id,
+        "left_separator_id": f"{basin_id}_LEFT_RAW_RIDGE",
+        "right_separator_id": f"{basin_id}_RIGHT_RAW_RIDGE",
+        "left_x_by_band_roi": left_path.tolist(),
+        "right_x_by_band_roi": right_path.tolist(),
+        "center_x_by_band_roi": midpoint_path.tolist(),
+    }
+    center_result = v1._refine_one_basin(  # noqa: SLF001
+        provisional,
+        [profile.tolist() for profile in band_profiles],
+        v1.DEFAULT_CORRECTION_CONFIG,
+    )
+    if center_result["reason"] == "insufficient_or_inconsistent_band_evidence":
+        return None, center_result
+    center_path = np.asarray(
+        center_result["bandwise_center_path_x_roi"],
+        dtype=np.float64,
+    )
+    center_at_reference = float(
+        np.interp(reference_y_roi, band_centers_y, center_path)
+    )
+    left_at_reference = float(
+        np.interp(reference_y_roi, band_centers_y, left_path)
+    )
+    right_at_reference = float(
+        np.interp(reference_y_roi, band_centers_y, right_path)
+    )
+    basin = {
+        **provisional,
+        "source": "ordered_raw_gray_valley_path",
+        "band_centers_y_roi": band_centers_y.tolist(),
+        "center_x_by_band_roi": center_path.tolist(),
+        "width_by_band_px": (right_path - left_path).tolist(),
+        "center_x_at_reference_roi": center_at_reference,
+        "width_at_reference_px": right_at_reference - left_at_reference,
+        "band_support": track["band_support"],
+        "row_support": track["row_support"],
+        "mean_step_px": track["mean_band_step_px"],
+        "verified": True,
+        "rejection_reasons": [],
+        "center_definition": "shared_dark_weighted_basin_center",
+    }
+    return basin, center_result
+
+
+def _recover_local_dark_valley_sequence(
+    image_gray: np.ndarray,
+    roi_bounds_global: dict,
+    direction: str,
+    separator_result: dict,
+    graph: dict,
+    hypothesis: dict,
+) -> dict:
+    """Recover direct black-stripe neighbors from ordered raw valleys."""
+
+    empty = {
+        "applied": False,
+        "triggered": False,
+        "success": False,
+        "reason": "trigger_not_met",
+    }
+    if hypothesis.get("reference_relation") != "inside_basin":
+        return empty
+    if direction != "vertical":
+        return {**empty, "reason": "non_vertical_direction"}
+    basin_by_id = {
+        item["basin_id"]: item
+        for item in graph.get("verified_basins", [])
+    }
+    basin_ids = hypothesis.get("basin_ids", {})
+    if any(
+        basin_ids.get(role) not in basin_by_id
+        for role in ("left", "clicked", "right")
+    ):
+        return {**empty, "reason": "basin_paths_missing"}
+    original_basins = {
+        role: basin_by_id[basin_ids[role]]
+        for role in ("left", "clicked", "right")
+    }
+    raw_roi = separator.extract_raw_roi(image_gray, roi_bounds_global)
+    directional = separator._directional_roi(  # noqa: SLF001
+        raw_roi, direction
+    )
+    band_centers_y = np.asarray(
+        original_basins["clicked"]["band_centers_y_roi"],
+        dtype=np.float64,
+    )
+    outer_left = np.asarray(
+        original_basins["left"]["left_x_by_band_roi"],
+        dtype=np.float64,
+    )
+    outer_right = np.asarray(
+        original_basins["right"]["right_x_by_band_roi"],
+        dtype=np.float64,
+    )
+    tracks, band_profiles = _ordered_local_valley_tracks(
+        directional,
+        band_centers_y,
+        outer_left,
+        outer_right,
+    )
+    reference_y = float(separator_result["reference_y_roi"])
+    reference_x = float(separator_result["reference_x_roi"])
+    track_geometry = []
+    for index, track in enumerate(tracks):
+        center = float(
+            np.interp(
+                reference_y,
+                band_centers_y,
+                track["minimum_x_by_band_roi"],
+            )
+        )
+        left = float(
+            np.interp(
+                reference_y,
+                band_centers_y,
+                track["left_x_by_band_roi"],
+            )
+        )
+        right = float(
+            np.interp(
+                reference_y,
+                band_centers_y,
+                track["right_x_by_band_roi"],
+            )
+        )
+        track_geometry.append(
+            {"index": index, "center": center, "left": left, "right": right}
+        )
+
+    if track_geometry:
+        median_width = float(
+            np.median(
+                [item["right"] - item["left"] for item in track_geometry]
+            )
+        )
+        kept = [
+            (track, item)
+            for track, item in zip(tracks, track_geometry)
+            if (
+                (item["right"] - item["left"]) / median_width
+                >= separator.DEFAULT_CONFIG.minimum_full_height_order_ratio
+                and (item["right"] - item["left"]) / median_width
+                <= separator.DEFAULT_CONFIG.maximum_dark_basin_edge_gap_ratio
+            )
+        ]
+        tracks = [item[0] for item in kept]
+        track_geometry = [
+            {**item[1], "index": index}
+            for index, item in enumerate(kept)
+        ]
+
+    clicked_basin = original_basins["clicked"]
+    clicked_left = float(
+        np.interp(
+            reference_y,
+            band_centers_y,
+            clicked_basin["left_x_by_band_roi"],
+        )
+    )
+    clicked_right = float(
+        np.interp(
+            reference_y,
+            band_centers_y,
+            clicked_basin["right_x_by_band_roi"],
+        )
+    )
+    clicked_track_count = sum(
+        clicked_left < item["center"] < clicked_right
+        for item in track_geometry
+    )
+    if clicked_track_count < 2:
+        return {
+            **empty,
+            "applied": True,
+            "reason": "clicked_basin_has_fewer_than_two_stable_valleys",
+            "verified_track_count": len(tracks),
+            "clicked_track_count": clicked_track_count,
+        }
+
+    triggered = {
+        **empty,
+        "applied": True,
+        "triggered": True,
+        "reason": "recovery_not_yet_validated",
+        "verified_track_count": len(tracks),
+        "clicked_track_count": clicked_track_count,
+    }
+    reference_matches = [
+        item
+        for item in track_geometry
+        if item["left"] < reference_x < item["right"]
+    ]
+    if len(reference_matches) != 1:
+        return {
+            **triggered,
+            "reason": "reference_valley_not_unique",
+            "reference_match_count": len(reference_matches),
+        }
+    clicked_index = reference_matches[0]["index"]
+    if clicked_index == 0 or clicked_index == len(tracks) - 1:
+        return {**triggered, "reason": "direct_neighbor_missing"}
+    selected_indices = {
+        "left": clicked_index - 1,
+        "clicked": clicked_index,
+        "right": clicked_index + 1,
+    }
+
+    selected_basins = {}
+    center_debug = {}
+    for role, index in selected_indices.items():
+        basin, calculation = _calculate_local_valley_basin(
+            tracks[index],
+            index,
+            band_centers_y,
+            band_profiles,
+            reference_y,
+        )
+        center_debug[role] = calculation
+        if basin is None:
+            return {
+                **triggered,
+                "reason": f"{role}_center_not_reliable",
+                "center_calculation": center_debug,
+            }
+        selected_basins[role] = basin
+
+    center_paths = {
+        role: np.asarray(basin["center_x_by_band_roi"], dtype=np.float64)
+        for role, basin in selected_basins.items()
+    }
+    left_gaps = center_paths["clicked"] - center_paths["left"]
+    right_gaps = center_paths["right"] - center_paths["clicked"]
+    if np.any(left_gaps <= 0) or np.any(right_gaps <= 0):
+        return {**triggered, "reason": "recovered_path_order_conflict"}
+    for gaps in (left_gaps, right_gaps):
+        median_gap = float(np.median(gaps))
+        if (
+            median_gap <= 0
+            or float(np.min(gaps)) / median_gap
+            < separator.DEFAULT_CONFIG.minimum_full_height_order_ratio
+        ):
+            return {**triggered, "reason": "recovered_path_order_unstable"}
+
+    all_centers = np.asarray(
+        [item["center"] for item in track_geometry], dtype=np.float64
+    )
+    spacings = np.diff(all_centers)
+    local_scale = float(np.median(spacings))
+    selected_spacing = np.asarray(
+        [
+            selected_basins["clicked"]["center_x_at_reference_roi"]
+            - selected_basins["left"]["center_x_at_reference_roi"],
+            selected_basins["right"]["center_x_at_reference_roi"]
+            - selected_basins["clicked"]["center_x_at_reference_roi"],
+        ],
+        dtype=np.float64,
+    )
+    scale_ratios = selected_spacing / local_scale
+    if any(
+        ratio < separator.DEFAULT_CONFIG.minimum_full_height_order_ratio
+        or ratio
+        > separator.DEFAULT_CONFIG.maximum_dark_basin_edge_gap_ratio
+        for ratio in scale_ratios
+    ):
+        return {
+            **triggered,
+            "reason": "recovered_local_scale_conflict",
+            "local_scale_px": local_scale,
+            "selected_scale_ratios": scale_ratios.tolist(),
+        }
+
+    left_center = selected_basins["left"]["center_x_at_reference_roi"]
+    right_center = selected_basins["right"]["center_x_at_reference_roi"]
+    if not left_center < reference_x < right_center:
+        return {**triggered, "reason": "recovered_centers_do_not_straddle_reference"}
+
+    role_ids = {
+        role: basin["basin_id"] for role, basin in selected_basins.items()
+    }
+    recovered_geometry = {
+        "reference_relation": "inside_basin",
+        "left_distance_px": reference_x - left_center,
+        "right_distance_px": right_center - reference_x,
+        "clicked_basin_width_px": selected_basins["clicked"][
+            "width_at_reference_px"
+        ],
+        "local_valley_center_spacing_px": selected_spacing.tolist(),
+        "local_valley_scale_px": local_scale,
+        "basins": {
+            role: {
+                "basin_id": basin["basin_id"],
+                "center_x_at_reference_roi": basin[
+                    "center_x_at_reference_roi"
+                ],
+                "center_x_at_reference_global": (
+                    roi_bounds_global["x0"]
+                    + basin["center_x_at_reference_roi"]
+                ),
+                "width_at_reference_px": basin["width_at_reference_px"],
+            }
+            for role, basin in selected_basins.items()
+        },
+    }
+    recovered_hypothesis = {
+        **hypothesis,
+        "hypothesis_id": f"{hypothesis['hypothesis_id']}_LVR",
+        "basin_ids": role_ids,
+        "basin_sequence": [
+            role_ids[role] for role in ("left", "clicked", "right")
+        ],
+        "separator_ids": None,
+        "separator_sequence": [],
+        "strictly_continuous": True,
+        "geometry": recovered_geometry,
+        "pitch_evidence": hypothesis["pitch_evidence"],
+        "provenance": {
+            **hypothesis["provenance"],
+            "local_valley_recovery": ALGORITHM_REVISION,
+        },
+        "local_valley_recovery": True,
+        "atomic": True,
+    }
+    return {
+        **triggered,
+        "success": True,
+        "reason": None,
+        "reference_track_index": clicked_index,
+        "selected_track_indices": selected_indices,
+        "local_scale_px": local_scale,
+        "selected_scale_ratios": scale_ratios.tolist(),
+        "third_valley_conflict": False,
+        "center_calculation": center_debug,
+        "selected_basins": list(selected_basins.values()),
+        "hypothesis": recovered_hypothesis,
+    }
+
+
 def _intermediate_dark_profile_candidate(
     profile: np.ndarray,
     clicked_center_x: float,
@@ -1378,7 +2046,7 @@ def _intermediate_dark_profile_candidate(
         for quantile in (10, 90)
     )
     dynamic = high - low
-    if dynamic < 8.0:
+    if dynamic < MINIMUM_RAW_GRAY_DYNAMIC:
         return None
     maxima = [
         index
@@ -1442,7 +2110,7 @@ def _raw_clicked_dark_center(
         float(np.percentile(local, quantile))
         for quantile in (10, 90)
     )
-    if high - low < 8.0:
+    if high - low < MINIMUM_RAW_GRAY_DYNAMIC:
         return float(reference_x_roi)
     dark_limit = low + 0.5 * (high - low)
     minima = [

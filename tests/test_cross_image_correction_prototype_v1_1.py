@@ -4,6 +4,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+import cv2
 import numpy as np
 
 from tools import cross_image_correction_prototype_v1_1 as prototype
@@ -242,6 +243,118 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
             result["normalized_contrast"],
             prototype.separator.DEFAULT_CONFIG.minimum_dark_basin_contrast,
         )
+
+    def test_local_valleys_keep_weak_but_stable_ridge_separate(self):
+        profile = np.full(100, 20.0, dtype=np.float64)
+        profile[30:71] = np.interp(
+            np.arange(30, 71),
+            [30, 40, 50, 60, 70],
+            [200.0, 10.0, 22.0, 10.0, 200.0],
+        )
+        valleys = prototype._raw_dark_valleys_in_interval(
+            profile, 30.0, 70.0
+        )
+        self.assertEqual(
+            [item["minimum_x_roi"] for item in valleys],
+            [40.0, 60.0],
+        )
+
+    @unittest.skipUnless(
+        (
+            prototype.PROJECT_ROOT
+            / "images"
+            / "Stripe_10_e0_t221236602_v8p56736_retry.bmp"
+        ).is_file(),
+        "Stripe 10 offline acceptance image is not installed",
+    )
+    def test_three_merged_clicked_basins_recover_direct_neighbors(self):
+        image = cv2.imread(
+            str(
+                prototype.PROJECT_ROOT
+                / "images"
+                / "Stripe_10_e0_t221236602_v8p56736_retry.bmp"
+            ),
+            cv2.IMREAD_GRAYSCALE,
+        )
+        cases = {
+            (1910, 1144): (1892.0, 1922.0),
+            (651, 825): (642.0, 668.7),
+            (747, 335): (732.2, 759.0),
+        }
+        for (x, y), expected in cases.items():
+            case = {"reference_global": {"x": x, "y": y}}
+            bounds = prototype.v1._case_roi(case, image)  # noqa: SLF001
+            result = prototype.run_joint_case_v1_1(
+                image, case["reference_global"], bounds
+            )
+            self.assertTrue(result["success"])
+            recovery = result["debug"]["local_dark_valley_recovery"]
+            self.assertTrue(recovery["success"])
+            self.assertFalse(recovery["third_valley_conflict"])
+            geometry = result["final_hypothesis"]["geometry"]["basins"]
+            actual = tuple(
+                geometry[side]["center_x_at_reference_global"]
+                for side in ("left", "right")
+            )
+            for value, target in zip(actual, expected):
+                self.assertAlmostEqual(value, target, delta=2.0)
+
+    def test_runtime_recovery_has_no_image_or_coordinate_special_case(self):
+        source = Path(prototype.__file__).read_text()
+        for forbidden in (
+            "1910",
+            "1144",
+            "651",
+            "825",
+            "747",
+            "335",
+            "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+        ):
+            self.assertNotIn(forbidden, source)
+
+    @unittest.skipUnless(
+        (prototype.PROJECT_ROOT / "images" / "Sample 2.bmp").is_file(),
+        "Sample 2 offline regression image is not installed",
+    )
+    def test_sample2_issue_and_random_identities_do_not_change(self):
+        image = cv2.imread(
+            str(prototype.PROJECT_ROOT / "images" / "Sample 2.bmp"),
+            cv2.IMREAD_GRAYSCALE,
+        )
+        manifest = prototype.v1.load_evaluation_manifest()
+        for group_name in ("sample2_issues", "sample2_random"):
+            for case in manifest[group_name]:
+                full_case = {**case, "image_name": "Sample 2.bmp"}
+                bounds = prototype.v1._case_roi(  # noqa: SLF001
+                    full_case, image
+                )
+                result = prototype.run_joint_case_v1_1(
+                    image, case["reference_global"], bounds
+                )
+                expected = case["expected"]
+                self.assertEqual(
+                    result["success"],
+                    expected["success"],
+                    case["sample_id"],
+                )
+                if expected["success"]:
+                    hypothesis = result["final_hypothesis"]
+                    self.assertEqual(
+                        hypothesis["basin_ids"],
+                        expected["basin_ids"],
+                        case["sample_id"],
+                    )
+                    self.assertEqual(
+                        hypothesis["separator_sequence"],
+                        expected["separator_sequence"],
+                        case["sample_id"],
+                    )
+                else:
+                    self.assertEqual(
+                        result["unavailable_reason"],
+                        expected["unavailable_reason"],
+                        case["sample_id"],
+                    )
 
     def test_intermediate_dark_veto_downgrades_without_replacement(self):
         hypothesis = {
