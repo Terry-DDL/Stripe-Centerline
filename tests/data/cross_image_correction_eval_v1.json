@@ -245,14 +245,14 @@
       "reference_global": {"x": 1746, "y": 1225},
       "expected": {
         "success": true,
-        "basin_ids": {"left": "B_C06_C07", "right": "B_C07_C08"},
-        "separator_sequence": ["C06", "C07", "C08"]
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"]
       }
     },
     {
       "sample_id": "R014",
       "reference_global": {"x": 364, "y": 1736},
-      "expected": {"success": false, "unavailable_reason": "ambiguous_reference_relationship"}
+      "expected": {"success": false, "unavailable_reason": "dark_basin_width_sequence_irregular"}
     },
     {
       "sample_id": "R015",

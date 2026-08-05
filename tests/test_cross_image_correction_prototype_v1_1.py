@@ -165,6 +165,68 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
         )
         self.assertEqual(relation["classification"], "not_plateau")
 
+    def semantic_fixture(self, reference_x):
+        band_count = 12
+        profiles = np.zeros((band_count, 100), dtype=np.float64)
+        profiles[:, 48:53] = 255.0
+        evidence = {"profiles": profiles}
+
+        def path(candidate_id, x):
+            return {
+                "candidate_id": candidate_id,
+                "accepted": True,
+                "x_by_band_roi": [float(x)] * band_count,
+            }
+
+        candidates = [
+            path("C01", 30),
+            path("C02", 50),
+            path("C03", 70),
+        ]
+        return prototype._reference_grayscale_semantic_classification(
+            candidates[1],
+            candidates,
+            reference_x,
+            evidence,
+            local_pitch_px=20.0,
+        )
+
+    def test_reference_gray_semantic_resolves_inside_basin(self):
+        result = self.semantic_fixture(56.0)
+        self.assertEqual(result["classification"], "inside_basin")
+        self.assertEqual(result["inside_basin_band_fraction"], 1.0)
+
+    def test_reference_gray_semantic_preserves_on_separator(self):
+        result = self.semantic_fixture(50.0)
+        self.assertEqual(result["classification"], "on_separator")
+        self.assertEqual(result["on_separator_band_fraction"], 1.0)
+
+    def test_reference_gray_semantic_keeps_inconsistent_bands_ambiguous(
+        self,
+    ):
+        band_count = 12
+        profiles = np.zeros((band_count, 100), dtype=np.float64)
+        profiles[:6, 48:57] = 255.0
+        profiles[6:, 48:53] = 255.0
+        evidence = {"profiles": profiles}
+
+        def path(candidate_id, x):
+            return {
+                "candidate_id": candidate_id,
+                "accepted": True,
+                "x_by_band_roi": [float(x)] * band_count,
+            }
+
+        candidates = [path("C01", 30), path("C02", 50), path("C03", 70)]
+        result = prototype._reference_grayscale_semantic_classification(
+            candidates[1],
+            candidates,
+            56.0,
+            evidence,
+            local_pitch_px=20.0,
+        )
+        self.assertEqual(result["classification"], "ambiguous")
+
     def test_preregistered_manifest_is_fixed_grid(self):
         manifest_path = (
             prototype.SMOKE_MANIFEST_PATH

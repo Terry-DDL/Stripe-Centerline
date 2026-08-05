@@ -107,6 +107,16 @@ def configuration_document() -> dict:
                 .reference_relationship_uncertainty_px
             ),
         },
+        "reference_grayscale_semantic_resolution": {
+            "scope": "single_near_separator_and_single_basin_hypothesis",
+            "plateau_source": "existing_raw_gray_ridge_interval",
+            "core_source": "existing_edge_derived_plateau_core",
+            "minimum_band_fraction": (
+                v1.DEFAULT_CORRECTION_CONFIG
+                .plateau_pair_minimum_band_fraction
+            ),
+            "distance_threshold_added": False,
+        },
         "center_refinement": {
             "source": "cross_image_correction_v1_frozen",
             "configuration_checksum": v1.correction_configuration_checksum(
@@ -636,11 +646,198 @@ def _plateau_reference_classification(
     }
 
 
+def _reference_grayscale_semantic_classification(
+    candidate: dict,
+    candidates: list[dict],
+    reference_x_roi: float,
+    evidence: dict,
+    local_pitch_px: float,
+) -> dict:
+    """Resolve a near-path reference from existing raw-gray band evidence."""
+
+    accepted = sorted(
+        [item for item in candidates if item["accepted"]],
+        key=lambda item: float(np.median(item["x_by_band_roi"])),
+    )
+    candidate_index = accepted.index(candidate)
+    candidate_median = float(np.median(candidate["x_by_band_roi"]))
+    if reference_x_roi < candidate_median:
+        neighbor_index = candidate_index - 1
+    else:
+        neighbor_index = candidate_index + 1
+    if neighbor_index < 0 or neighbor_index >= len(accepted):
+        return {
+            "classification": "ambiguous",
+            "reason": "adjacent_basin_boundary_missing",
+            "candidate_id": candidate["candidate_id"],
+            "bands": [],
+        }
+    neighbor = accepted[neighbor_index]
+
+    band_results = []
+    for band_index, profile in enumerate(evidence["profiles"]):
+        ridge = v1._ridge_interval(  # noqa: SLF001
+            np.asarray(profile, dtype=np.float64),
+            candidate["x_by_band_roi"][band_index],
+            local_pitch_px,
+        )
+        if ridge["status"] != "available":
+            continue
+        band_results.append(
+            {
+                "band_index": band_index,
+                "left_edge_x_roi": ridge["left_x_roi"],
+                "right_edge_x_roi": ridge["right_x_roi"],
+                "center_x_roi": float(
+                    candidate["x_by_band_roi"][band_index]
+                ),
+            }
+        )
+    if not band_results:
+        return {
+            "classification": "ambiguous",
+            "reason": "local_plateau_geometry_unavailable",
+            "candidate_id": candidate["candidate_id"],
+            "bands": [],
+        }
+
+    # Reuse the existing edge-derived core construction. A single accepted
+    # path supplies both observed source positions; no fixed core half-width
+    # is introduced.
+    source = {
+        "x_by_band_roi": candidate["x_by_band_roi"],
+    }
+    enriched, geometry_summary = _plateau_band_geometry(
+        band_results,
+        source,
+        source,
+    )
+    bands = []
+    for item in enriched:
+        band_index = item["band_index"]
+        profile = np.asarray(
+            evidence["profiles"][band_index],
+            dtype=np.float64,
+        )
+        ref_index = int(
+            np.clip(round(reference_x_roi), 0, profile.size - 1)
+        )
+        candidate_x = int(
+            np.clip(
+                round(candidate["x_by_band_roi"][band_index]),
+                0,
+                profile.size - 1,
+            )
+        )
+        neighbor_x = int(
+            np.clip(
+                round(neighbor["x_by_band_roi"][band_index]),
+                0,
+                profile.size - 1,
+            )
+        )
+        basin_left, basin_right = sorted(
+            (candidate_x, neighbor_x)
+        )
+        basin_values = profile[basin_left + 1 : basin_right]
+        if basin_values.size == 0:
+            continue
+        core_left = int(round(item["core_left_x_roi"]))
+        core_right = int(round(item["core_right_x_roi"]))
+        separator_gray = float(
+            np.median(profile[core_left : core_right + 1])
+        )
+        basin_gray = float(np.min(basin_values))
+        reference_gray = float(profile[ref_index])
+        inside_plateau = bool(
+            item["left_edge_x_roi"]
+            <= reference_x_roi
+            <= item["right_edge_x_roi"]
+        )
+        inside_core = bool(
+            item["core_left_x_roi"]
+            <= reference_x_roi
+            <= item["core_right_x_roi"]
+        )
+        closer_to_separator = bool(
+            abs(reference_gray - separator_gray)
+            < abs(reference_gray - basin_gray)
+        )
+        closer_to_basin = bool(
+            abs(reference_gray - basin_gray)
+            < abs(reference_gray - separator_gray)
+        )
+        bands.append(
+            {
+                **item,
+                "reference_gray": reference_gray,
+                "separator_core_gray": separator_gray,
+                "adjacent_basin_dark_gray": basin_gray,
+                "reference_inside_plateau": inside_plateau,
+                "reference_inside_core": inside_core,
+                "reference_closer_to_separator": closer_to_separator,
+                "reference_closer_to_basin": closer_to_basin,
+            }
+        )
+    if not bands:
+        return {
+            "classification": "ambiguous",
+            "reason": "adjacent_basin_gray_unavailable",
+            "candidate_id": candidate["candidate_id"],
+            "bands": [],
+        }
+
+    minimum = (
+        v1.DEFAULT_CORRECTION_CONFIG
+        .plateau_pair_minimum_band_fraction
+    )
+    on_separator_fraction = float(
+        np.mean(
+            [
+                item["reference_inside_plateau"]
+                and item["reference_inside_core"]
+                and item["reference_closer_to_separator"]
+                for item in bands
+            ]
+        )
+    )
+    inside_basin_fraction = float(
+        np.mean(
+            [
+                not item["reference_inside_plateau"]
+                and item["reference_closer_to_basin"]
+                for item in bands
+            ]
+        )
+    )
+    if on_separator_fraction >= minimum:
+        classification = "on_separator"
+        reason = "stable_plateau_membership_and_separator_gray"
+    elif inside_basin_fraction >= minimum:
+        classification = "inside_basin"
+        reason = "stable_plateau_exit_and_basin_gray"
+    else:
+        classification = "ambiguous"
+        reason = "raw_gray_band_semantics_not_consistent"
+    return {
+        "algorithm_revision": "reference_grayscale_semantic_resolution",
+        "candidate_id": candidate["candidate_id"],
+        "classification": classification,
+        "reason": reason,
+        "minimum_band_fraction": minimum,
+        "on_separator_band_fraction": on_separator_fraction,
+        "inside_basin_band_fraction": inside_basin_fraction,
+        "geometry_summary": geometry_summary,
+        "bands": bands,
+    }
+
+
 def select_clicked_basin_paths_v1_1(
     candidates: list[dict],
     reference_x_roi: float,
     reference_y_roi: float,
     evidence: dict,
+    local_pitch_px: float,
 ) -> dict:
     """Apply width-aware relation only to confirmed plateau separators."""
 
@@ -677,6 +874,118 @@ def select_clicked_basin_paths_v1_1(
             item["candidate_id"] for item in ambiguous
         ],
     }
+    relation_items = [
+        item
+        for item in frozen["competing_explanations"]
+        if item.get("type")
+        in {
+            "reference_on_separator",
+            "reference_relationship_uncertain",
+        }
+    ]
+    role_hypotheses = frozen["role_hypotheses"]
+    semantic = None
+    if (
+        not frozen["crossing"]
+        and len(relation_items) == 1
+        and len(role_hypotheses) == 1
+    ):
+        by_id = {item["candidate_id"]: item for item in accepted}
+        relation_candidate = by_id[relation_items[0]["candidate_id"]]
+        semantic = _reference_grayscale_semantic_classification(
+            relation_candidate,
+            candidates,
+            reference_x_roi,
+            evidence,
+            local_pitch_px,
+        )
+        width_debug[
+            "reference_grayscale_semantic_resolution"
+        ] = semantic
+        role = role_hypotheses[0]
+        if semantic["classification"] == "inside_basin":
+            if not role["verified"]:
+                return {
+                    **frozen,
+                    "status": "unavailable",
+                    "unavailable_reason": role[
+                        "rejection_reasons"
+                    ][0],
+                    "relationship_status": "basin_rejected",
+                    "selection": {},
+                    "competing_explanations": [
+                        {
+                            "type": "clicked_basin_roles",
+                            "hypothesis_id": role["hypothesis_id"],
+                            "selection_candidate_ids": role[
+                                "selection_candidate_ids"
+                            ],
+                            "verified": False,
+                            "rejection_reasons": role[
+                                "rejection_reasons"
+                            ],
+                        }
+                    ],
+                    "rejection_reasons": role[
+                        "rejection_reasons"
+                    ],
+                    "width_aware_reference": width_debug,
+                }
+            selection = {
+                name: by_id[candidate_id]
+                for name, candidate_id in role[
+                    "selection_candidate_ids"
+                ].items()
+            }
+            return {
+                **frozen,
+                "status": "available",
+                "unavailable_reason": None,
+                "relationship_status": "basin_unique",
+                "selection": selection,
+                "competing_explanations": [
+                    {
+                        "type": "clicked_basin_roles",
+                        "hypothesis_id": role["hypothesis_id"],
+                        "selection_candidate_ids": role[
+                            "selection_candidate_ids"
+                        ],
+                        "verified": True,
+                        "rejection_reasons": [],
+                    }
+                ],
+                "rejection_reasons": [],
+                "width_aware_reference": width_debug,
+            }
+        if semantic["classification"] == "on_separator":
+            return {
+                **frozen,
+                "status": "unavailable",
+                "unavailable_reason": "reference_on_separator",
+                "relationship_status": "reference_on_separator",
+                "selection": {},
+                "competing_explanations": [
+                    {
+                        "type": "reference_on_separator",
+                        "candidate_id": relation_candidate[
+                            "candidate_id"
+                        ],
+                        "grayscale_semantic": True,
+                        "evidence": semantic,
+                    },
+                    {
+                        "type": "clicked_basin_roles",
+                        "hypothesis_id": role["hypothesis_id"],
+                        "selection_candidate_ids": role[
+                            "selection_candidate_ids"
+                        ],
+                        "verified": True,
+                        "rejection_reasons": [],
+                    },
+                ],
+                "rejection_reasons": ["reference_on_separator"],
+                "width_aware_reference": width_debug,
+            }
     if frozen["crossing"]:
         return {**frozen, "width_aware_reference": width_debug}
     if len(definite) > 1 or (definite and ambiguous):
@@ -832,6 +1141,7 @@ def detect_centerized_separator_paths_v1_1(
         frozen["reference_x_roi"],
         frozen["reference_y_roi"],
         evidence,
+        local_pitch,
     )
     return {
         **frozen,
