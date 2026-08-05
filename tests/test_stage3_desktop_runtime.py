@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import cv2
 import numpy as np
@@ -27,6 +28,99 @@ def bounds():
 
 
 class Stage3DesktopRuntimeTests(unittest.TestCase):
+    def test_final_lines_follow_existing_angle_through_reference_centers(self):
+        image = np.zeros((200, 500), dtype=np.uint8)
+        stage3 = available_shadow_result()
+        with patch.object(
+            runtime,
+            "_estimate_formal_line_angle_deg",
+            return_value=5.0,
+        ):
+            result = runtime.build_desktop_result(
+                image,
+                "synthetic.bmp",
+                {"x": 270, "y": 100},
+                bounds(),
+                stage3,
+                Path("/tmp/not-written"),
+            )
+
+        interactive = result.report["interactive_result"]
+        self.assertEqual(240.0, interactive["left"]["center_x_global"])
+        self.assertEqual(300.0, interactive["right"]["center_x_global"])
+        self.assertEqual(30.0, interactive["left"]["distance_to_click_px"])
+        self.assertEqual(30.0, interactive["right"]["distance_to_click_px"])
+        self.assertEqual(60.0, interactive["stripe_spacing_px"])
+
+        overlay = result.debug_images[runtime.FORMAL_OVERLAY_FILENAME]
+        self.assertTrue(
+            np.any(
+                np.all(
+                    overlay[100, 239:242] == (255, 0, 0),
+                    axis=1,
+                )
+            )
+        )
+        self.assertTrue(
+            np.any(
+                np.all(
+                    overlay[100, 299:302] == (0, 255, 255),
+                    axis=1,
+                )
+            )
+        )
+        self.assertTrue(
+            np.any(
+                np.all(
+                    overlay[10, 247:250] == (255, 0, 0),
+                    axis=1,
+                )
+            )
+        )
+        self.assertTrue(
+            np.any(
+                np.all(
+                    overlay[189, 231:234] == (255, 0, 0),
+                    axis=1,
+                )
+            )
+        )
+
+    def test_zero_angle_keeps_final_lines_vertical(self):
+        image = np.zeros((200, 500), dtype=np.uint8)
+        stage3 = available_shadow_result()
+        with patch.object(
+            runtime,
+            "_estimate_formal_line_angle_deg",
+            return_value=0.0,
+        ):
+            result = runtime.build_desktop_result(
+                image,
+                "synthetic.bmp",
+                {"x": 270, "y": 100},
+                bounds(),
+                stage3,
+                Path("/tmp/not-written"),
+            )
+
+        overlay = result.debug_images[runtime.FORMAL_OVERLAY_FILENAME]
+        self.assertTrue(
+            np.any(
+                np.all(
+                    overlay[10, 239:242] == (255, 0, 0),
+                    axis=1,
+                )
+            )
+        )
+        self.assertTrue(
+            np.any(
+                np.all(
+                    overlay[189, 239:242] == (255, 0, 0),
+                    axis=1,
+                )
+            )
+        )
+
     def test_success_uses_one_atomic_stage3_geometry(self):
         image = np.zeros((200, 500), dtype=np.uint8)
         stage3 = available_shadow_result()

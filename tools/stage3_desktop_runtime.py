@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import math
 from pathlib import Path
 from typing import Callable
 
@@ -17,6 +18,9 @@ import numpy as np
 
 from tools import basin_graph_joint_prototype as joint
 from tools import cross_image_correction_prototype_v1_1 as cross_image_v1_1
+from config import CONFIG, INTERACTIVE_CONFIG
+from image_processing import crop_roi_global
+from interactive_pipeline import _preprocess_roi, estimate_rotation_shadow
 
 
 RESULT_SOURCE = "cross_image_correction_v1_1"
@@ -196,6 +200,7 @@ def _draw_formal_overlay(
     reference_global: dict,
     bounds,
     geometry: dict | None,
+    line_angle_deg: float = 0.0,
 ) -> np.ndarray:
     overlay = cv2.cvtColor(image_gray, cv2.COLOR_GRAY2BGR)
     cv2.rectangle(
@@ -218,18 +223,46 @@ def _draw_formal_overlay(
             ("left", (255, 0, 0)),
             ("right", (0, 255, 255)),
         ):
-            center_x = int(
-                round(geometry[side]["center_x_global"])
+            center_x = float(geometry[side]["center_x_global"])
+            slope_x_per_y = -math.tan(math.radians(line_angle_deg))
+            top_x = center_x + slope_x_per_y * (
+                bounds.y0_global - reference_global["y"]
+            )
+            bottom_y = bounds.y1_global - 1
+            bottom_x = center_x + slope_x_per_y * (
+                bottom_y - reference_global["y"]
             )
             cv2.line(
                 overlay,
-                (center_x, bounds.y0_global),
-                (center_x, bounds.y1_global - 1),
+                (int(round(top_x)), bounds.y0_global),
+                (int(round(bottom_x)), bottom_y),
                 color,
                 2,
                 cv2.LINE_AA,
             )
     return overlay
+
+
+def _estimate_formal_line_angle_deg(
+    image_gray: np.ndarray,
+    bounds,
+) -> float:
+    """Reuse the configured stripe-angle estimate for final line drawing."""
+
+    image_gray_roi = crop_roi_global(image_gray, bounds)
+    stages = _preprocess_roi(
+        image_gray_roi,
+        CONFIG,
+        INTERACTIVE_CONFIG,
+        "otsu",
+    )
+    angle_deg = estimate_rotation_shadow(
+        stages.vertical_close,
+        INTERACTIVE_CONFIG,
+    ).best_angle_deg
+    if abs(angle_deg) < INTERACTIVE_CONFIG.rotation_min_abs_angle_deg:
+        return 0.0
+    return float(angle_deg)
 
 
 def build_desktop_result(
@@ -315,11 +348,17 @@ def build_desktop_result(
         },
         "interactive_result": interactive_result,
     }
+    line_angle_deg = (
+        _estimate_formal_line_angle_deg(image_gray, bounds)
+        if geometry is not None
+        else 0.0
+    )
     overlay = _draw_formal_overlay(
         image_gray,
         reference_global,
         bounds,
         geometry,
+        line_angle_deg,
     )
     return Stage3DesktopResult(
         click_x_global=reference_global["x"],
