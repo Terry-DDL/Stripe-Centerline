@@ -227,6 +227,112 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
         )
         self.assertEqual(result["classification"], "ambiguous")
 
+    def test_intermediate_dark_profile_uses_existing_contrast_gate(self):
+        profile = np.full(100, 20.0, dtype=np.float64)
+        profile[31:41] = np.linspace(20.0, 200.0, 10)
+        profile[41:51] = np.linspace(200.0, 10.0, 10)
+        profile[51:61] = np.linspace(10.0, 200.0, 10)
+        profile[61:70] = np.linspace(200.0, 20.0, 9)
+        result = prototype._intermediate_dark_profile_candidate(
+            profile, 30.0, 70.0
+        )
+        self.assertIsNotNone(result)
+        self.assertTrue(result["supported"])
+        self.assertGreaterEqual(
+            result["normalized_contrast"],
+            prototype.separator.DEFAULT_CONFIG.minimum_dark_basin_contrast,
+        )
+
+    def test_intermediate_dark_veto_downgrades_without_replacement(self):
+        hypothesis = {
+            "hypothesis_id": "JH01",
+            "reference_relation": "inside_basin",
+        }
+        relation = {
+            "status": "unique",
+            "unavailable_reason": None,
+            "hypotheses": [hypothesis],
+        }
+        separator_result = {
+            "reference_x_roi": 50.0,
+            "candidates": [],
+        }
+        pitch_result = {
+            "algorithm_revision": "pitch-v1",
+            "configuration_checksum": "pitch-config",
+        }
+        evidence = {
+            "applied": True,
+            "reference_relation": "inside_basin",
+            "sides": [
+                {
+                    "side": "right",
+                    "verified": True,
+                    "dark_basin_x_global": 123.0,
+                    "band_support": 1.0,
+                    "row_support": 0.99,
+                    "median_normalized_contrast": 0.4,
+                }
+            ],
+        }
+        with (
+            patch.object(
+                prototype,
+                "FROZEN_RUN_JOINT_CASE",
+                return_value={"success": True},
+            ),
+            patch.object(
+                prototype,
+                "detect_centerized_separator_paths_v1_1",
+                return_value=separator_result,
+            ),
+            patch.object(
+                prototype.joint,
+                "build_ordered_basin_graph",
+                return_value={"verified_basins": []},
+            ),
+            patch.object(
+                prototype.joint,
+                "resolve_reference_relation",
+                return_value=relation,
+            ),
+            patch.object(
+                prototype.raw_pitch,
+                "estimate_raw_local_pitch_v3",
+                return_value=pitch_result,
+            ),
+            patch.object(
+                prototype.joint,
+                "_basin_geometry",
+                return_value={"basins": {}},
+            ),
+            patch.object(
+                prototype.joint,
+                "_pitch_evidence_for_geometry",
+                return_value={"rejects_geometry": False},
+            ),
+            patch.object(
+                prototype,
+                "_intermediate_dark_basin_evidence",
+                return_value=evidence,
+            ),
+        ):
+            result = prototype.run_joint_case_v1_1(
+                np.zeros((20, 20), dtype=np.uint8),
+                {"x": 10, "y": 10},
+                {"x0": 0, "y0": 0, "x1": 20, "y1": 20},
+            )
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["status"], "unavailable")
+        self.assertEqual(
+            result["unavailable_reason"],
+            "intermediate_dark_basin_present",
+        )
+        self.assertIsNone(result["final_hypothesis"])
+        veto = result["debug"]["intermediate_dark_basin_veto"]
+        self.assertEqual(veto["triggered_sides"], evidence["sides"])
+
     def test_preregistered_manifest_is_fixed_grid(self):
         manifest_path = (
             prototype.SMOKE_MANIFEST_PATH

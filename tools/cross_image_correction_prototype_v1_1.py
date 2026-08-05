@@ -117,6 +117,26 @@ def configuration_document() -> dict:
             ),
             "distance_threshold_added": False,
         },
+        "intermediate_dark_basin_veto": {
+            "scope": "inside_basin_success_only",
+            "gray_source": "raw_roi",
+            "minimum_band_fraction": (
+                separator.DEFAULT_CONFIG
+                .minimum_dark_basin_band_fraction
+            ),
+            "minimum_row_fraction": (
+                separator.DEFAULT_CONFIG
+                .minimum_dark_basin_band_fraction
+            ),
+            "minimum_normalized_contrast": (
+                separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+            ),
+            "maximum_mean_band_step_px": (
+                separator.DEFAULT_CONFIG
+                .maximum_role_path_mean_step_px
+            ),
+            "replacement_center_allowed": False,
+        },
         "center_refinement": {
             "source": "cross_image_correction_v1_frozen",
             "configuration_checksum": v1.correction_configuration_checksum(
@@ -1293,6 +1313,33 @@ def run_joint_case_v1_1(
             "unavailable_reason": "high_pitch_geometry_conflict",
             "final_hypothesis": None,
         }
+    intermediate_dark = _intermediate_dark_basin_evidence(
+        image_gray,
+        roi_bounds_global,
+        direction,
+        separator_result,
+        graph,
+        hypothesis,
+    )
+    debug["intermediate_dark_basin_evidence"] = intermediate_dark
+    triggered = [
+        item
+        for item in intermediate_dark["sides"]
+        if item["verified"]
+    ]
+    if triggered:
+        debug["intermediate_dark_basin_veto"] = {
+            "reason": "intermediate_dark_basin_present",
+            "triggered_sides": triggered,
+            "rejected_hypothesis": hypothesis,
+        }
+        return {
+            **base,
+            "status": "unavailable",
+            "success": False,
+            "unavailable_reason": "intermediate_dark_basin_present",
+            "final_hypothesis": None,
+        }
     if not frozen_result["success"]:
         debug["release_unavailable_audit"] = {
             "reason": "release_unavailable_cannot_become_success",
@@ -1308,6 +1355,318 @@ def run_joint_case_v1_1(
         "success": True,
         "unavailable_reason": None,
         "final_hypothesis": hypothesis,
+    }
+
+
+def _intermediate_dark_profile_candidate(
+    profile: np.ndarray,
+    clicked_center_x: float,
+    selected_center_x: float,
+) -> dict | None:
+    """Find one dark valley strictly between two flanking bright ridges."""
+
+    left_center, right_center = sorted(
+        (float(clicked_center_x), float(selected_center_x))
+    )
+    left = int(np.clip(round(left_center), 0, profile.size - 1))
+    right = int(np.clip(round(right_center), 0, profile.size - 1))
+    if right - left < 5:
+        return None
+    local = profile[left : right + 1]
+    low, high = (
+        float(np.percentile(local, quantile))
+        for quantile in (10, 90)
+    )
+    dynamic = high - low
+    if dynamic < 8.0:
+        return None
+    maxima = [
+        index
+        for index in range(left + 1, right)
+        if (
+            profile[index] >= profile[index - 1]
+            and profile[index] >= profile[index + 1]
+        )
+    ]
+    if len(maxima) < 2:
+        return None
+    left_peak = maxima[0]
+    right_peak = maxima[-1]
+    search_left = left_peak + 1
+    search_right = right_peak - 1
+    if search_right - search_left < 2:
+        return None
+    dark_x = search_left + int(
+        np.argmin(profile[search_left : search_right + 1])
+    )
+    left_values = profile[left_peak:dark_x]
+    right_values = profile[dark_x + 1 : right_peak + 1]
+    if left_values.size == 0 or right_values.size == 0:
+        return None
+    dark_gray = float(profile[dark_x])
+    left_bright = float(np.max(left_values))
+    right_bright = float(np.max(right_values))
+    flank_gray = min(left_bright, right_bright)
+    normalized_contrast = (flank_gray - dark_gray) / dynamic
+    return {
+        "x_roi": float(dark_x),
+        "supported": bool(
+            normalized_contrast
+            >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+        ),
+        "dark_gray": dark_gray,
+        "left_bright_gray": left_bright,
+        "right_bright_gray": right_bright,
+        "normalized_contrast": float(normalized_contrast),
+    }
+
+
+def _raw_clicked_dark_center(
+    profile: np.ndarray,
+    reference_x_roi: float,
+    left_selected_x: float,
+    right_selected_x: float,
+) -> float:
+    """Locate the clicked raw-gray dark valley without using basin IDs."""
+
+    left, right = sorted(
+        (
+            int(np.clip(round(left_selected_x), 0, profile.size - 1)),
+            int(np.clip(round(right_selected_x), 0, profile.size - 1)),
+        )
+    )
+    if right - left < 5:
+        return float(reference_x_roi)
+    local = profile[left : right + 1]
+    low, high = (
+        float(np.percentile(local, quantile))
+        for quantile in (10, 90)
+    )
+    if high - low < 8.0:
+        return float(reference_x_roi)
+    dark_limit = low + 0.5 * (high - low)
+    minima = [
+        index
+        for index in range(left + 1, right)
+        if (
+            profile[index] <= dark_limit
+            and profile[index] <= profile[index - 1]
+            and profile[index] <= profile[index + 1]
+        )
+    ]
+    if not minima:
+        return float(left + int(np.argmin(local)))
+    return float(
+        min(minima, key=lambda index: abs(index - reference_x_roi))
+    )
+
+
+def _intermediate_dark_basin_evidence(
+    image_gray: np.ndarray,
+    roi_bounds_global: dict,
+    direction: str,
+    separator_result: dict,
+    graph: dict,
+    hypothesis: dict,
+) -> dict:
+    """Validate extra raw-gray dark valleys between clicked/selected stripes."""
+
+    empty = {
+        "applied": False,
+        "reference_relation": hypothesis.get("reference_relation"),
+        "sides": [],
+    }
+    if hypothesis.get("reference_relation") != "inside_basin":
+        return empty
+    if direction != "vertical":
+        return {**empty, "unavailable_reason": "non_vertical_direction"}
+    basin_by_id = {
+        item["basin_id"]: item
+        for item in graph.get("verified_basins", [])
+    }
+    basin_ids = hypothesis.get("basin_ids", {})
+    if any(
+        basin_ids.get(role) not in basin_by_id
+        for role in ("clicked", "left", "right")
+    ):
+        return {**empty, "unavailable_reason": "basin_paths_missing"}
+
+    basins = {
+        role: basin_by_id[basin_ids[role]]
+        for role in ("clicked", "left", "right")
+    }
+    raw_roi = separator.extract_raw_roi(image_gray, roi_bounds_global)
+    directional = separator._directional_roi(  # noqa: SLF001
+        raw_roi,
+        direction,
+    )
+    band_bounds = separator._band_bounds(  # noqa: SLF001
+        directional.shape[0],
+        separator.DEFAULT_CONFIG.band_count,
+    )
+    reference_x = float(separator_result["reference_x_roi"])
+    band_centers_y = np.asarray(
+        basins["clicked"]["band_centers_y_roi"],
+        dtype=np.float64,
+    )
+    paths = {
+        role: np.asarray(
+            basins[role]["center_x_by_band_roi"],
+            dtype=np.float64,
+        )
+        for role in ("left", "right")
+    }
+    clicked_by_band = []
+    band_profiles = []
+    for band_index, (y0, y1) in enumerate(band_bounds):
+        profile = separator._smooth_profile(  # noqa: SLF001
+            np.median(
+                directional[y0:y1].astype(np.float64),
+                axis=0,
+            ),
+            separator.DEFAULT_CONFIG.profile_smoothing_sigma_px,
+        )
+        band_profiles.append(profile)
+        clicked_by_band.append(
+            _raw_clicked_dark_center(
+                profile,
+                reference_x,
+                paths["left"][band_index],
+                paths["right"][band_index],
+            )
+        )
+    clicked_path = np.asarray(clicked_by_band, dtype=np.float64)
+
+    side_results = []
+    minimum_fraction = (
+        separator.DEFAULT_CONFIG.minimum_dark_basin_band_fraction
+    )
+    for side in ("left", "right"):
+        band_items = []
+        for band_index, profile in enumerate(band_profiles):
+            item = _intermediate_dark_profile_candidate(
+                profile,
+                clicked_path[band_index],
+                paths[side][band_index],
+            )
+            if item is not None:
+                band_items.append({"band_index": band_index, **item})
+
+        row_items = []
+        for row_index in range(directional.shape[0]):
+            profile = separator._smooth_profile(  # noqa: SLF001
+                directional[row_index].astype(np.float64),
+                separator.DEFAULT_CONFIG.profile_smoothing_sigma_px,
+            )
+            left_at_row = float(
+                np.interp(row_index, band_centers_y, paths["left"])
+            )
+            right_at_row = float(
+                np.interp(row_index, band_centers_y, paths["right"])
+            )
+            clicked_at_row = _raw_clicked_dark_center(
+                profile,
+                reference_x,
+                left_at_row,
+                right_at_row,
+            )
+            selected_at_row = float(
+                np.interp(row_index, band_centers_y, paths[side])
+            )
+            item = _intermediate_dark_profile_candidate(
+                profile,
+                clicked_at_row,
+                selected_at_row,
+            )
+            if item is not None:
+                row_items.append({"row_index": row_index, **item})
+
+        supported_bands = [
+            item for item in band_items if item["supported"]
+        ]
+        supported_rows = [
+            item for item in row_items if item["supported"]
+        ]
+        band_support = (
+            len(supported_bands) / len(band_items)
+            if band_items
+            else 0.0
+        )
+        row_support = (
+            len(supported_rows) / len(row_items)
+            if row_items
+            else 0.0
+        )
+        x_values = np.asarray(
+            [item["x_roi"] for item in band_items],
+            dtype=np.float64,
+        )
+        dark_x_roi = (
+            float(np.median(x_values)) if x_values.size else None
+        )
+        steps = np.abs(np.diff(x_values))
+        mean_step = float(np.mean(steps)) if steps.size else 0.0
+        normalized_contrast = (
+            float(
+                np.median(
+                    [
+                        item["normalized_contrast"]
+                        for item in band_items
+                    ]
+                )
+            )
+            if band_items
+            else None
+        )
+        verified = bool(
+            band_support >= minimum_fraction
+            and row_support >= minimum_fraction
+            and normalized_contrast is not None
+            and normalized_contrast
+            >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+            and mean_step
+            <= separator.DEFAULT_CONFIG.maximum_role_path_mean_step_px
+        )
+        side_results.append(
+            {
+                "side": side,
+                "verified": verified,
+                "dark_basin_x_roi": dark_x_roi,
+                "dark_basin_x_global": (
+                    None
+                    if dark_x_roi is None
+                    else dark_x_roi + roi_bounds_global["x0"]
+                ),
+                "band_support": band_support,
+                "row_support": row_support,
+                "median_normalized_contrast": normalized_contrast,
+                "mean_band_step_px": mean_step,
+                "x_mad_px": (
+                    None
+                    if not x_values.size
+                    else float(
+                        np.median(
+                            np.abs(x_values - dark_x_roi)
+                        )
+                    )
+                ),
+                "x_range_px": (
+                    None if not x_values.size else float(np.ptp(x_values))
+                ),
+            }
+        )
+    return {
+        "applied": True,
+        "reference_relation": "inside_basin",
+        "minimum_band_fraction": minimum_fraction,
+        "minimum_row_fraction": minimum_fraction,
+        "minimum_normalized_contrast": (
+            separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+        ),
+        "maximum_mean_band_step_px": (
+            separator.DEFAULT_CONFIG.maximum_role_path_mean_step_px
+        ),
+        "sides": side_results,
     }
 
 
