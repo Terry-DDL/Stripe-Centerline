@@ -984,21 +984,13 @@ def run_joint_case_v1_1(
             "final_hypothesis": None,
         }
     if not frozen_result["success"]:
-        debug["safe_upgrade_blocked"] = {
+        debug["release_unavailable_audit"] = {
             "reason": "release_unavailable_cannot_become_success",
             "release_unavailable_reason": frozen_result[
                 "unavailable_reason"
             ],
-            "proposed_hypothesis": hypothesis,
-        }
-        return {
-            **base,
-            "status": "unavailable",
-            "success": False,
-            "unavailable_reason": frozen_result[
-                "unavailable_reason"
-            ],
-            "final_hypothesis": None,
+            "hard_veto_applied": False,
+            "accepted_hypothesis": hypothesis,
         }
     return {
         **base,

@@ -2,6 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -194,6 +195,85 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
         self.assertEqual(
             prototype.configuration_checksum(),
             prototype.configuration_checksum(),
+        )
+
+    def test_release_unavailable_is_audit_only_after_all_checks(self):
+        separator_result = {
+            "reference_x_roi": 50.0,
+            "candidates": [],
+        }
+        relation_hypothesis = {
+            "hypothesis_id": "JH01",
+            "reference_relation": "inside_basin",
+        }
+        relation = {
+            "status": "unique",
+            "unavailable_reason": None,
+            "hypotheses": [relation_hypothesis],
+        }
+        pitch_result = {
+            "algorithm_revision": "pitch-v1",
+            "configuration_checksum": "pitch-config",
+        }
+        pitch_evidence = {"rejects_geometry": False}
+        with (
+            patch.object(
+                prototype,
+                "FROZEN_RUN_JOINT_CASE",
+                return_value={
+                    "success": False,
+                    "unavailable_reason": "legacy_failure",
+                },
+            ),
+            patch.object(
+                prototype,
+                "detect_centerized_separator_paths_v1_1",
+                return_value=separator_result,
+            ),
+            patch.object(
+                prototype.joint,
+                "build_ordered_basin_graph",
+                return_value={"verified_basins": []},
+            ),
+            patch.object(
+                prototype.joint,
+                "resolve_reference_relation",
+                return_value=relation,
+            ),
+            patch.object(
+                prototype.raw_pitch,
+                "estimate_raw_local_pitch_v3",
+                return_value=pitch_result,
+            ),
+            patch.object(
+                prototype.joint,
+                "_basin_geometry",
+                return_value={"basins": {}},
+            ),
+            patch.object(
+                prototype.joint,
+                "_pitch_evidence_for_geometry",
+                return_value=pitch_evidence,
+            ),
+        ):
+            result = prototype.run_joint_case_v1_1(
+                np.zeros((20, 20), dtype=np.uint8),
+                {"x": 10, "y": 10},
+                {"x0": 0, "y0": 0, "x1": 20, "y1": 20},
+            )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["status"], "available")
+        self.assertIsNone(result["unavailable_reason"])
+        audit = result["debug"]["release_unavailable_audit"]
+        self.assertFalse(audit["hard_veto_applied"])
+        self.assertEqual(
+            audit["release_unavailable_reason"],
+            "legacy_failure",
+        )
+        self.assertEqual(
+            audit["accepted_hypothesis"],
+            result["final_hypothesis"],
         )
 
 
