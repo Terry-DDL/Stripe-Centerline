@@ -38,7 +38,7 @@ EXPERIMENT_START_COMMIT = (
 )
 RELEASE_COMMIT = "55b26e6deac5acbb50e3934c03d71e3c5b56b269"
 ALGORITHM_REVISION = (
-    "cross_image_correction_offline_v1_1_local_valley_recovery"
+    "cross_image_correction_offline_v1_1_local_contrast_recovery"
 )
 MINIMUM_RAW_GRAY_DYNAMIC = 8.0
 FREEZE_PATH = (
@@ -61,6 +61,8 @@ DEFAULT_OUTPUT_DIR = (
 FROZEN_DETECT_SEPARATOR_PATHS = separator.detect_separator_paths
 FROZEN_RUN_JOINT_CASE = joint.run_joint_case
 V1_RUN_JOINT_CASE = v1.run_centerized_joint_case
+ENABLE_REFERENCE_SEMANTIC_TIEBREAK = True
+ENABLE_PITCH_GUIDED_MISSING_SEPARATOR_COMPLETION = True
 
 
 def configuration_document() -> dict:
@@ -160,6 +162,35 @@ def configuration_document() -> dict:
             "path_match_tolerance_px": (
                 separator.DEFAULT_CONFIG.match_tolerance_px
             ),
+            "coordinate_or_image_special_cases": False,
+        },
+        "local_contrast_coverage_recovery": {
+            "scope": (
+                "unique_clicked_basin_roles_rejected_only_by_"
+                "dark_basin_sequence_not_verified"
+            ),
+            "identity_source": "four_consecutive_ordered_separator_paths",
+            "local_profile_source": "median_rows_near_reference_y",
+            "local_half_window_rows": int(
+                round(separator.DEFAULT_CONFIG.match_tolerance_px)
+            ),
+            "minimum_local_normalized_contrast": (
+                separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+            ),
+            "minimum_path_support": (
+                separator.DEFAULT_CONFIG.minimum_role_path_support_fraction
+            ),
+            "maximum_path_mean_step_px": (
+                separator.DEFAULT_CONFIG.maximum_role_path_mean_step_px
+            ),
+            "minimum_gap_width_consistency_ratio": (
+                separator.DEFAULT_CONFIG.minimum_full_height_order_ratio
+            ),
+            "reference_core_guard_px": (
+                separator.DEFAULT_CONFIG.reference_guard_px
+            ),
+            "pitch_requirement": "harmonically_safe_high_supports_geometry",
+            "global_dark_basin_band_fraction_changed": False,
             "coordinate_or_image_special_cases": False,
         },
         "center_refinement": {
@@ -948,7 +979,65 @@ def select_clicked_basin_paths_v1_1(
             "reference_grayscale_semantic_resolution"
         ] = semantic
         role = role_hypotheses[0]
-        if semantic["classification"] == "inside_basin":
+        role_supports = [
+            float(item["support_fraction"])
+            for item in role.get("path_metrics", [])
+            if item.get("support_fraction") is not None
+        ]
+        minimum_role_support = min(role_supports) if role_supports else 0.0
+        semantic_relation = semantic["classification"]
+        semantic_tiebreak = {
+            "adopted": False,
+            "source_classification": semantic_relation,
+            "resolved_relation": semantic_relation,
+            "minimum_role_support": minimum_role_support,
+        }
+        if (
+            ENABLE_REFERENCE_SEMANTIC_TIEBREAK
+            and semantic_relation == "ambiguous"
+        ):
+            on_fraction = float(
+                semantic.get("on_separator_band_fraction", 0.0)
+            )
+            inside_fraction = float(
+                semantic.get("inside_basin_band_fraction", 0.0)
+            )
+            if (
+                on_fraction >= 0.50
+                and inside_fraction < 0.50
+                and minimum_role_support >= 0.80
+                and role.get("verified") is True
+            ):
+                semantic_relation = "on_separator"
+                semantic_tiebreak.update(
+                    {
+                        "adopted": True,
+                        "resolved_relation": semantic_relation,
+                        "reason": (
+                            "ambiguous_semantic_with_local_separator_majority"
+                        ),
+                    }
+                )
+            elif (
+                inside_fraction >= 0.50
+                and on_fraction < 0.50
+                and minimum_role_support >= 0.90
+                and role.get("verified") is True
+                and frozen.get("unavailable_reason")
+                == "ambiguous_reference_relationship"
+            ):
+                semantic_relation = "inside_basin"
+                semantic_tiebreak.update(
+                    {
+                        "adopted": True,
+                        "resolved_relation": semantic_relation,
+                        "reason": (
+                            "ambiguous_semantic_with_local_basin_majority"
+                        ),
+                    }
+                )
+        width_debug["semantic_tiebreak"] = semantic_tiebreak
+        if semantic_relation == "inside_basin":
             if not role["verified"]:
                 return {
                     **frozen,
@@ -1002,7 +1091,17 @@ def select_clicked_basin_paths_v1_1(
                 "rejection_reasons": [],
                 "width_aware_reference": width_debug,
             }
-        if semantic["classification"] == "on_separator":
+        if semantic_relation == "on_separator":
+            semantic_tiebreak = {
+                **semantic_tiebreak,
+                "adopted": ENABLE_REFERENCE_SEMANTIC_TIEBREAK,
+                "resolved_relation": "on_separator",
+                "reason": semantic_tiebreak.get(
+                    "reason",
+                    "strong_grayscale_separator_semantic",
+                ),
+            }
+            width_debug["semantic_tiebreak"] = semantic_tiebreak
             return {
                 **frozen,
                 "status": "unavailable",
@@ -1017,6 +1116,7 @@ def select_clicked_basin_paths_v1_1(
                         ],
                         "grayscale_semantic": True,
                         "evidence": semantic,
+                        "semantic_tiebreak": semantic_tiebreak,
                     },
                     {
                         "type": "clicked_basin_roles",
@@ -1261,16 +1361,17 @@ def run_joint_case_v1_1(
         raw_roi,
         direction,
     )
-    relation = joint.resolve_reference_relation(
-        separator_result,
-        graph,
-    )
     pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
         image_gray,
         reference_global,
         roi_bounds_global,
         direction,
         raw_pitch.DEFAULT_CONFIG,
+    )
+    relation = joint.resolve_reference_relation(
+        separator_result,
+        graph,
+        pitch_result,
     )
     debug = {
         "separator_result": separator_result,
@@ -1286,6 +1387,47 @@ def run_joint_case_v1_1(
         "experiment_only": True,
     }
     if relation["status"] != "unique":
+        local_recovery = _recover_local_dark_valley_sequence(
+            image_gray,
+            roi_bounds_global,
+            direction,
+            separator_result,
+            graph,
+            None,
+            pitch_result,
+        )
+        debug["local_dark_valley_recovery"] = local_recovery
+        if local_recovery["success"]:
+            recovered_hypothesis = local_recovery["hypothesis"]
+            recovered_ids = {
+                basin["basin_id"]
+                for basin in local_recovery["selected_basins"]
+            }
+            graph["verified_basins"] = [
+                basin
+                for basin in graph.get("verified_basins", [])
+                if basin["basin_id"] not in recovered_ids
+            ] + local_recovery["selected_basins"]
+            graph["verified_basin_ids"] = [
+                basin["basin_id"] for basin in graph["verified_basins"]
+            ]
+            debug["joint_hypotheses"] = [recovered_hypothesis]
+            if not frozen_result["success"]:
+                debug["release_unavailable_audit"] = {
+                    "reason": "release_unavailable_cannot_become_success",
+                    "release_unavailable_reason": frozen_result[
+                        "unavailable_reason"
+                    ],
+                    "hard_veto_applied": False,
+                    "accepted_hypothesis": recovered_hypothesis,
+                }
+            return {
+                **base,
+                "status": "available",
+                "success": True,
+                "unavailable_reason": None,
+                "final_hypothesis": recovered_hypothesis,
+            }
         return {
             **base,
             "status": "unavailable",
@@ -1331,6 +1473,37 @@ def run_joint_case_v1_1(
     }
     debug["joint_hypotheses"] = [hypothesis]
     if pitch_evidence["rejects_geometry"]:
+        if ENABLE_PITCH_GUIDED_MISSING_SEPARATOR_COMPLETION:
+            local_recovery = _recover_local_dark_valley_sequence(
+                image_gray,
+                roi_bounds_global,
+                direction,
+                separator_result,
+                graph,
+                hypothesis,
+                pitch_result,
+                allow_single_clicked_track=True,
+                staged_trigger="high_pitch_geometry_conflict",
+            )
+            debug["local_dark_valley_recovery"] = local_recovery
+            if local_recovery["success"]:
+                recovered_hypothesis = local_recovery["hypothesis"]
+                graph["verified_basins"].extend(
+                    local_recovery["selected_basins"]
+                )
+                debug["joint_hypotheses"] = [recovered_hypothesis]
+                debug["staged_release"] = {
+                    "stage": "pitch_guided_missing_separator_completion",
+                    "source_veto": "high_pitch_geometry_conflict",
+                    "recovery_reason": local_recovery.get("reason"),
+                }
+                return {
+                    **base,
+                    "status": "available",
+                    "success": True,
+                    "unavailable_reason": None,
+                    "final_hypothesis": recovered_hypothesis,
+                }
         return {
             **base,
             "status": "unavailable",
@@ -1354,6 +1527,18 @@ def run_joint_case_v1_1(
         separator_result,
         graph,
         hypothesis,
+        pitch_result,
+        allow_single_clicked_track=bool(
+            ENABLE_PITCH_GUIDED_MISSING_SEPARATOR_COMPLETION
+            and any(
+                item["verified"] for item in intermediate_dark["sides"]
+            )
+        ),
+        staged_trigger=(
+            "intermediate_dark_basin_present"
+            if ENABLE_PITCH_GUIDED_MISSING_SEPARATOR_COMPLETION
+            else None
+        ),
     )
     debug["local_dark_valley_recovery"] = local_recovery
     if local_recovery["triggered"]:
@@ -1363,6 +1548,12 @@ def run_joint_case_v1_1(
                 local_recovery["selected_basins"]
             )
             debug["joint_hypotheses"] = [recovered_hypothesis]
+            if local_recovery.get("single_clicked_track_allowed"):
+                debug["staged_release"] = {
+                    "stage": "pitch_guided_missing_separator_completion",
+                    "source_veto": "intermediate_dark_basin_present",
+                    "recovery_reason": local_recovery.get("reason"),
+                }
             if not frozen_result["success"]:
                 debug["release_unavailable_audit"] = {
                     "reason": "release_unavailable_cannot_become_success",
@@ -1733,15 +1924,361 @@ def _calculate_local_valley_basin(
     return basin, center_result
 
 
+def _local_reference_profile_basin_evidence(
+    profile: np.ndarray,
+    basin: dict,
+    reference_y_roi: float,
+) -> dict:
+    """Verify one separator-defined dark gap near the clicked row."""
+
+    band_centers = np.asarray(
+        basin["band_centers_y_roi"], dtype=np.float64
+    )
+    left_x = int(
+        round(
+            np.interp(
+                reference_y_roi,
+                band_centers,
+                basin["left_x_by_band_roi"],
+            )
+        )
+    )
+    right_x = int(
+        round(
+            np.interp(
+                reference_y_roi,
+                band_centers,
+                basin["right_x_by_band_roi"],
+            )
+        )
+    )
+    x0, x1 = sorted((left_x, right_x))
+    if x1 - x0 < 3:
+        return {
+            "supported": False,
+            "reason": "local_gap_too_narrow",
+            "left_x_roi": x0,
+            "right_x_roi": x1,
+        }
+
+    interior = profile[x0 + 1 : x1]
+    local = profile[
+        max(0, x0 - 5) : min(profile.size, x1 + 6)
+    ]
+    if interior.size == 0 or local.size == 0:
+        return {
+            "supported": False,
+            "reason": "local_profile_unavailable",
+            "left_x_roi": x0,
+            "right_x_roi": x1,
+        }
+    boundary_level = min(float(profile[x0]), float(profile[x1]))
+    interior_level = float(np.percentile(interior, 40))
+    scale = max(
+        float(np.percentile(local, 90) - np.percentile(local, 10)),
+        MINIMUM_RAW_GRAY_DYNAMIC,
+    )
+    normalized_contrast = (boundary_level - interior_level) / scale
+    return {
+        "supported": bool(
+            normalized_contrast
+            >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+        ),
+        "reason": None,
+        "left_x_roi": x0,
+        "right_x_roi": x1,
+        "boundary_level": boundary_level,
+        "interior_level": interior_level,
+        "dynamic_range": scale,
+        "normalized_contrast": float(normalized_contrast),
+    }
+
+
+def _recover_contrast_limited_separator_sequence(
+    image_gray: np.ndarray,
+    roi_bounds_global: dict,
+    direction: str,
+    separator_result: dict,
+    graph: dict,
+    pitch_result: dict,
+) -> dict:
+    """Recover one locally verified gap triplet rejected only by coverage."""
+
+    empty = {
+        "applied": False,
+        "triggered": False,
+        "success": False,
+        "mode": "separator_sequence_local_contrast",
+        "reason": "trigger_not_met",
+    }
+    if direction != "vertical":
+        return {**empty, "reason": "non_vertical_direction"}
+    if (
+        separator_result.get("status") != "unavailable"
+        or separator_result.get("unavailable_reason")
+        != "basin_structure_not_verified"
+    ):
+        return {**empty, "reason": "not_basin_structure_failure"}
+
+    arbitration = separator_result.get("arbitration_debug", {})
+    hypotheses = arbitration.get("role_hypotheses", [])
+    if len(hypotheses) != 1:
+        return {**empty, "reason": "role_hypothesis_not_unique"}
+    role_hypothesis = hypotheses[0]
+    if (
+        role_hypothesis.get("type") != "clicked_basin_roles"
+        or role_hypothesis.get("crossing")
+        or set(role_hypothesis.get("rejection_reasons", []))
+        != {"dark_basin_sequence_not_verified"}
+    ):
+        return {**empty, "reason": "not_contrast_coverage_only"}
+
+    selection = role_hypothesis.get("selection_candidate_ids", {})
+    try:
+        selected_sequence = [
+            selection[role] for role in separator.ROLE_ORDER
+        ]
+        indexes = [
+            graph["ordered_separator_ids"].index(candidate_id)
+            for candidate_id in selected_sequence
+        ]
+    except (KeyError, ValueError):
+        return {**empty, "reason": "selected_separator_missing"}
+    if indexes != list(range(indexes[0], indexes[0] + 4)):
+        return {**empty, "reason": "selected_separator_not_consecutive"}
+
+    path_metrics = role_hypothesis.get("path_metrics", [])
+    if len(path_metrics) != 4 or any(
+        item["support_fraction"]
+        < separator.DEFAULT_CONFIG.minimum_role_path_support_fraction
+        or item["mean_step_px"]
+        > separator.DEFAULT_CONFIG.maximum_role_path_mean_step_px
+        for item in path_metrics
+    ):
+        return {**empty, "reason": "selected_path_geometry_unstable"}
+    pair_order = role_hypothesis.get("full_height_pair_order", [])
+    if len(pair_order) != 3 or any(
+        not item["stable_full_height_order"]
+        or item["crossing_band_indices"]
+        for item in pair_order
+    ):
+        return {**empty, "reason": "selected_path_order_unstable"}
+
+    edge_gaps = np.asarray(
+        role_hypothesis.get("edge_gap_at_reference_px", []),
+        dtype=np.float64,
+    )
+    if edge_gaps.size != 3 or np.any(edge_gaps <= 0):
+        return {**empty, "reason": "selected_gap_width_unavailable"}
+    if (
+        float(np.min(edge_gaps)) / float(np.max(edge_gaps))
+        < separator.DEFAULT_CONFIG.minimum_full_height_order_ratio
+    ):
+        return {**empty, "reason": "selected_gap_width_inconsistent"}
+
+    basin_by_pair = {
+        (item["left_separator_id"], item["right_separator_id"]): item
+        for item in graph.get("basin_candidates", [])
+    }
+    pairs = list(zip(selected_sequence, selected_sequence[1:]))
+    if any(pair not in basin_by_pair for pair in pairs):
+        return {**empty, "reason": "selected_basin_missing"}
+    selected_basins = [basin_by_pair[pair] for pair in pairs]
+    if any(
+        set(basin.get("rejection_reasons", []))
+        - {"dark_basin_not_verified"}
+        for basin in selected_basins
+    ):
+        return {**empty, "reason": "selected_basin_structural_conflict"}
+
+    reference_x = float(separator_result["reference_x_roi"])
+    reference_y = float(separator_result["reference_y_roi"])
+    clicked_basin = selected_basins[1]
+    clicked_centers = np.asarray(
+        clicked_basin["band_centers_y_roi"], dtype=np.float64
+    )
+    clicked_left = float(
+        np.interp(
+            reference_y,
+            clicked_centers,
+            clicked_basin["left_x_by_band_roi"],
+        )
+    )
+    clicked_right = float(
+        np.interp(
+            reference_y,
+            clicked_centers,
+            clicked_basin["right_x_by_band_roi"],
+        )
+    )
+    reference_guard = separator.DEFAULT_CONFIG.reference_guard_px
+    if not (
+        clicked_left + reference_guard
+        < reference_x
+        < clicked_right - reference_guard
+    ):
+        return {**empty, "reason": "reference_not_inside_clicked_gap_core"}
+
+    raw_roi = separator.extract_raw_roi(image_gray, roi_bounds_global)
+    directional = separator._directional_roi(  # noqa: SLF001
+        raw_roi, direction
+    )
+    half_window = max(
+        1, int(round(separator.DEFAULT_CONFIG.match_tolerance_px))
+    )
+    y0 = max(0, int(round(reference_y)) - half_window)
+    y1 = min(
+        directional.shape[0],
+        int(round(reference_y)) + half_window + 1,
+    )
+    if y1 <= y0:
+        return {**empty, "reason": "local_reference_rows_unavailable"}
+    local_profile = np.median(
+        directional[y0:y1], axis=0
+    ).astype(np.float64)
+    local_evidence = [
+        _local_reference_profile_basin_evidence(
+            local_profile, basin, reference_y
+        )
+        for basin in selected_basins
+    ]
+    if any(not item["supported"] for item in local_evidence):
+        return {
+            **empty,
+            "applied": True,
+            "triggered": True,
+            "reason": "local_reference_contrast_not_verified",
+            "local_evidence": local_evidence,
+        }
+
+    recovered_basins = []
+    for basin, evidence in zip(selected_basins, local_evidence):
+        recovered_basins.append(
+            {
+                **basin,
+                "source": "adjacent_separator_paths_local_contrast_recovery",
+                "verified": True,
+                "rejection_reasons": [],
+                "local_reference_contrast_evidence": evidence,
+            }
+        )
+    basin_ids = {
+        role: basin["basin_id"]
+        for role, basin in zip(
+            ("left", "clicked", "right"), recovered_basins
+        )
+    }
+    hypothesis = {
+        "hypothesis_id": "JH01_LCR",
+        "reference_relation": "inside_basin",
+        "separator_ids": {
+            role: selection[role] for role in separator.ROLE_ORDER
+        },
+        "basin_ids": basin_ids,
+        "strictly_continuous": True,
+        "separator_sequence": selected_sequence,
+        "basin_sequence": [
+            basin_ids[role] for role in ("left", "clicked", "right")
+        ],
+    }
+    recovered_ids = set(basin_ids.values())
+    recovery_graph = {
+        **graph,
+        "verified_basins": [
+            basin
+            for basin in graph.get("verified_basins", [])
+            if basin["basin_id"] not in recovered_ids
+        ]
+        + recovered_basins,
+    }
+    geometry = joint._basin_geometry(  # noqa: SLF001
+        hypothesis,
+        recovery_graph,
+        reference_x,
+        roi_bounds_global["x0"],
+    )
+    pitch_evidence = joint._pitch_evidence_for_geometry(  # noqa: SLF001
+        pitch_result,
+        geometry,
+        joint.DEFAULT_CONFIG,
+    )
+    if (
+        pitch_evidence["joint_decision"]
+        != "high_pitch_supports_geometry"
+        or pitch_evidence["rejects_geometry"]
+    ):
+        return {
+            **empty,
+            "applied": True,
+            "triggered": True,
+            "reason": "high_pitch_does_not_support_recovery",
+            "pitch_evidence": pitch_evidence,
+            "local_evidence": local_evidence,
+        }
+
+    recovered_hypothesis = {
+        **hypothesis,
+        "geometry": geometry,
+        "pitch_evidence": pitch_evidence,
+        "provenance": {
+            "separator_algorithm_revision": ALGORITHM_REVISION,
+            "separator_configuration_checksum": configuration_checksum(),
+            "raw_pitch_algorithm_revision": pitch_result[
+                "algorithm_revision"
+            ],
+            "raw_pitch_configuration_checksum": pitch_result[
+                "configuration_checksum"
+            ],
+            "local_contrast_recovery": ALGORITHM_REVISION,
+        },
+        "local_contrast_recovery": True,
+        "atomic": True,
+    }
+    return {
+        **empty,
+        "applied": True,
+        "triggered": True,
+        "success": True,
+        "reason": None,
+        "source_failure": "dark_basin_sequence_not_verified",
+        "local_row_range_roi": [y0, y1],
+        "edge_gap_widths_px": edge_gaps.tolist(),
+        "local_evidence": local_evidence,
+        "pitch_evidence": pitch_evidence,
+        "selected_basins": recovered_basins,
+        "hypothesis": recovered_hypothesis,
+    }
+
+
 def _recover_local_dark_valley_sequence(
     image_gray: np.ndarray,
     roi_bounds_global: dict,
     direction: str,
     separator_result: dict,
     graph: dict,
-    hypothesis: dict,
+    hypothesis: dict | None,
+    pitch_result: dict | None = None,
+    allow_single_clicked_track: bool = False,
+    staged_trigger: str | None = None,
 ) -> dict:
     """Recover direct black-stripe neighbors from ordered raw valleys."""
+
+    if hypothesis is None:
+        if pitch_result is None:
+            return {
+                "applied": False,
+                "triggered": False,
+                "success": False,
+                "reason": "pitch_result_missing",
+            }
+        return _recover_contrast_limited_separator_sequence(
+            image_gray,
+            roi_bounds_global,
+            direction,
+            separator_result,
+            graph,
+            pitch_result,
+        )
 
     empty = {
         "applied": False,
@@ -1859,7 +2396,7 @@ def _recover_local_dark_valley_sequence(
         clicked_left < item["center"] < clicked_right
         for item in track_geometry
     )
-    if clicked_track_count < 2:
+    if clicked_track_count < 2 and not allow_single_clicked_track:
         return {
             **empty,
             "applied": True,
@@ -1875,6 +2412,8 @@ def _recover_local_dark_valley_sequence(
         "reason": "recovery_not_yet_validated",
         "verified_track_count": len(tracks),
         "clicked_track_count": clicked_track_count,
+        "staged_trigger": staged_trigger,
+        "single_clicked_track_allowed": allow_single_clicked_track,
     }
     reference_matches = [
         item
@@ -1965,6 +2504,17 @@ def _recover_local_dark_valley_sequence(
     if not left_center < reference_x < right_center:
         return {**triggered, "reason": "recovered_centers_do_not_straddle_reference"}
 
+    recovered_pitch_evidence = _recovered_valley_pitch_evidence(
+        pitch_result,
+        selected_spacing,
+    )
+    if recovered_pitch_evidence["rejects_geometry"]:
+        return {
+            **triggered,
+            "reason": "recovered_high_pitch_geometry_conflict",
+            "pitch_evidence": recovered_pitch_evidence,
+        }
+
     role_ids = {
         role: basin["basin_id"] for role, basin in selected_basins.items()
     }
@@ -2003,7 +2553,7 @@ def _recover_local_dark_valley_sequence(
         "separator_sequence": [],
         "strictly_continuous": True,
         "geometry": recovered_geometry,
-        "pitch_evidence": hypothesis["pitch_evidence"],
+        "pitch_evidence": recovered_pitch_evidence,
         "provenance": {
             **hypothesis["provenance"],
             "local_valley_recovery": ALGORITHM_REVISION,
@@ -2019,11 +2569,71 @@ def _recover_local_dark_valley_sequence(
         "selected_track_indices": selected_indices,
         "local_scale_px": local_scale,
         "selected_scale_ratios": scale_ratios.tolist(),
+        "pitch_evidence": recovered_pitch_evidence,
         "third_valley_conflict": False,
         "center_calculation": center_debug,
         "selected_basins": list(selected_basins.values()),
         "hypothesis": recovered_hypothesis,
     }
+
+
+def _recovered_valley_pitch_evidence(
+    pitch_result: dict | None,
+    selected_spacing: np.ndarray,
+) -> dict:
+    """Reapply the frozen pitch safety bounds to recovered valley spacing."""
+
+    if pitch_result is None:
+        return {
+            "confidence": "unavailable",
+            "success_eligible": False,
+            "diagnostic_pitch_px": None,
+            "usable_pitch_px": None,
+            "harmonic_ambiguity": {"detected": False},
+            "geometry_spacing_ratios": [],
+            "joint_decision": "unavailable_no_effect",
+            "rejects_geometry": False,
+        }
+    harmonically_safe_high = bool(
+        pitch_result["success_eligible"]
+        and pitch_result["confidence"] == "high"
+        and not pitch_result["harmonic_ambiguity"]["detected"]
+        and pitch_result["usable_pitch_px"] is not None
+    )
+    evidence = {
+        "algorithm_revision": pitch_result["algorithm_revision"],
+        "configuration_checksum": pitch_result["configuration_checksum"],
+        "confidence": pitch_result["confidence"],
+        "success_eligible": pitch_result["success_eligible"],
+        "harmonic_ambiguity": pitch_result["harmonic_ambiguity"],
+        "diagnostic_pitch_px": pitch_result["diagnostic_pitch_px"],
+        "usable_pitch_px": (
+            pitch_result["usable_pitch_px"] if harmonically_safe_high else None
+        ),
+        "unavailable_reason": pitch_result["unavailable_reason"],
+        "geometry_spacing_ratios": [],
+        "joint_decision": "diagnostics_only",
+        "rejects_geometry": False,
+    }
+    if not harmonically_safe_high:
+        if pitch_result["confidence"] == "unavailable":
+            evidence["joint_decision"] = "unavailable_no_effect"
+        return evidence
+    pitch_px = float(pitch_result["usable_pitch_px"])
+    ratios = [float(spacing / pitch_px) for spacing in selected_spacing]
+    evidence["geometry_spacing_ratios"] = ratios
+    conflict = any(
+        ratio < joint.DEFAULT_CONFIG.high_pitch_minimum_spacing_ratio
+        or ratio > joint.DEFAULT_CONFIG.high_pitch_maximum_spacing_ratio
+        for ratio in ratios
+    )
+    evidence["rejects_geometry"] = conflict
+    evidence["joint_decision"] = (
+        "high_pitch_geometry_conflict"
+        if conflict
+        else "high_pitch_supports_geometry"
+    )
+    return evidence
 
 
 def _intermediate_dark_profile_candidate(

@@ -47,6 +47,7 @@ FROZEN_STAGE3_INSIDE_GEOMETRY_CHECKSUM = (
     "7e970a26969ca8d852c8655b021e7ac12283a536f443be1b2eb4186fc32070fd"
 )
 OUTPUT_DIR = PROJECT_ROOT / "outputs" / "basin_graph_joint_stage3_v1_1"
+ENABLE_LOCAL_REFERENCE_ADJACENCY_VALIDATION = True
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,12 @@ class BasinGraphJointConfig:
 
     high_pitch_minimum_spacing_ratio: float = 0.67
     high_pitch_maximum_spacing_ratio: float = 1.50
+    local_reference_minimum_path_support: float = 0.75
+    local_reference_maximum_mean_step_px: float = 2.0
+    local_reference_maximum_edge_gap_ratio: float = 6.0
+    local_reference_maximum_inside_basin_fraction: float = 0.25
+    local_reference_band_count: int = 3
+    local_reference_minimum_contrast_fraction: float = 2.0 / 3.0
 
 
 DEFAULT_CONFIG = BasinGraphJointConfig()
@@ -339,6 +346,7 @@ def _inside_basin_relation(
 def _separator_adjacency_relation(
     separator_result: dict,
     graph: dict,
+    pitch_result: dict | None = None,
 ) -> dict:
     arbitration = separator_result["arbitration_debug"]
     competing_explanations = arbitration.get(
@@ -379,7 +387,16 @@ def _separator_adjacency_relation(
             }
         )
     ]
-    if other_verified_explanations:
+    semantic_tiebreak = separator_relations[0].get(
+        "semantic_tiebreak",
+        {},
+    )
+    prefer_reference_separator = bool(
+        semantic_tiebreak.get("adopted")
+        and semantic_tiebreak.get("resolved_relation")
+        == "on_separator"
+    )
+    if other_verified_explanations and not prefer_reference_separator:
         return {
             "status": "unavailable",
             "relation": "on_separator",
@@ -399,6 +416,27 @@ def _separator_adjacency_relation(
         }
     left_id = ordered_ids[index - 1]
     right_id = ordered_ids[index + 1]
+    local_validation = _local_reference_adjacency_validation(
+        separator_result,
+        graph,
+        reference_separator_id,
+        left_id,
+        right_id,
+        DEFAULT_CONFIG,
+        pitch_result,
+    )
+    if local_validation["success"]:
+        existing_ids = {
+            basin["basin_id"]
+            for basin in graph.get("verified_basins", [])
+        }
+        for basin in local_validation["basins"]:
+            if basin["basin_id"] not in existing_ids:
+                graph.setdefault("verified_basins", []).append(basin)
+                graph.setdefault("verified_basin_ids", []).append(
+                    basin["basin_id"]
+                )
+                existing_ids.add(basin["basin_id"])
     lookup = _basin_lookup(graph)
     left_pair = (left_id, reference_separator_id)
     right_pair = (reference_separator_id, right_id)
@@ -416,7 +454,7 @@ def _separator_adjacency_relation(
         for reason in arbitration.get("rejection_reasons", [])
         if reason != "reference_on_separator"
     )
-    if inherited_safety_conflicts:
+    if inherited_safety_conflicts and not local_validation["success"]:
         return {
             "status": "unavailable",
             "relation": "on_separator",
@@ -450,6 +488,8 @@ def _separator_adjacency_relation(
             "right_basin_id": lookup[right_pair]["basin_id"],
         },
         "strictly_continuous": True,
+        "semantic_tiebreak": semantic_tiebreak,
+        "local_reference_adjacency_validation": local_validation,
     }
     return {
         "status": "unique",
@@ -459,16 +499,215 @@ def _separator_adjacency_relation(
     }
 
 
+def _local_reference_adjacency_validation(
+    separator_result: dict,
+    graph: dict,
+    reference_separator_id: str,
+    left_id: str,
+    right_id: str,
+    config: BasinGraphJointConfig,
+    pitch_result: dict | None,
+) -> dict:
+    """Validate only the two basins touching an established reference separator."""
+
+    if not ENABLE_LOCAL_REFERENCE_ADJACENCY_VALIDATION:
+        return {
+            "success": False,
+            "reason": "staged_local_reference_validation_disabled",
+            "basins": [],
+        }
+
+    arbitration = separator_result["arbitration_debug"]
+    roles = arbitration.get("role_hypotheses", [])
+    if len(roles) != 1:
+        return {"success": False, "reason": "role_hypothesis_not_unique", "basins": []}
+    role = roles[0]
+    if role.get("crossing"):
+        return {"success": False, "reason": "role_paths_cross", "basins": []}
+    hard_conflicts = {
+        "path_crossing_full_height",
+        "separator_envelopes_overlap",
+    }
+    if hard_conflicts.intersection(role.get("rejection_reasons", [])):
+        return {"success": False, "reason": "hard_path_conflict", "basins": []}
+    semantic = (
+        (arbitration.get("width_aware_reference", {}) or {}).get(
+            "reference_grayscale_semantic_resolution", {}
+        )
+        or {}
+    )
+    inside_basin_fraction = float(
+        semantic.get("inside_basin_band_fraction", 0.0)
+    )
+    if (
+        inside_basin_fraction
+        > config.local_reference_maximum_inside_basin_fraction
+    ):
+        return {
+            "success": False,
+            "reason": "reference_semantic_not_separator_local",
+            "basins": [],
+            "inside_basin_band_fraction": inside_basin_fraction,
+        }
+    path_metrics = role.get("path_metrics", [])
+    supports = [
+        float(item["support_fraction"])
+        for item in path_metrics
+        if item.get("support_fraction") is not None
+    ]
+    steps = [
+        float(item["mean_step_px"])
+        for item in path_metrics
+        if item.get("mean_step_px") is not None
+    ]
+    edge_ratio = role.get("edge_gap_ratio")
+    if (
+        not supports
+        or min(supports) < config.local_reference_minimum_path_support
+        or not steps
+        or max(steps) > config.local_reference_maximum_mean_step_px
+        or edge_ratio is None
+        or float(edge_ratio) > config.local_reference_maximum_edge_gap_ratio
+    ):
+        return {
+            "success": False,
+            "reason": "global_safety_scope_not_met",
+            "basins": [],
+            "minimum_path_support": min(supports) if supports else None,
+            "maximum_mean_step_px": max(steps) if steps else None,
+            "edge_gap_ratio": edge_ratio,
+        }
+
+    basin_by_pair = {
+        (basin["left_separator_id"], basin["right_separator_id"]): basin
+        for basin in graph.get("basin_candidates", [])
+    }
+    requested_pairs = [
+        (left_id, reference_separator_id),
+        (reference_separator_id, right_id),
+    ]
+    requested_basins = [basin_by_pair.get(pair) for pair in requested_pairs]
+    if any(basin is None for basin in requested_basins):
+        return {
+            "success": False,
+            "reason": "adjacent_basin_candidate_missing",
+            "basins": [],
+        }
+    diagnostic_pitch = (
+        pitch_result.get("diagnostic_pitch_px")
+        if pitch_result is not None
+        else None
+    )
+    if diagnostic_pitch is None or float(diagnostic_pitch) <= 0:
+        return {
+            "success": False,
+            "reason": "local_reference_pitch_unavailable",
+            "basins": [],
+        }
+    center_spacing = abs(
+        float(requested_basins[1]["center_x_at_reference_roi"])
+        - float(requested_basins[0]["center_x_at_reference_roi"])
+    )
+    pitch_ratio = center_spacing / float(diagnostic_pitch)
+    if (
+        pitch_ratio < config.high_pitch_minimum_spacing_ratio
+        or pitch_ratio > config.high_pitch_maximum_spacing_ratio
+    ):
+        return {
+            "success": False,
+            "reason": "local_reference_pitch_geometry_conflict",
+            "basins": [],
+            "diagnostic_pitch_px": float(diagnostic_pitch),
+            "basin_center_spacing_px": center_spacing,
+            "pitch_ratio": pitch_ratio,
+        }
+    reference_y = float(separator_result["reference_y_roi"])
+    accepted_basins = []
+    basin_audits = []
+    for pair in requested_pairs:
+        basin = basin_by_pair[pair]
+        band_centers = np.asarray(basin["band_centers_y_roi"], dtype=np.float64)
+        count = min(config.local_reference_band_count, len(band_centers))
+        local_indices = np.argsort(np.abs(band_centers - reference_y))[:count]
+        gaps = np.asarray(basin["width_by_band_px"], dtype=np.float64)[local_indices]
+        contrasts = np.asarray(
+            basin["dark_basin_evidence"]["normalized_contrast_by_band"],
+            dtype=np.float64,
+        )[local_indices]
+        contrast_fraction = float(
+            np.mean(
+                contrasts
+                >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+            )
+        )
+        local_ok = bool(
+            len(local_indices) == config.local_reference_band_count
+            and np.all(
+                gaps
+                >= separator.DEFAULT_CONFIG.minimum_dark_basin_edge_gap_px
+            )
+            and contrast_fraction
+            >= config.local_reference_minimum_contrast_fraction
+            and float(np.median(contrasts))
+            >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+        )
+        basin_audits.append(
+            {
+                "basin_id": basin["basin_id"],
+                "band_indices": sorted(int(value) for value in local_indices),
+                "local_gap_px": gaps.tolist(),
+                "local_contrast": contrasts.tolist(),
+                "local_contrast_fraction": contrast_fraction,
+                "accepted": local_ok,
+            }
+        )
+        if not local_ok:
+            return {
+                "success": False,
+                "reason": "click_local_basin_evidence_not_verified",
+                "basins": [],
+                "basin_audits": basin_audits,
+            }
+        accepted_basins.append(
+            {
+                **basin,
+                "verified": True,
+                "rejection_reasons": [],
+                "source": (
+                    "adjacent_frozen_separator_paths_"
+                    "click_local_reference_validation"
+                ),
+                "click_local_reference_validation": basin_audits[-1],
+            }
+        )
+    return {
+        "success": True,
+        "reason": "click_local_reference_adjacency_verified",
+        "basins": accepted_basins,
+        "basin_audits": basin_audits,
+        "minimum_path_support": min(supports),
+        "maximum_mean_step_px": max(steps),
+        "edge_gap_ratio": float(edge_ratio),
+        "inside_basin_band_fraction": inside_basin_fraction,
+        "diagnostic_pitch_px": float(diagnostic_pitch),
+        "basin_center_spacing_px": center_spacing,
+        "pitch_ratio": pitch_ratio,
+    }
 def resolve_reference_relation(
     separator_result: dict,
     graph: dict,
+    pitch_result: dict | None = None,
 ) -> dict:
     """Resolve exactly one basin or separator-adjacency interpretation."""
 
     if separator_result["status"] == "available":
         return _inside_basin_relation(separator_result, graph)
     if separator_result["unavailable_reason"] == "reference_on_separator":
-        return _separator_adjacency_relation(separator_result, graph)
+        return _separator_adjacency_relation(
+            separator_result,
+            graph,
+            pitch_result,
+        )
     return {
         "status": "unavailable",
         "relation": None,

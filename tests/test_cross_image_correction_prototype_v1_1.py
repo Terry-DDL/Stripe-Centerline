@@ -299,6 +299,124 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
             for value, target in zip(actual, expected):
                 self.assertAlmostEqual(value, target, delta=2.0)
 
+    @unittest.skipUnless(
+        (prototype.PROJECT_ROOT / "images" / "Sample 1.bmp").is_file(),
+        "Sample 1 offline regression image is not installed",
+    )
+    def test_local_contrast_recovers_broken_white_paths_near_click(self):
+        image = cv2.imread(
+            str(prototype.PROJECT_ROOT / "images" / "Sample 1.bmp"),
+            cv2.IMREAD_GRAYSCALE,
+        )
+        reference = {"x": 336, "y": 811}
+        bounds = prototype.v1._case_roi(  # noqa: SLF001
+            {"reference_global": reference}, image
+        )
+        result = prototype.run_joint_case_v1_1(
+            image, reference, bounds
+        )
+
+        self.assertTrue(result["success"])
+        recovery = result["debug"]["local_dark_valley_recovery"]
+        self.assertEqual(
+            recovery["mode"], "separator_sequence_local_contrast"
+        )
+        self.assertEqual(
+            recovery["source_failure"],
+            "dark_basin_sequence_not_verified",
+        )
+        self.assertTrue(
+            all(item["supported"] for item in recovery["local_evidence"])
+        )
+        self.assertEqual(
+            result["final_hypothesis"]["separator_sequence"],
+            ["C16", "C17", "C18", "C19"],
+        )
+        basins = result["final_hypothesis"]["geometry"]["basins"]
+        self.assertAlmostEqual(
+            basins["left"]["center_x_at_reference_roi"], 234.5
+        )
+        self.assertAlmostEqual(
+            basins["right"]["center_x_at_reference_roi"], 264.0
+        )
+
+        separator_result = result["debug"]["separator_result"]
+        graph = result["debug"]["basin_graph"]
+        low_pitch = {
+            **result["debug"]["raw_pitch_result"],
+            "confidence": "low",
+            "success_eligible": False,
+        }
+        rejected_pitch = (
+            prototype._recover_contrast_limited_separator_sequence(
+                image,
+                bounds,
+                "vertical",
+                separator_result,
+                graph,
+                low_pitch,
+            )
+        )
+        self.assertFalse(rejected_pitch["success"])
+        self.assertEqual(
+            rejected_pitch["reason"],
+            "high_pitch_does_not_support_recovery",
+        )
+
+        no_local_contrast = image.copy()
+        reference_y_roi = int(separator_result["reference_y_roi"])
+        y_global = bounds["y0"] + reference_y_roi
+        half_window = int(
+            round(prototype.separator.DEFAULT_CONFIG.match_tolerance_px)
+        )
+        no_local_contrast[
+            y_global - half_window : y_global + half_window + 1,
+            bounds["x0"] : bounds["x1"],
+        ] = 0
+        rejected_local = (
+            prototype._recover_contrast_limited_separator_sequence(
+                no_local_contrast,
+                bounds,
+                "vertical",
+                separator_result,
+                graph,
+                result["debug"]["raw_pitch_result"],
+            )
+        )
+        self.assertFalse(rejected_local["success"])
+        self.assertEqual(
+            rejected_local["reason"],
+            "local_reference_contrast_not_verified",
+        )
+
+    def test_local_contrast_does_not_bypass_structural_failure(self):
+        result = prototype._recover_local_dark_valley_sequence(
+            np.zeros((20, 20), dtype=np.uint8),
+            {"x0": 0, "y0": 0, "x1": 20, "y1": 20},
+            "vertical",
+            {
+                "status": "unavailable",
+                "unavailable_reason": "basin_structure_not_verified",
+                "arbitration_debug": {
+                    "role_hypotheses": [
+                        {
+                            "type": "clicked_basin_roles",
+                            "crossing": False,
+                            "rejection_reasons": [
+                                "role_path_geometry_unstable"
+                            ],
+                        }
+                    ]
+                },
+            },
+            {"ordered_separator_ids": [], "basin_candidates": []},
+            None,
+            {},
+        )
+        self.assertFalse(result["success"])
+        self.assertFalse(result["triggered"])
+        self.assertEqual(result["reason"], "not_contrast_coverage_only")
+
     def test_runtime_recovery_has_no_image_or_coordinate_special_case(self):
         source = Path(prototype.__file__).read_text()
         for forbidden in (
@@ -308,7 +426,10 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
             "825",
             "747",
             "335",
+            "336",
+            "811",
             "Stripe_10_e0_t221236602_v8p56736_retry.bmp",
+            "Sample 1.bmp",
         ):
             self.assertNotIn(forbidden, source)
 
