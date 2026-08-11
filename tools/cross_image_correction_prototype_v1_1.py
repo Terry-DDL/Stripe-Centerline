@@ -1605,6 +1605,21 @@ def run_joint_case_v1_1(
             "unavailable_reason": "intermediate_dark_basin_present",
             "final_hypothesis": None,
         }
+    output_center_safety = joint.validate_output_basin_center_darkness(
+        hypothesis,
+        graph,
+        separator_result["reference_y_roi"],
+        joint.DEFAULT_CONFIG,
+    )
+    debug["output_basin_center_darkness_safety"] = output_center_safety
+    if not output_center_safety["success"]:
+        return {
+            **base,
+            "status": "unavailable",
+            "success": False,
+            "unavailable_reason": output_center_safety["reason"],
+            "final_hypothesis": None,
+        }
     if not frozen_result["success"]:
         debug["release_unavailable_audit"] = {
             "reason": "release_unavailable_cannot_become_success",

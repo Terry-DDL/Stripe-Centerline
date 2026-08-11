@@ -602,6 +602,7 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
     def test_release_unavailable_is_audit_only_after_all_checks(self):
         separator_result = {
             "reference_x_roi": 50.0,
+            "reference_y_roi": 10.0,
             "candidates": [],
         }
         relation_hypothesis = {
@@ -656,6 +657,15 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
                 prototype.joint,
                 "_pitch_evidence_for_geometry",
                 return_value=pitch_evidence,
+            ),
+            patch.object(
+                prototype.joint,
+                "validate_output_basin_center_darkness",
+                return_value={
+                    "success": True,
+                    "reason": "output_basin_centers_dark",
+                    "basin_audits": [],
+                },
             ),
         ):
             result = prototype.run_joint_case_v1_1(

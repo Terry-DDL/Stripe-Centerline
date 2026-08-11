@@ -66,6 +66,7 @@ class BasinGraphJointConfig:
     local_reference_maximum_inside_basin_fraction: float = 0.25
     local_reference_band_count: int = 3
     local_reference_minimum_contrast_fraction: float = 2.0 / 3.0
+    local_reference_maximum_center_brightness_excess: float = 0.05
 
 
 DEFAULT_CONFIG = BasinGraphJointConfig()
@@ -148,6 +149,123 @@ def _basin_id(left_id: str, right_id: str) -> str:
     return f"B_{left_id}_{right_id}"
 
 
+def _basin_center_darkness_evidence(
+    left: dict,
+    right: dict,
+    evidence: dict,
+) -> dict:
+    """Measure whether the geometric basin center is an internal bright ridge."""
+
+    left_x = np.rint(left["x_by_band_roi"]).astype(int)
+    right_x = np.rint(right["x_by_band_roi"]).astype(int)
+    excess_by_band = []
+    for band_index, (left_value, right_value) in enumerate(
+        zip(left_x, right_x)
+    ):
+        x0, x1 = sorted((int(left_value), int(right_value)))
+        if x1 - x0 < 3:
+            excess_by_band.append(float("inf"))
+            continue
+        profile = evidence["profiles"][band_index]
+        center_x = int(round((x0 + x1) / 2.0))
+        center_window = profile[
+            max(x0 + 1, center_x - 1) : min(x1, center_x + 2)
+        ]
+        interior = profile[x0 + 1 : x1]
+        local = profile[
+            max(0, x0 - 5) : min(profile.size, x1 + 6)
+        ]
+        center_level = float(np.median(center_window))
+        robust_dark_level = float(np.percentile(interior, 40))
+        scale = max(
+            float(
+                np.percentile(local, 90)
+                - np.percentile(local, 10)
+            ),
+            8.0,
+        )
+        excess_by_band.append(
+            (center_level - robust_dark_level) / scale
+        )
+    return {
+        "normalized_center_brightness_excess_by_band": excess_by_band,
+        "provenance": "raw_gray_band_profile_center_vs_interior_p40",
+    }
+
+
+def validate_output_basin_center_darkness(
+    hypothesis: dict,
+    graph: dict,
+    reference_y_roi: float,
+    config: JointConfig = DEFAULT_CONFIG,
+) -> dict:
+    """Require each reported basin center to remain in robust dark interior.
+
+    This is an output safety invariant, so it deliberately checks only the
+    left/right basins whose centers are returned to the caller.  Clicked and
+    auxiliary basins cannot invalidate an otherwise sound reported pair.
+    """
+
+    basin_by_id = {
+        basin["basin_id"]: basin
+        for basin in graph.get("basin_candidates", [])
+    }
+    audits = []
+    for role in ("left", "right"):
+        basin_id = hypothesis.get("basin_ids", {}).get(role)
+        basin = basin_by_id.get(basin_id)
+        if basin is None or "center_darkness_evidence" not in basin:
+            return {
+                "success": False,
+                "reason": "output_basin_center_evidence_missing",
+                "basin_audits": audits,
+            }
+        band_centers = np.asarray(
+            basin["band_centers_y_roi"],
+            dtype=np.float64,
+        )
+        count = min(config.local_reference_band_count, len(band_centers))
+        local_indices = np.argsort(
+            np.abs(band_centers - float(reference_y_roi))
+        )[:count]
+        excess = np.asarray(
+            basin["center_darkness_evidence"][
+                "normalized_center_brightness_excess_by_band"
+            ],
+            dtype=np.float64,
+        )[local_indices]
+        median_excess = float(np.median(excess))
+        accepted = bool(
+            len(local_indices) == config.local_reference_band_count
+            and np.all(np.isfinite(excess))
+            and median_excess
+            <= config.local_reference_maximum_center_brightness_excess
+        )
+        audits.append(
+            {
+                "role": role,
+                "basin_id": basin_id,
+                "band_indices": sorted(int(value) for value in local_indices),
+                "center_brightness_excess": excess.tolist(),
+                "median_center_brightness_excess": median_excess,
+                "maximum_center_brightness_excess": (
+                    config.local_reference_maximum_center_brightness_excess
+                ),
+                "accepted": accepted,
+            }
+        )
+    success = all(audit["accepted"] for audit in audits)
+    return {
+        "success": success,
+        "reason": (
+            "output_basin_centers_dark"
+            if success
+            else "output_basin_center_not_dark"
+        ),
+        "basin_audits": audits,
+    }
+
+
 def _make_basin_node(
     left: dict,
     right: dict,
@@ -203,6 +321,11 @@ def _make_basin_node(
         ),
         "full_height_order": order,
         "dark_basin_evidence": dark_evidence,
+        "center_darkness_evidence": _basin_center_darkness_evidence(
+            left,
+            right,
+            evidence,
+        ),
         "verified": verified,
         "rejection_reasons": rejection_reasons,
     }
@@ -448,6 +571,7 @@ def _separator_adjacency_relation(
             "unavailable_reason": (
                 "separator_adjacent_dark_basins_not_verified"
             ),
+            "local_reference_adjacency_validation": local_validation,
         }
     inherited_safety_conflicts = sorted(
         reason
@@ -463,6 +587,7 @@ def _separator_adjacency_relation(
                 "reference_separator_basin_safety_conflict"
             ),
             "inherited_safety_conflicts": inherited_safety_conflicts,
+            "local_reference_adjacency_validation": local_validation,
         }
     hypothesis = {
         "hypothesis_id": "JH01",
@@ -640,6 +765,20 @@ def _local_reference_adjacency_validation(
                 >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
             )
         )
+        center_excess_by_band = np.asarray(
+            basin["center_darkness_evidence"][
+                "normalized_center_brightness_excess_by_band"
+            ],
+            dtype=np.float64,
+        )[local_indices]
+        median_center_brightness_excess = float(
+            np.median(center_excess_by_band)
+        )
+        center_is_dark = bool(
+            np.all(np.isfinite(center_excess_by_band))
+            and median_center_brightness_excess
+            <= config.local_reference_maximum_center_brightness_excess
+        )
         local_ok = bool(
             len(local_indices) == config.local_reference_band_count
             and np.all(
@@ -650,6 +789,7 @@ def _local_reference_adjacency_validation(
             >= config.local_reference_minimum_contrast_fraction
             and float(np.median(contrasts))
             >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+            and center_is_dark
         )
         basin_audits.append(
             {
@@ -658,13 +798,27 @@ def _local_reference_adjacency_validation(
                 "local_gap_px": gaps.tolist(),
                 "local_contrast": contrasts.tolist(),
                 "local_contrast_fraction": contrast_fraction,
+                "local_center_brightness_excess": (
+                    center_excess_by_band.tolist()
+                ),
+                "median_center_brightness_excess": (
+                    median_center_brightness_excess
+                ),
+                "maximum_center_brightness_excess": (
+                    config.local_reference_maximum_center_brightness_excess
+                ),
+                "center_is_dark": center_is_dark,
                 "accepted": local_ok,
             }
         )
         if not local_ok:
             return {
                 "success": False,
-                "reason": "click_local_basin_evidence_not_verified",
+                "reason": (
+                    "click_local_basin_center_not_dark"
+                    if not center_is_dark
+                    else "click_local_basin_evidence_not_verified"
+                ),
                 "basins": [],
                 "basin_audits": basin_audits,
             }

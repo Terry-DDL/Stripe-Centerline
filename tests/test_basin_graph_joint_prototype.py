@@ -52,6 +52,84 @@ class BasinGraphJointPrototypeTests(unittest.TestCase):
             checks["raw_pitch_configuration_checksum"],
         )
 
+    def test_basin_center_darkness_rejects_internal_bright_ridge(self):
+        left = {"x_by_band_roi": [2.0, 2.0, 2.0]}
+        right = {"x_by_band_roi": [8.0, 8.0, 8.0]}
+        dark_center = np.full((3, 12), 20.0)
+        bright_center = dark_center.copy()
+        for profiles in (dark_center, bright_center):
+            profiles[:, 2] = 200.0
+            profiles[:, 8] = 200.0
+        bright_center[:, 4:7] = 120.0
+
+        dark = joint._basin_center_darkness_evidence(  # noqa: SLF001
+            left,
+            right,
+            {"profiles": dark_center},
+        )
+        bright = joint._basin_center_darkness_evidence(  # noqa: SLF001
+            left,
+            right,
+            {"profiles": bright_center},
+        )
+
+        self.assertTrue(
+            all(
+                value
+                <= joint.DEFAULT_CONFIG.local_reference_maximum_center_brightness_excess
+                for value in dark[
+                    "normalized_center_brightness_excess_by_band"
+                ]
+            )
+        )
+        self.assertTrue(
+            all(
+                value
+                > joint.DEFAULT_CONFIG.local_reference_maximum_center_brightness_excess
+                for value in bright[
+                    "normalized_center_brightness_excess_by_band"
+                ]
+            )
+        )
+
+    def test_output_center_darkness_checks_only_reported_basins(self):
+        def basin(basin_id: str, values: list[float]) -> dict:
+            return {
+                "basin_id": basin_id,
+                "band_centers_y_roi": [10.0, 20.0, 30.0],
+                "center_darkness_evidence": {
+                    "normalized_center_brightness_excess_by_band": values,
+                },
+            }
+
+        graph = {
+            "basin_candidates": [
+                basin("left", [0.01, 0.02, 0.01]),
+                basin("clicked", [0.40, 0.40, 0.40]),
+                basin("right", [0.02, 0.08, 0.09]),
+            ]
+        }
+        hypothesis = {
+            "basin_ids": {
+                "left": "left",
+                "clicked": "clicked",
+                "right": "right",
+            }
+        }
+
+        result = joint.validate_output_basin_center_darkness(
+            hypothesis,
+            graph,
+            20.0,
+        )
+
+        self.assertFalse(result["success"])
+        self.assertEqual("output_basin_center_not_dark", result["reason"])
+        self.assertEqual(
+            ["left", "right"],
+            [audit["role"] for audit in result["basin_audits"]],
+        )
+
     def test_success_is_one_atomic_continuous_hypothesis(self):
         image = synthetic_stripes()
         result = joint.run_joint_case(
