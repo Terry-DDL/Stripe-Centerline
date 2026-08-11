@@ -519,17 +519,30 @@ def _separator_adjacency_relation(
         and semantic_tiebreak.get("resolved_relation")
         == "on_separator"
     )
-    if other_verified_explanations and not prefer_reference_separator:
-        return {
-            "status": "unavailable",
-            "relation": "on_separator",
-            "hypotheses": other_verified_explanations,
-            "unavailable_reason": (
-                "multiple_reasonable_reference_hypotheses"
-            ),
-        }
     ordered_ids = graph["ordered_separator_ids"]
     index = ordered_ids.index(reference_separator_id)
+    local_validation = None
+    if other_verified_explanations and not prefer_reference_separator:
+        if index > 0 and index + 1 < len(ordered_ids):
+            local_validation = _local_reference_adjacency_validation(
+                separator_result,
+                graph,
+                reference_separator_id,
+                ordered_ids[index - 1],
+                ordered_ids[index + 1],
+                DEFAULT_CONFIG,
+                pitch_result,
+            )
+        if not local_validation or not local_validation["success"]:
+            return {
+                "status": "unavailable",
+                "relation": "on_separator",
+                "hypotheses": other_verified_explanations,
+                "unavailable_reason": (
+                    "multiple_reasonable_reference_hypotheses"
+                ),
+                "local_reference_adjacency_validation": local_validation,
+            }
     if index == 0 or index + 1 >= len(ordered_ids):
         return {
             "status": "unavailable",
@@ -539,15 +552,16 @@ def _separator_adjacency_relation(
         }
     left_id = ordered_ids[index - 1]
     right_id = ordered_ids[index + 1]
-    local_validation = _local_reference_adjacency_validation(
-        separator_result,
-        graph,
-        reference_separator_id,
-        left_id,
-        right_id,
-        DEFAULT_CONFIG,
-        pitch_result,
-    )
+    if local_validation is None:
+        local_validation = _local_reference_adjacency_validation(
+            separator_result,
+            graph,
+            reference_separator_id,
+            left_id,
+            right_id,
+            DEFAULT_CONFIG,
+            pitch_result,
+        )
     if local_validation["success"]:
         existing_ids = {
             basin["basin_id"]

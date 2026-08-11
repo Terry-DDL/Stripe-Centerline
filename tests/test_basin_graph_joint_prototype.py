@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -394,14 +395,58 @@ class BasinGraphJointPrototypeTests(unittest.TestCase):
                 },
             }
         )
-        relation = joint._separator_adjacency_relation(
-            separator_result,
-            result["debug"]["basin_graph"],
-        )
+        with mock.patch.object(
+            joint,
+            "_local_reference_adjacency_validation",
+            return_value={
+                "success": False,
+                "reason": "local_evidence_not_verified",
+                "basins": [],
+            },
+        ):
+            relation = joint._separator_adjacency_relation(
+                separator_result,
+                result["debug"]["basin_graph"],
+            )
         self.assertEqual("unavailable", relation["status"])
         self.assertEqual(
             "multiple_reasonable_reference_hypotheses",
             relation["unavailable_reason"],
+        )
+
+    def test_local_adjacency_runs_before_reference_competition_return(self):
+        result = self.run_development_sample("D007")
+        separator_result = copy.deepcopy(
+            result["debug"]["separator_result"]
+        )
+        separator_result["arbitration_debug"][
+            "competing_explanations"
+        ].append(
+            {
+                "type": "clicked_basin_roles",
+                "hypothesis_id": "H99",
+                "verified": True,
+                "selection_candidate_ids": {
+                    "left_clicked_boundary": "C01",
+                    "right_clicked_boundary": "C02",
+                },
+            }
+        )
+        graph = copy.deepcopy(result["debug"]["basin_graph"])
+        relation = joint._separator_adjacency_relation(
+            separator_result,
+            graph,
+            result["debug"].get("raw_pitch_result"),
+        )
+        self.assertEqual("unique", relation["status"])
+        self.assertEqual("on_separator", relation["relation"])
+        local = relation["hypotheses"][0][
+            "local_reference_adjacency_validation"
+        ]
+        self.assertTrue(local["success"])
+        self.assertEqual(
+            "click_local_reference_adjacency_verified",
+            local["reason"],
         )
 
     def test_multiple_reference_separator_matches_are_unavailable(self):
