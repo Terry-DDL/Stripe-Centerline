@@ -18,9 +18,14 @@ import numpy as np
 
 from tools import basin_graph_joint_prototype as joint
 from tools import cross_image_correction_prototype_v1_1 as cross_image_v1_1
+from tools import separator_path_prototype as separator
 from config import CONFIG, INTERACTIVE_CONFIG
 from image_processing import crop_roi_global
-from interactive_pipeline import _preprocess_roi, estimate_rotation_shadow
+from interactive_pipeline import (
+    _preprocess_roi,
+    _rotation_guard_reasons,
+    estimate_rotation_shadow,
+)
 
 
 RESULT_SOURCE = "cross_image_correction_v1_1"
@@ -246,8 +251,9 @@ def _draw_formal_overlay(
 def _estimate_formal_line_angle_deg(
     image_gray: np.ndarray,
     bounds,
+    stage3_result: dict | None = None,
 ) -> float:
-    """Reuse the configured stripe-angle estimate for final line drawing."""
+    """Choose a displayed angle consistent with verified basin trajectories."""
 
     image_gray_roi = crop_roi_global(image_gray, bounds)
     stages = _preprocess_roi(
@@ -259,10 +265,78 @@ def _estimate_formal_line_angle_deg(
     angle_deg = estimate_rotation_shadow(
         stages.vertical_close,
         INTERACTIVE_CONFIG,
-    ).best_angle_deg
-    if abs(angle_deg) < INTERACTIVE_CONFIG.rotation_min_abs_angle_deg:
+    )
+    best_angle_deg = angle_deg.best_angle_deg
+    if abs(best_angle_deg) < INTERACTIVE_CONFIG.rotation_min_abs_angle_deg:
         return 0.0
-    return float(angle_deg)
+    if stage3_result is None:
+        return float(best_angle_deg)
+
+    structural = _reported_basin_orientation(stage3_result)
+    if structural is None:
+        return float(best_angle_deg)
+    guard_reasons = _rotation_guard_reasons(
+        angle_deg,
+        list(stages.threshold_warning_flags),
+        INTERACTIVE_CONFIG,
+    )
+    current_drawn_angle_deg = -float(best_angle_deg)
+    basin_drawn_angle_deg = structural["angle_from_vertical_deg"]
+    mismatch_drift_px = abs(
+        math.tan(math.radians(current_drawn_angle_deg))
+        - math.tan(math.radians(basin_drawn_angle_deg))
+    ) * structural["vertical_span_px"]
+    if (
+        guard_reasons
+        and mismatch_drift_px
+        > separator.DEFAULT_CONFIG.trace_search_radius_px
+    ):
+        return -float(basin_drawn_angle_deg)
+    return float(best_angle_deg)
+
+
+def _reported_basin_orientation(
+    stage3_result: dict,
+) -> dict[str, float] | None:
+    """Return a robust angle from the two basin trajectories being reported."""
+
+    hypothesis = stage3_result.get("final_hypothesis") or {}
+    basin_ids = hypothesis.get("basin_ids") or {}
+    requested_ids = [basin_ids.get(role) for role in ("left", "right")]
+    if any(basin_id is None for basin_id in requested_ids):
+        return None
+    basin_by_id = {
+        basin.get("basin_id"): basin
+        for basin in (
+            stage3_result.get("debug", {})
+            .get("basin_graph", {})
+            .get("verified_basins", [])
+        )
+    }
+    angles = []
+    spans = []
+    for basin_id in requested_ids:
+        basin = basin_by_id.get(basin_id)
+        if basin is None:
+            return None
+        y = np.asarray(basin.get("band_centers_y_roi", []), dtype=np.float64)
+        x = np.asarray(basin.get("center_x_by_band_roi", []), dtype=np.float64)
+        if y.size < 2 or x.size != y.size:
+            return None
+        slopes = [
+            (x[j] - x[i]) / (y[j] - y[i])
+            for i in range(y.size)
+            for j in range(i + 1, y.size)
+            if y[j] != y[i]
+        ]
+        if not slopes:
+            return None
+        angles.append(math.degrees(math.atan(float(np.median(slopes)))))
+        spans.append(float(y[-1] - y[0]))
+    return {
+        "angle_from_vertical_deg": float(np.median(angles)),
+        "vertical_span_px": min(spans),
+    }
 
 
 def build_desktop_result(
@@ -349,7 +423,7 @@ def build_desktop_result(
         "interactive_result": interactive_result,
     }
     line_angle_deg = (
-        _estimate_formal_line_angle_deg(image_gray, bounds)
+        _estimate_formal_line_angle_deg(image_gray, bounds, stage3_result)
         if geometry is not None
         else 0.0
     )

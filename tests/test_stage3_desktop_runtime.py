@@ -28,6 +28,34 @@ def bounds():
 
 
 class Stage3DesktopRuntimeTests(unittest.TestCase):
+    def test_unreliable_rotation_cannot_diverge_from_reported_basins(self):
+        stage3 = available_shadow_result()
+        weak_rotation = SimpleNamespace(
+            best_angle_deg=5.0,
+            zero_angle_score=0.10,
+            best_score=0.105,
+            peak_separation=0.001,
+        )
+        stages = SimpleNamespace(
+            vertical_close=np.zeros((180, 460), dtype=np.uint8),
+            threshold_warning_flags=(),
+        )
+        with (
+            patch.object(runtime, "_preprocess_roi", return_value=stages),
+            patch.object(
+                runtime,
+                "estimate_rotation_shadow",
+                return_value=weak_rotation,
+            ),
+        ):
+            angle = runtime._estimate_formal_line_angle_deg(  # noqa: SLF001
+                np.zeros((200, 500), dtype=np.uint8),
+                bounds(),
+                stage3,
+            )
+
+        self.assertEqual(0.0, angle)
+
     def test_final_lines_follow_existing_angle_through_reference_centers(self):
         image = np.zeros((200, 500), dtype=np.uint8)
         stage3 = available_shadow_result()
