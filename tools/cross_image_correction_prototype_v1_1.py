@@ -1331,6 +1331,259 @@ def detect_centerized_separator_paths_v1_1(
     }
 
 
+def _click_local_four_path_revalidation(
+    separator_result: dict,
+    graph: dict,
+) -> dict:
+    """Revalidate one rejected four-path role near the clicked row only."""
+
+    empty = {
+        "applied": False,
+        "success": False,
+        "reason": "trigger_not_met",
+    }
+    arbitration = separator_result.get("arbitration_debug", {})
+    roles = arbitration.get("role_hypotheses", [])
+    if len(roles) != 1:
+        return {**empty, "reason": "role_hypothesis_not_unique"}
+    role = roles[0]
+    rejection_reasons = set(role.get("rejection_reasons", []))
+    remote_geometry_reasons = {
+        "path_order_not_stable_full_height",
+        "role_path_insufficient_vertical_support",
+        "role_path_geometry_unstable",
+    }
+    allowed_reasons = {
+        *remote_geometry_reasons,
+        "dark_basin_sequence_not_verified",
+    }
+    if (
+        role.get("type") != "clicked_basin_roles"
+        or not rejection_reasons.intersection(remote_geometry_reasons)
+        or rejection_reasons - allowed_reasons
+    ):
+        return {**empty, "reason": "not_remote_geometry_failure"}
+    if role.get("crossing") or any(
+        item.get("crossing_band_indices")
+        for item in role.get("full_height_pair_order", [])
+    ):
+        return {**empty, "reason": "path_crossing_full_height"}
+
+    selection = role.get("selection_candidate_ids", {})
+    try:
+        selected_ids = [selection[name] for name in separator.ROLE_ORDER]
+    except KeyError:
+        return {**empty, "reason": "selected_separator_missing"}
+    ordered_ids = graph.get("ordered_separator_ids", [])
+    try:
+        selected_indexes = [ordered_ids.index(item) for item in selected_ids]
+    except ValueError:
+        return {**empty, "reason": "selected_separator_missing"}
+    if selected_indexes != list(
+        range(selected_indexes[0], selected_indexes[0] + 4)
+    ):
+        return {**empty, "reason": "selected_separator_not_consecutive"}
+
+    candidate_by_id = {
+        item["candidate_id"]: item
+        for item in separator_result.get("candidates", [])
+    }
+    try:
+        paths = [candidate_by_id[item] for item in selected_ids]
+    except KeyError:
+        return {**empty, "reason": "selected_separator_missing"}
+    band_centers = np.asarray(
+        paths[0]["band_centers_y_roi"], dtype=np.float64
+    )
+    reference_y = float(separator_result["reference_y_roi"])
+    local_indices = np.sort(
+        np.argsort(np.abs(band_centers - reference_y))[:3]
+    )
+    if (
+        local_indices.size != 3
+        or not np.all(np.diff(local_indices) == 1)
+    ):
+        return {**empty, "reason": "local_bands_not_contiguous"}
+    supported_sets = [
+        set(int(value) for value in path.get("supported_band_indices", []))
+        for path in paths
+    ]
+    if any(
+        not all(int(index) in supported for index in local_indices)
+        for supported in supported_sets
+    ):
+        return {
+            **empty,
+            "applied": True,
+            "reason": "local_path_support_not_verified",
+            "band_indices": local_indices.tolist(),
+        }
+
+    local_x = np.asarray(
+        [
+            np.asarray(path["x_by_band_roi"], dtype=np.float64)[
+                local_indices
+            ]
+            for path in paths
+        ]
+    )
+    local_steps = np.mean(np.abs(np.diff(local_x, axis=1)), axis=1)
+    if np.any(
+        local_steps
+        > separator.DEFAULT_CONFIG.maximum_role_path_mean_step_px
+    ):
+        return {
+            **empty,
+            "applied": True,
+            "reason": "local_path_geometry_unstable",
+            "band_indices": local_indices.tolist(),
+            "mean_step_px": local_steps.tolist(),
+        }
+    pair_gaps = np.diff(local_x, axis=0)
+    if np.any(pair_gaps <= 0):
+        return {
+            **empty,
+            "applied": True,
+            "reason": "local_path_crossing",
+            "band_indices": local_indices.tolist(),
+        }
+    pair_medians = np.median(pair_gaps, axis=1)
+    if np.any(
+        np.min(pair_gaps, axis=1) / pair_medians
+        < separator.DEFAULT_CONFIG.minimum_full_height_order_ratio
+    ):
+        return {
+            **empty,
+            "applied": True,
+            "reason": "local_path_order_unstable",
+            "band_indices": local_indices.tolist(),
+        }
+    widths = np.asarray(
+        [float(path["peak_width_px"]) for path in paths],
+        dtype=np.float64,
+    )
+    local_edge_gaps = pair_gaps - (
+        widths[:-1, None] + widths[1:, None]
+    ) / 2.0
+    if np.any(
+        local_edge_gaps
+        < separator.DEFAULT_CONFIG.minimum_dark_basin_edge_gap_px
+    ):
+        return {
+            **empty,
+            "applied": True,
+            "reason": "local_separator_envelopes_overlap",
+            "band_indices": local_indices.tolist(),
+        }
+
+    basin_by_pair = {
+        (item["left_separator_id"], item["right_separator_id"]): item
+        for item in graph.get("basin_candidates", [])
+    }
+    pairs = list(zip(selected_ids, selected_ids[1:]))
+    if any(pair not in basin_by_pair for pair in pairs):
+        return {**empty, "reason": "selected_basin_missing"}
+    selected_basins = [basin_by_pair[pair] for pair in pairs]
+    basin_audits = []
+    for basin in selected_basins:
+        contrast = np.asarray(
+            basin["dark_basin_evidence"][
+                "normalized_contrast_by_band"
+            ],
+            dtype=np.float64,
+        )[local_indices]
+        stable_fraction = float(
+            np.mean(
+                contrast
+                >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+            )
+        )
+        median_contrast = float(np.median(contrast))
+        accepted = bool(
+            stable_fraction
+            >= separator.DEFAULT_CONFIG.minimum_dark_basin_band_fraction
+            and median_contrast
+            >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+        )
+        basin_audits.append(
+            {
+                "basin_id": basin["basin_id"],
+                "contrast": contrast.tolist(),
+                "stable_fraction": stable_fraction,
+                "median_contrast": median_contrast,
+                "accepted": accepted,
+            }
+        )
+    if not all(item["accepted"] for item in basin_audits):
+        return {
+            **empty,
+            "applied": True,
+            "reason": "local_basin_contrast_not_verified",
+            "band_indices": local_indices.tolist(),
+            "basin_audits": basin_audits,
+        }
+
+    patched_separator = copy.deepcopy(separator_result)
+    patched_arbitration = patched_separator["arbitration_debug"]
+    patched_role = copy.deepcopy(role)
+    patched_role["verified"] = True
+    patched_role["rejection_reasons"] = []
+    patched_role["click_local_four_path_revalidation"] = True
+    patched_arbitration["role_hypotheses"] = [patched_role]
+    patched_arbitration["rejection_reasons"] = [
+        reason
+        for reason in patched_arbitration.get("rejection_reasons", [])
+        if reason not in allowed_reasons
+    ]
+    for explanation in patched_arbitration.get(
+        "competing_explanations", []
+    ):
+        if explanation.get("hypothesis_id") == role.get("hypothesis_id"):
+            explanation["verified"] = True
+            explanation["rejection_reasons"] = []
+    if patched_separator.get("unavailable_reason") != "reference_on_separator":
+        patched_separator["status"] = "available"
+        patched_separator["unavailable_reason"] = None
+        patched_separator["selection"] = {
+            name: candidate_by_id[selection[name]]
+            for name in separator.ROLE_ORDER
+        }
+
+    patched_graph = copy.deepcopy(graph)
+    recovered_basins = [
+        {
+            **basin,
+            "verified": True,
+            "rejection_reasons": [],
+            "source": "click_local_four_path_revalidation",
+            "click_local_basin_contrast": audit,
+        }
+        for basin, audit in zip(selected_basins, basin_audits)
+    ]
+    recovered_ids = {item["basin_id"] for item in recovered_basins}
+    patched_graph["verified_basins"] = [
+        item
+        for item in patched_graph.get("verified_basins", [])
+        if item["basin_id"] not in recovered_ids
+    ] + recovered_basins
+    patched_graph["verified_basin_ids"] = [
+        item["basin_id"] for item in patched_graph["verified_basins"]
+    ]
+    return {
+        **empty,
+        "applied": True,
+        "success": True,
+        "reason": "click_local_four_path_verified",
+        "source_rejections": sorted(rejection_reasons),
+        "separator_sequence": selected_ids,
+        "band_indices": local_indices.tolist(),
+        "mean_step_px": local_steps.tolist(),
+        "basin_audits": basin_audits,
+        "separator_result": patched_separator,
+        "graph": patched_graph,
+    }
+
+
 def run_joint_case_v1_1(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -1386,6 +1639,33 @@ def run_joint_case_v1_1(
         "debug": debug,
         "experiment_only": True,
     }
+    if relation["status"] != "unique":
+        local_structure = _click_local_four_path_revalidation(
+            separator_result,
+            graph,
+        )
+        debug["click_local_four_path_revalidation"] = {
+            key: value
+            for key, value in local_structure.items()
+            if key not in {"separator_result", "graph"}
+        }
+        if local_structure["success"]:
+            separator_result = local_structure["separator_result"]
+            graph = local_structure["graph"]
+            relation = joint.resolve_reference_relation(
+                separator_result,
+                graph,
+                pitch_result,
+            )
+            debug["separator_result"] = separator_result
+            debug["basin_graph"] = graph
+            debug["reference_relation"] = relation
+            debug["staged_release"] = {
+                "stage": "click_local_four_path_revalidation",
+                "source_rejections": local_structure[
+                    "source_rejections"
+                ],
+            }
     if relation["status"] != "unique":
         local_recovery = _recover_local_dark_valley_sequence(
             image_gray,
