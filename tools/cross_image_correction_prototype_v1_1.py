@@ -1638,17 +1638,10 @@ def _recover_local_adaptive_dim_separator(
     if relation.get("status") != "unique" or len(relation.get("hypotheses", [])) != 1:
         return empty
     hypothesis = relation["hypotheses"][0]
-    local_validation = hypothesis.get("local_reference_adjacency_validation", {})
-    if (
-        hypothesis.get("reference_relation") != "on_separator"
-        or local_validation.get("reason")
-        != "local_reference_pitch_geometry_conflict"
-    ):
-        return empty
 
     pitch = pitch_result.get("diagnostic_pitch_px")
     sequence = hypothesis.get("separator_sequence", [])
-    if pitch is None or float(pitch) <= 0 or len(sequence) != 3:
+    if pitch is None or float(pitch) <= 0 or len(sequence) < 3:
         return {**empty, "triggered": True, "reason": "merged_gap_geometry_missing"}
     candidate_by_id = {
         item["candidate_id"]: item
@@ -1658,21 +1651,56 @@ def _recover_local_adaptive_dim_separator(
     if any(candidate_id not in candidate_by_id for candidate_id in sequence):
         return {**empty, "triggered": True, "reason": "merged_gap_paths_missing"}
     paths = [candidate_by_id[candidate_id] for candidate_id in sequence]
-    gaps = [
-        float(
-            np.median(
-                np.asarray(right["x_by_band_roi"], dtype=np.float64)
-                - np.asarray(left["x_by_band_roi"], dtype=np.float64)
-            )
-        )
+    gap_by_band = [
+        np.asarray(right["x_by_band_roi"], dtype=np.float64)
+        - np.asarray(left["x_by_band_roi"], dtype=np.float64)
         for left, right in zip(paths, paths[1:])
     ]
-    wide_index = int(np.argmax(gaps))
-    if (
-        gaps[wide_index] / float(pitch)
-        <= joint.DEFAULT_CONFIG.high_pitch_maximum_spacing_ratio
-    ):
+    gaps = [float(np.median(values)) for values in gap_by_band]
+    reference_x_roi = float(separator_result["reference_x_roi"])
+    reference_y_roi = float(separator_result["reference_y_roi"])
+    reference_gap_tolerance = float(
+        separator.DEFAULT_CONFIG.match_tolerance_px
+    )
+    separator_roles = hypothesis.get("separator_ids", {})
+    clicked_boundary_pair = (
+        separator_roles.get("left_clicked_boundary"),
+        separator_roles.get("right_clicked_boundary"),
+    )
+    clicked_separator_id = hypothesis.get(
+        "clicked_separator_id",
+        hypothesis.get("reference_separator_id"),
+    )
+
+    def is_output_local_gap(index: int) -> bool:
+        pair = (
+            paths[index]["candidate_id"],
+            paths[index + 1]["candidate_id"],
+        )
+        if all(clicked_boundary_pair):
+            return pair == clicked_boundary_pair
+        return clicked_separator_id in pair
+
+    eligible_gap_indices = [
+        index
+        for index, (left, right, values) in enumerate(
+            zip(paths, paths[1:], gap_by_band)
+        )
+        if np.all(values > 0.0)
+        and is_output_local_gap(index)
+        and gaps[index] / float(pitch)
+        > joint.DEFAULT_CONFIG.high_pitch_maximum_spacing_ratio
+        and separator._path_x_at_y(  # noqa: SLF001
+            left, reference_y_roi
+        ) - reference_gap_tolerance
+        <= reference_x_roi
+        <= separator._path_x_at_y(  # noqa: SLF001
+            right, reference_y_roi
+        ) + reference_gap_tolerance
+    ]
+    if not eligible_gap_indices:
         return {**empty, "triggered": True, "reason": "no_local_merged_gap"}
+    wide_index = max(eligible_gap_indices, key=gaps.__getitem__)
 
     left_path = paths[wide_index]
     right_path = paths[wide_index + 1]
@@ -1749,7 +1777,7 @@ def _recover_local_adaptive_dim_separator(
             "suppressed_candidates": [],
             "adaptive_local_recovery": {
                 "origin": "existing_adaptive_white_mask",
-                "trigger": "local_reference_pitch_geometry_conflict",
+                "trigger": "local_reference_merged_gap",
                 "left_separator_id": left_path["candidate_id"],
                 "right_separator_id": right_path["candidate_id"],
                 "merged_gap_px": gaps[wide_index],
@@ -1767,6 +1795,16 @@ def _recover_local_adaptive_dim_separator(
         }
 
     candidate_x = np.asarray(candidate["x_by_band_roi"], dtype=np.float64)
+    if not (
+        np.all(candidate_x - left_x > 0.0)
+        and np.all(right_x - candidate_x > 0.0)
+    ):
+        return {
+            **empty,
+            "triggered": True,
+            "reason": "adaptive_separator_order_conflict",
+            "candidate": candidate,
+        }
     split_gaps = [
         float(np.median(candidate_x - left_x)),
         float(np.median(right_x - candidate_x)),
@@ -1887,6 +1925,33 @@ def run_joint_case_v1_1(
         "debug": debug,
         "experiment_only": True,
     }
+    if relation["status"] != "unique":
+        local_structure = _click_local_four_path_revalidation(
+            separator_result,
+            graph,
+        )
+        debug["click_local_four_path_revalidation"] = {
+            key: value
+            for key, value in local_structure.items()
+            if key not in {"separator_result", "graph"}
+        }
+        if local_structure["success"]:
+            separator_result = local_structure["separator_result"]
+            graph = local_structure["graph"]
+            relation = joint.resolve_reference_relation(
+                separator_result,
+                graph,
+                pitch_result,
+            )
+            debug["separator_result"] = separator_result
+            debug["basin_graph"] = graph
+            debug["reference_relation"] = relation
+            debug["staged_release"] = {
+                "stage": "click_local_four_path_revalidation",
+                "source_rejections": local_structure[
+                    "source_rejections"
+                ],
+            }
     adaptive_dim_recovery = _recover_local_adaptive_dim_separator(
         image_gray,
         roi_bounds_global,
@@ -1915,33 +1980,6 @@ def run_joint_case_v1_1(
         debug["separator_result"] = separator_result
         debug["basin_graph"] = graph
         debug["reference_relation"] = relation
-    if relation["status"] != "unique":
-        local_structure = _click_local_four_path_revalidation(
-            separator_result,
-            graph,
-        )
-        debug["click_local_four_path_revalidation"] = {
-            key: value
-            for key, value in local_structure.items()
-            if key not in {"separator_result", "graph"}
-        }
-        if local_structure["success"]:
-            separator_result = local_structure["separator_result"]
-            graph = local_structure["graph"]
-            relation = joint.resolve_reference_relation(
-                separator_result,
-                graph,
-                pitch_result,
-            )
-            debug["separator_result"] = separator_result
-            debug["basin_graph"] = graph
-            debug["reference_relation"] = relation
-            debug["staged_release"] = {
-                "stage": "click_local_four_path_revalidation",
-                "source_rejections": local_structure[
-                    "source_rejections"
-                ],
-            }
     if relation["status"] != "unique":
         local_recovery = _recover_local_dark_valley_sequence(
             image_gray,
