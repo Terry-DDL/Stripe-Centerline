@@ -193,6 +193,80 @@ def _basin_center_darkness_evidence(
     }
 
 
+def _adaptive_boundary_basin_evidence(
+    left: dict,
+    right: dict,
+    evidence: dict,
+) -> tuple[dict, dict] | None:
+    """Validate a dark basin against its ordinary bright boundary.
+
+    An adaptive-recovered separator is intentionally allowed to be dim in raw
+    gray, so the ordinary two-bright-boundary contrast is not meaningful for
+    the basin touching it.  The other boundary remains a raw-gray separator
+    and supplies the local light-to-dark comparison.
+    """
+
+    adaptive = [
+        path
+        for path in (left, right)
+        if path.get("adaptive_local_recovery")
+    ]
+    if len(adaptive) != 1:
+        return None
+    ordinary = right if adaptive[0] is left else left
+    left_x = np.rint(left["x_by_band_roi"]).astype(int)
+    right_x = np.rint(right["x_by_band_roi"]).astype(int)
+    ordinary_x = np.rint(ordinary["x_by_band_roi"]).astype(int)
+    contrast_by_band = []
+    for band_index, (left_value, right_value, boundary_value) in enumerate(
+        zip(left_x, right_x, ordinary_x)
+    ):
+        x0, x1 = sorted((int(left_value), int(right_value)))
+        profile = evidence["profiles"][band_index]
+        center_x = int(round((x0 + x1) / 2.0))
+        center_level = float(
+            np.median(
+                profile[
+                    max(x0 + 1, center_x - 1) : min(x1, center_x + 2)
+                ]
+            )
+        )
+        boundary_x = int(boundary_value)
+        boundary_level = float(
+            np.median(
+                profile[
+                    max(0, boundary_x - 1) : min(profile.size, boundary_x + 2)
+                ]
+            )
+        )
+        local = profile[max(0, x0 - 5) : min(profile.size, x1 + 6)]
+        scale = max(
+            float(np.percentile(local, 90) - np.percentile(local, 10)),
+            8.0,
+        )
+        contrast_by_band.append((boundary_level - center_level) / scale)
+    contrast = np.asarray(contrast_by_band, dtype=np.float64)
+    supported = contrast >= separator.DEFAULT_CONFIG.minimum_dark_basin_contrast
+    stable_fraction = float(np.mean(supported))
+    dark_evidence = {
+        "left_candidate_id": left["candidate_id"],
+        "right_candidate_id": right["candidate_id"],
+        "normalized_contrast_by_band": contrast.tolist(),
+        "median_normalized_contrast": float(np.median(contrast)),
+        "stable_band_fraction": stable_fraction,
+        "verified": bool(
+            stable_fraction
+            >= separator.DEFAULT_CONFIG.minimum_dark_basin_band_fraction
+        ),
+        "provenance": "adaptive_boundary_plus_ordinary_separator_local_darkness",
+    }
+    center_evidence = {
+        "normalized_center_brightness_excess_by_band": (-contrast).tolist(),
+        "provenance": "adaptive_boundary_center_vs_ordinary_separator",
+    }
+    return dark_evidence, center_evidence
+
+
 def validate_output_basin_center_darkness(
     hypothesis: dict,
     graph: dict,
@@ -307,6 +381,18 @@ def _make_basin_node(
         evidence,
         separator.DEFAULT_CONFIG,
     )
+    center_darkness_evidence = _basin_center_darkness_evidence(
+        left,
+        right,
+        evidence,
+    )
+    adaptive_evidence = _adaptive_boundary_basin_evidence(
+        left,
+        right,
+        evidence,
+    )
+    if adaptive_evidence is not None:
+        dark_evidence, center_darkness_evidence = adaptive_evidence
     left_x = np.asarray(left["x_by_band_roi"], dtype=np.float64)
     right_x = np.asarray(right["x_by_band_roi"], dtype=np.float64)
     width = right_x - left_x
@@ -327,7 +413,11 @@ def _make_basin_node(
             left["candidate_id"],
             right["candidate_id"],
         ),
-        "source": "adjacent_frozen_separator_paths",
+        "source": (
+            "adaptive_recovered_separator_local_basin"
+            if adaptive_evidence is not None
+            else "adjacent_frozen_separator_paths"
+        ),
         "left_separator_id": left["candidate_id"],
         "right_separator_id": right["candidate_id"],
         "band_centers_y_roi": left["band_centers_y_roi"],
@@ -346,11 +436,7 @@ def _make_basin_node(
         ),
         "full_height_order": order,
         "dark_basin_evidence": dark_evidence,
-        "center_darkness_evidence": _basin_center_darkness_evidence(
-            left,
-            right,
-            evidence,
-        ),
+        "center_darkness_evidence": center_darkness_evidence,
         "verified": verified,
         "rejection_reasons": rejection_reasons,
     }
@@ -720,6 +806,11 @@ def _local_reference_adjacency_validation(
             "inside_basin_band_fraction": inside_basin_fraction,
         }
     path_metrics = role.get("path_metrics", [])
+    adaptive_candidate_ids = {
+        item["candidate_id"]
+        for item in separator_result.get("candidates", [])
+        if item.get("accepted") and item.get("adaptive_local_recovery")
+    }
     supports = [
         float(item["support_fraction"])
         for item in path_metrics
@@ -747,8 +838,19 @@ def _local_reference_adjacency_validation(
             "basins": [],
             **global_shape_diagnostic,
         }
+    support_within_limits = bool(
+        path_metrics
+        and all(
+            (
+                item.get("candidate_id") in adaptive_candidate_ids
+                or float(item.get("support_fraction", 0.0))
+                >= config.local_reference_minimum_path_support
+            )
+            for item in path_metrics
+        )
+    )
     global_shape_within_legacy_limits = bool(
-        min(supports) >= config.local_reference_minimum_path_support
+        support_within_limits
         and max(steps) <= config.local_reference_maximum_mean_step_px
         and float(edge_ratio)
         <= config.local_reference_maximum_edge_gap_ratio

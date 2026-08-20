@@ -31,6 +31,8 @@ from tools import basin_graph_joint_prototype as joint  # noqa: E402
 from tools import cross_image_correction_prototype as v1  # noqa: E402
 from tools import raw_local_pitch_prototype_v3 as raw_pitch  # noqa: E402
 from tools import separator_path_prototype as separator  # noqa: E402
+from config import CONFIG, INTERACTIVE_CONFIG  # noqa: E402
+from interactive_pipeline import _preprocess_roi  # noqa: E402
 
 
 EXPERIMENT_START_COMMIT = (
@@ -63,6 +65,7 @@ FROZEN_RUN_JOINT_CASE = joint.run_joint_case
 V1_RUN_JOINT_CASE = v1.run_centerized_joint_case
 ENABLE_REFERENCE_SEMANTIC_TIEBREAK = True
 ENABLE_PITCH_GUIDED_MISSING_SEPARATOR_COMPLETION = True
+ADAPTIVE_DIM_SEPARATOR_WHITE_FRACTION = 0.10
 
 
 def configuration_document() -> dict:
@@ -1615,6 +1618,199 @@ def _click_local_four_path_revalidation(
     }
 
 
+def _recover_local_adaptive_dim_separator(
+    image_gray: np.ndarray,
+    roi_bounds_global: dict,
+    direction: str,
+    separator_result: dict,
+    relation: dict,
+    pitch_result: dict,
+) -> dict:
+    """Recover one dim separator only inside an already diagnosed merged gap."""
+
+    empty = {
+        "triggered": False,
+        "success": False,
+        "reason": "trigger_not_met",
+        "separator_result": separator_result,
+        "candidate": None,
+    }
+    if relation.get("status") != "unique" or len(relation.get("hypotheses", [])) != 1:
+        return empty
+    hypothesis = relation["hypotheses"][0]
+    local_validation = hypothesis.get("local_reference_adjacency_validation", {})
+    if (
+        hypothesis.get("reference_relation") != "on_separator"
+        or local_validation.get("reason")
+        != "local_reference_pitch_geometry_conflict"
+    ):
+        return empty
+
+    pitch = pitch_result.get("diagnostic_pitch_px")
+    sequence = hypothesis.get("separator_sequence", [])
+    if pitch is None or float(pitch) <= 0 or len(sequence) != 3:
+        return {**empty, "triggered": True, "reason": "merged_gap_geometry_missing"}
+    candidate_by_id = {
+        item["candidate_id"]: item
+        for item in separator_result.get("candidates", [])
+        if item.get("accepted")
+    }
+    if any(candidate_id not in candidate_by_id for candidate_id in sequence):
+        return {**empty, "triggered": True, "reason": "merged_gap_paths_missing"}
+    paths = [candidate_by_id[candidate_id] for candidate_id in sequence]
+    gaps = [
+        float(
+            np.median(
+                np.asarray(right["x_by_band_roi"], dtype=np.float64)
+                - np.asarray(left["x_by_band_roi"], dtype=np.float64)
+            )
+        )
+        for left, right in zip(paths, paths[1:])
+    ]
+    wide_index = int(np.argmax(gaps))
+    if (
+        gaps[wide_index] / float(pitch)
+        <= joint.DEFAULT_CONFIG.high_pitch_maximum_spacing_ratio
+    ):
+        return {**empty, "triggered": True, "reason": "no_local_merged_gap"}
+
+    left_path = paths[wide_index]
+    right_path = paths[wide_index + 1]
+    left_x = np.asarray(left_path["x_by_band_roi"], dtype=np.float64)
+    right_x = np.asarray(right_path["x_by_band_roi"], dtype=np.float64)
+    expected_x = (left_x + right_x) / 2.0
+    raw_roi = separator.extract_raw_roi(image_gray, roi_bounds_global)
+    adaptive_mask = _preprocess_roi(
+        raw_roi,
+        CONFIG,
+        INTERACTIVE_CONFIG,
+        "adaptive",
+    ).threshold_binary
+    directional_mask = separator._directional_roi(  # noqa: SLF001
+        adaptive_mask,
+        direction,
+    )
+    band_bounds = separator._band_bounds(  # noqa: SLF001
+        directional_mask.shape[0],
+        separator.DEFAULT_CONFIG.band_count,
+    )
+    if len(band_bounds) != len(expected_x):
+        return {**empty, "triggered": True, "reason": "adaptive_band_count_mismatch"}
+
+    adaptive_responses = np.zeros(
+        (len(band_bounds), directional_mask.shape[1]),
+        dtype=np.float64,
+    )
+    local_radius = int(round(separator.DEFAULT_CONFIG.match_tolerance_px))
+    for band_index, (y0, y1) in enumerate(band_bounds):
+        center = int(round(float(expected_x[band_index])))
+        x0 = max(1, center - local_radius)
+        x1 = min(directional_mask.shape[1] - 1, center + local_radius + 1)
+        for x in range(x0, x1):
+            white_fraction = float(
+                np.mean(directional_mask[y0:y1, x - 1 : x + 2] > 0)
+            )
+            adaptive_responses[band_index, x] = (
+                white_fraction / ADAPTIVE_DIM_SEPARATOR_WHITE_FRACTION
+            )
+    aggregate = np.mean(
+        np.partition(
+            adaptive_responses,
+            adaptive_responses.shape[0]
+            - separator.DEFAULT_CONFIG.aggregate_top_band_count,
+            axis=0,
+        )[-separator.DEFAULT_CONFIG.aggregate_top_band_count :],
+        axis=0,
+    )
+    adaptive_evidence = {
+        "band_bounds": band_bounds,
+        "band_centers_y": np.asarray(
+            [(y0 + y1 - 1) / 2.0 for y0, y1 in band_bounds],
+            dtype=np.float64,
+        ),
+        "profiles": adaptive_responses,
+        "responses": adaptive_responses,
+        "aggregate_response": aggregate,
+        "width": directional_mask.shape[1],
+        "height": directional_mask.shape[0],
+    }
+    seed_x = int(round(float(np.median(expected_x))))
+    candidate = separator._trace_one_seed(  # noqa: SLF001
+        {"x": seed_x, "response": float(aggregate[seed_x])},
+        adaptive_evidence,
+        separator.DEFAULT_CONFIG,
+    )
+    candidate.update(
+        {
+            "candidate_id": "ADAPTIVE_LOCAL_DIM_01",
+            "x_at_reference_roi": separator._path_x_at_y(  # noqa: SLF001
+                candidate, float(separator_result["reference_y_roi"])
+            ),
+            "suppressed_candidates": [],
+            "adaptive_local_recovery": {
+                "origin": "existing_adaptive_white_mask",
+                "trigger": "local_reference_pitch_geometry_conflict",
+                "left_separator_id": left_path["candidate_id"],
+                "right_separator_id": right_path["candidate_id"],
+                "merged_gap_px": gaps[wide_index],
+                "pitch_px": float(pitch),
+                "minimum_white_fraction": ADAPTIVE_DIM_SEPARATOR_WHITE_FRACTION,
+            },
+        }
+    )
+    if not candidate["accepted"]:
+        return {
+            **empty,
+            "triggered": True,
+            "reason": candidate.get("rejection_reason") or "adaptive_path_rejected",
+            "candidate": candidate,
+        }
+
+    raw_directional = separator._directional_roi(  # noqa: SLF001
+        raw_roi,
+        direction,
+    )
+    raw_evidence = separator.build_raw_gray_response(
+        raw_directional,
+        separator.DEFAULT_CONFIG,
+    )
+    candidates = [*separator_result["candidates"], candidate]
+    arbitration = select_clicked_basin_paths_v1_1(
+        candidates,
+        float(separator_result["reference_x_roi"]),
+        float(separator_result["reference_y_roi"]),
+        raw_evidence,
+        float(pitch),
+    )
+    recovered = {
+        **separator_result,
+        "status": arbitration["status"],
+        "unavailable_reason": arbitration["unavailable_reason"],
+        "crossing": arbitration["crossing"],
+        "selection": arbitration["selection"],
+        "arbitration_debug": {
+            key: value
+            for key, value in arbitration.items()
+            if key not in {"status", "unavailable_reason", "selection"}
+        },
+        "candidates": candidates,
+        "adaptive_local_dim_separator_recovery": {
+            "triggered": True,
+            "candidate_id": candidate["candidate_id"],
+            "candidate_x_at_reference_roi": candidate["x_at_reference_roi"],
+            "support_fraction": candidate["support_fraction"],
+        },
+    }
+    return {
+        **empty,
+        "triggered": True,
+        "success": True,
+        "reason": "adaptive_separator_candidate_accepted",
+        "separator_result": recovered,
+        "candidate": candidate,
+    }
+
+
 def run_joint_case_v1_1(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -1670,6 +1866,34 @@ def run_joint_case_v1_1(
         "debug": debug,
         "experiment_only": True,
     }
+    adaptive_dim_recovery = _recover_local_adaptive_dim_separator(
+        image_gray,
+        roi_bounds_global,
+        direction,
+        separator_result,
+        relation,
+        pitch_result,
+    )
+    debug["adaptive_local_dim_separator_recovery"] = {
+        key: value
+        for key, value in adaptive_dim_recovery.items()
+        if key not in {"separator_result", "candidate"}
+    }
+    if adaptive_dim_recovery["success"]:
+        separator_result = adaptive_dim_recovery["separator_result"]
+        graph = joint.build_ordered_basin_graph(
+            separator_result,
+            raw_roi,
+            direction,
+        )
+        relation = joint.resolve_reference_relation(
+            separator_result,
+            graph,
+            pitch_result,
+        )
+        debug["separator_result"] = separator_result
+        debug["basin_graph"] = graph
+        debug["reference_relation"] = relation
     if relation["status"] != "unique":
         local_structure = _click_local_four_path_revalidation(
             separator_result,
