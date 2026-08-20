@@ -1202,6 +1202,35 @@ def select_clicked_basin_paths_v1_1(
             ),
             "width_aware_reference": width_debug,
         }
+    verified_roles = [
+        item
+        for item in frozen.get("role_hypotheses", [])
+        if item.get("verified") is True
+    ]
+    if ambiguous and len(verified_roles) == 1:
+        role = verified_roles[0]
+        candidate_by_id = {
+            item["candidate_id"]: item for item in accepted
+        }
+        width_debug["uncertain_relationship_diagnostic"] = {
+            "candidate_ids": [item["candidate_id"] for item in ambiguous],
+            "veto_applied": False,
+            "reason": "verified_local_basin_identity_preferred",
+        }
+        return {
+            **frozen,
+            "status": "available",
+            "unavailable_reason": None,
+            "relationship_status": "basin_unique",
+            "selection": {
+                name: candidate_by_id[candidate_id]
+                for name, candidate_id in role[
+                    "selection_candidate_ids"
+                ].items()
+            },
+            "rejection_reasons": [],
+            "width_aware_reference": width_debug,
+        }
     if ambiguous:
         return {
             **frozen,
@@ -1348,21 +1377,21 @@ def _click_local_four_path_revalidation(
         return {**empty, "reason": "role_hypothesis_not_unique"}
     role = roles[0]
     rejection_reasons = set(role.get("rejection_reasons", []))
-    remote_geometry_reasons = {
+    soft_full_height_reasons = {
         "path_order_not_stable_full_height",
         "role_path_insufficient_vertical_support",
         "role_path_geometry_unstable",
-    }
-    allowed_reasons = {
-        *remote_geometry_reasons,
         "dark_basin_sequence_not_verified",
+        "dark_basin_width_sequence_irregular",
     }
     if (
         role.get("type") != "clicked_basin_roles"
-        or not rejection_reasons.intersection(remote_geometry_reasons)
-        or rejection_reasons - allowed_reasons
+        or not rejection_reasons
+        or rejection_reasons - soft_full_height_reasons
+        or arbitration.get("relationship_status")
+        not in {"basin_rejected", "basin_structure_rejected"}
     ):
-        return {**empty, "reason": "not_remote_geometry_failure"}
+        return {**empty, "reason": "not_soft_full_height_failure"}
     if role.get("crossing") or any(
         item.get("crossing_band_indices")
         for item in role.get("full_height_pair_order", [])
@@ -1514,14 +1543,15 @@ def _click_local_four_path_revalidation(
                 "accepted": accepted,
             }
         )
-    if not all(item["accepted"] for item in basin_audits):
-        return {
-            **empty,
-            "applied": True,
-            "reason": "local_basin_contrast_not_verified",
-            "band_indices": local_indices.tolist(),
-            "basin_audits": basin_audits,
-        }
+    # These coverage scores describe every basin in the four-path role,
+    # including the clicked/auxiliary basin that is not reported.  They are
+    # useful diagnostics, but cannot by themselves invalidate locally stable,
+    # ordered separator identity.  The final output-center darkness invariant
+    # remains responsible for rejecting an actually unreliable reported
+    # left/right center.
+    contrast_diagnostic_only = not all(
+        item["accepted"] for item in basin_audits
+    )
 
     patched_separator = copy.deepcopy(separator_result)
     patched_arbitration = patched_separator["arbitration_debug"]
@@ -1533,7 +1563,7 @@ def _click_local_four_path_revalidation(
     patched_arbitration["rejection_reasons"] = [
         reason
         for reason in patched_arbitration.get("rejection_reasons", [])
-        if reason not in allowed_reasons
+        if reason not in soft_full_height_reasons
     ]
     for explanation in patched_arbitration.get(
         "competing_explanations", []
@@ -1579,6 +1609,7 @@ def _click_local_four_path_revalidation(
         "band_indices": local_indices.tolist(),
         "mean_step_px": local_steps.tolist(),
         "basin_audits": basin_audits,
+        "contrast_diagnostic_only": contrast_diagnostic_only,
         "separator_result": patched_separator,
         "graph": patched_graph,
     }

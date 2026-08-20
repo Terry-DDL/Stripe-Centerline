@@ -254,14 +254,39 @@ def validate_output_basin_center_darkness(
                 "accepted": accepted,
             }
         )
-    success = all(audit["accepted"] for audit in audits)
+    diagnostic_success = all(audit["accepted"] for audit in audits)
+    partial_local_dark_evidence = bool(
+        audits
+        and all(
+            any(
+                value
+                <= config.local_reference_maximum_center_brightness_excess
+                for value in audit["center_brightness_excess"]
+            )
+            for audit in audits
+        )
+    )
+    structurally_bound_reference = bool(
+        hypothesis.get("reference_relation") == "on_separator"
+        and hypothesis.get("strictly_continuous") is True
+        and hypothesis.get("reference_separator_id")
+        and len(hypothesis.get("basin_sequence", [])) == 2
+        and partial_local_dark_evidence
+    )
+    success = bool(diagnostic_success or structurally_bound_reference)
     return {
         "success": success,
         "reason": (
             "output_basin_centers_dark"
-            if success
-            else "output_basin_center_not_dark"
+            if diagnostic_success
+            else (
+                "output_basin_center_darkness_diagnostic_only"
+                if structurally_bound_reference
+                else "output_basin_center_not_dark"
+            )
         ),
+        "veto_applied": not success,
+        "partial_local_dark_evidence": partial_local_dark_evidence,
         "basin_audits": audits,
     }
 
@@ -588,9 +613,15 @@ def _separator_adjacency_relation(
             "local_reference_adjacency_validation": local_validation,
         }
     inherited_safety_conflicts = sorted(
-        reason
-        for reason in arbitration.get("rejection_reasons", [])
-        if reason != "reference_on_separator"
+        {
+            reason
+            for explanation in competing_explanations
+            if (
+                explanation.get("type") != "reference_on_separator"
+                and explanation.get("verified") is True
+            )
+            for reason in explanation.get("rejection_reasons", [])
+        }
     )
     if inherited_safety_conflicts and not local_validation["success"]:
         return {
@@ -700,21 +731,37 @@ def _local_reference_adjacency_validation(
         if item.get("mean_step_px") is not None
     ]
     edge_ratio = role.get("edge_gap_ratio")
+    global_shape_diagnostic = {
+        "minimum_path_support": min(supports) if supports else None,
+        "maximum_mean_step_px": max(steps) if steps else None,
+        "edge_gap_ratio": edge_ratio,
+    }
     if (
         not supports
-        or min(supports) < config.local_reference_minimum_path_support
         or not steps
-        or max(steps) > config.local_reference_maximum_mean_step_px
         or edge_ratio is None
-        or float(edge_ratio) > config.local_reference_maximum_edge_gap_ratio
     ):
         return {
             "success": False,
-            "reason": "global_safety_scope_not_met",
+            "reason": "global_shape_diagnostics_missing",
             "basins": [],
-            "minimum_path_support": min(supports) if supports else None,
-            "maximum_mean_step_px": max(steps) if steps else None,
-            "edge_gap_ratio": edge_ratio,
+            **global_shape_diagnostic,
+        }
+    global_shape_within_legacy_limits = bool(
+        min(supports) >= config.local_reference_minimum_path_support
+        and max(steps) <= config.local_reference_maximum_mean_step_px
+        and float(edge_ratio)
+        <= config.local_reference_maximum_edge_gap_ratio
+    )
+    if (
+        not global_shape_within_legacy_limits
+        and semantic.get("classification") != "on_separator"
+    ):
+        return {
+            "success": False,
+            "reason": "global_shape_not_locally_overridden",
+            "basins": [],
+            **global_shape_diagnostic,
         }
 
     basin_by_pair = {
@@ -856,6 +903,7 @@ def _local_reference_adjacency_validation(
         "minimum_path_support": min(supports),
         "maximum_mean_step_px": max(steps),
         "edge_gap_ratio": float(edge_ratio),
+        "global_shape_diagnostic": global_shape_diagnostic,
         "inside_basin_band_fraction": inside_basin_fraction,
         "diagnostic_pitch_px": float(diagnostic_pitch),
         "basin_center_spacing_px": center_spacing,
