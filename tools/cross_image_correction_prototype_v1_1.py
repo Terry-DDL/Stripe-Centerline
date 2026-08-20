@@ -1766,6 +1766,27 @@ def _recover_local_adaptive_dim_separator(
             "candidate": candidate,
         }
 
+    candidate_x = np.asarray(candidate["x_by_band_roi"], dtype=np.float64)
+    split_gaps = [
+        float(np.median(candidate_x - left_x)),
+        float(np.median(right_x - candidate_x)),
+    ]
+    pitch_tolerance = float(
+        INTERACTIVE_CONFIG.neighbor_recovery_max_pitch_error_ratio
+    )
+    minimum_split_gap = (1.0 - pitch_tolerance) * float(pitch)
+    maximum_split_gap = (1.0 + pitch_tolerance) * float(pitch)
+    if not all(
+        minimum_split_gap <= gap <= maximum_split_gap
+        for gap in split_gaps
+    ):
+        return {
+            **empty,
+            "triggered": True,
+            "reason": "adaptive_split_pitch_inconsistent",
+            "candidate": candidate,
+        }
+
     raw_directional = separator._directional_roi(  # noqa: SLF001
         raw_roi,
         direction,
