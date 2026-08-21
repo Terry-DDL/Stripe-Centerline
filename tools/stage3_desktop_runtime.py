@@ -19,6 +19,13 @@ import numpy as np
 from tools import basin_graph_joint_prototype as joint
 from tools import cross_image_correction_prototype_v1_1 as cross_image_v1_1
 from tools import separator_path_prototype as separator
+from tools.lightweight_profile import (
+    ProfileSession,
+    activate as activate_profile,
+    active_session,
+    profiled,
+    stage as profile_stage,
+)
 from config import CONFIG, INTERACTIVE_CONFIG
 from image_processing import crop_roi_global
 from interactive_pipeline import (
@@ -81,13 +88,28 @@ def run_frozen_stage3(
 ) -> dict:
     """Run frozen cross-image v1.1 with the desktop image, point, and ROI."""
 
-    return runner(
-        image_gray,
-        dict(reference_global),
-        bounds_to_dict(bounds),
-        "vertical",
-        joint.DEFAULT_CONFIG,
-    )
+    session = active_session()
+    owns_session = session is None
+    if session is None:
+        session = ProfileSession()
+
+    def run():
+        with profile_stage("stage3_algorithm_total"):
+            return runner(
+                image_gray,
+                dict(reference_global),
+                bounds_to_dict(bounds),
+                "vertical",
+                joint.DEFAULT_CONFIG,
+            )
+
+    if owns_session:
+        with activate_profile(session):
+            result = run()
+    else:
+        result = run()
+    result.setdefault("debug", {})["performance_profile"] = session.report()
+    return result
 
 
 def _pitch_provenance(stage3_result: dict) -> dict:
@@ -200,6 +222,186 @@ def _formal_geometry(
     }
 
 
+def _partial_side_geometry(
+    stage3_result: dict,
+    reference_global: dict,
+    bounds,
+) -> tuple[dict | None, dict[str, dict]]:
+    """Return independently verified output basins from one role hypothesis."""
+
+    debug = stage3_result.get("debug", {})
+    if stage3_result.get("unavailable_reason") not in {
+        "basin_structure_not_verified",
+        "path_order_conflict",
+        "separator_adjacent_dark_basins_not_verified",
+        "reference_separator_basin_safety_conflict",
+        "continuous_dark_basins_not_verified",
+        "intermediate_dark_basin_present",
+        "output_basin_center_not_dark",
+    }:
+        return None, {
+            side: {
+                "status": "unavailable",
+                "reason": stage3_result.get("unavailable_reason"),
+            }
+            for side in ("left", "right")
+        }
+    separator_result = debug.get("separator_result", {})
+    arbitration = separator_result.get("arbitration_debug", {})
+    hypotheses = arbitration.get("role_hypotheses", [])
+    side_status = {
+        side: {
+            "status": "unavailable",
+            "reason": stage3_result.get("unavailable_reason"),
+        }
+        for side in ("left", "right")
+    }
+    side_pairs = None
+    reference_relation = None
+    if len(hypotheses) == 1 and hypotheses[0].get("type") == (
+        "clicked_basin_roles"
+    ):
+        selection = hypotheses[0].get("selection_candidate_ids", {})
+        side_pairs = {
+            "left": (
+                selection.get("left_adjacent"),
+                selection.get("left_clicked_boundary"),
+            ),
+            "right": (
+                selection.get("right_clicked_boundary"),
+                selection.get("right_adjacent"),
+            ),
+        }
+        reference_relation = "inside_basin"
+    else:
+        reference_matches = [
+            item
+            for item in arbitration.get("competing_explanations", [])
+            if item.get("type") == "reference_on_separator"
+        ]
+        ordered_ids = debug.get("basin_graph", {}).get(
+            "ordered_separator_ids", []
+        )
+        if (
+            len(reference_matches) == 1
+            and reference_matches[0].get("candidate_id") in ordered_ids
+        ):
+            reference_id = reference_matches[0]["candidate_id"]
+            index = ordered_ids.index(reference_id)
+            side_pairs = {
+                "left": (
+                    ordered_ids[index - 1] if index > 0 else None,
+                    reference_id,
+                ),
+                "right": (
+                    reference_id,
+                    ordered_ids[index + 1]
+                    if index + 1 < len(ordered_ids)
+                    else None,
+                ),
+            }
+            reference_relation = "on_separator"
+    if side_pairs is None:
+        return None, side_status
+
+    candidate_by_id = {
+        candidate.get("candidate_id"): candidate
+        for candidate in separator_result.get("candidates", [])
+    }
+    basin_by_pair = {
+        (basin.get("left_separator_id"), basin.get("right_separator_id")): basin
+        for basin in debug.get("basin_graph", {}).get("basin_candidates", [])
+    }
+    center_audits = {
+        audit.get("role"): audit
+        for audit in debug.get("output_basin_center_darkness_safety", {}).get(
+            "basin_audits", []
+        )
+    }
+    unsafe_intermediate = {
+        item.get("side")
+        for item in debug.get("intermediate_dark_basin_evidence", {}).get(
+            "sides", []
+        )
+        if item.get("verified")
+    }
+
+    sides = {}
+    for side, pair in side_pairs.items():
+        if None in pair:
+            continue
+        paths = [candidate_by_id.get(candidate_id) for candidate_id in pair]
+        if any(path is None or not path.get("accepted") for path in paths):
+            side_status[side]["reason"] = "side_separator_path_unavailable"
+            continue
+        if any(
+            path.get("support_fraction", 0.0)
+            < separator.DEFAULT_CONFIG.minimum_role_path_support_fraction
+            for path in paths
+        ):
+            side_status[side]["reason"] = (
+                "role_path_insufficient_vertical_support"
+            )
+            continue
+        if any(
+            path.get("mean_step_px", math.inf)
+            > separator.DEFAULT_CONFIG.maximum_role_path_mean_step_px
+            for path in paths
+        ):
+            side_status[side]["reason"] = "role_path_geometry_unstable"
+            continue
+        basin = basin_by_pair.get(pair)
+        if basin is None or not basin.get("verified"):
+            side_status[side]["reason"] = "side_basin_not_verified"
+            continue
+        if side in unsafe_intermediate:
+            side_status[side]["reason"] = "intermediate_dark_basin_present"
+            continue
+        audit = center_audits.get(side)
+        if audit is not None and not audit.get("accepted"):
+            side_status[side]["reason"] = "output_basin_center_not_dark"
+            continue
+
+        center_roi = float(basin["center_x_at_reference_roi"])
+        center_global = bounds.x0_global + center_roi
+        distance = (
+            reference_global["x"] - center_global
+            if side == "left"
+            else center_global - reference_global["x"]
+        )
+        if distance < 0:
+            side_status[side]["reason"] = "side_geometry_wrong_side"
+            continue
+        sides[side] = {
+            "center_x_global": float(center_global),
+            "center_x_roi": center_roi,
+            "distance_to_click_px": float(distance),
+            "basin_id": basin["basin_id"],
+            "left_separator_id": basin["left_separator_id"],
+            "right_separator_id": basin["right_separator_id"],
+            "basin_width_px": float(basin["width_at_reference_px"]),
+            "evidence_status": "verified",
+        }
+        side_status[side] = {"status": "available", "reason": None}
+
+    if not sides:
+        return None, side_status
+    geometry = {
+        "reference_relation": reference_relation,
+        "left": sides.get("left"),
+        "right": sides.get("right"),
+        "stripe_spacing_px": None,
+        "atomic": False,
+        "partial": True,
+    }
+    if len(sides) == 2:
+        geometry["stripe_spacing_px"] = (
+            sides["right"]["center_x_global"]
+            - sides["left"]["center_x_global"]
+        )
+    return geometry, side_status
+
+
 def _draw_formal_overlay(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -228,6 +430,8 @@ def _draw_formal_overlay(
             ("left", (255, 0, 0)),
             ("right", (0, 255, 255)),
         ):
+            if geometry.get(side) is None:
+                continue
             center_x = float(geometry[side]["center_x_global"])
             slope_x_per_y = -math.tan(math.radians(line_angle_deg))
             top_x = center_x + slope_x_per_y * (
@@ -339,6 +543,7 @@ def _reported_basin_orientation(
     }
 
 
+@profiled("desktop_result_construction", "result_construction")
 def build_desktop_result(
     image_gray: np.ndarray,
     image_name: str,
@@ -354,9 +559,23 @@ def build_desktop_result(
         reference_global,
         bounds,
     )
-    success = geometry is not None
+    if geometry is None:
+        geometry, side_status = _partial_side_geometry(
+            stage3_result,
+            reference_global,
+            bounds,
+        )
+    else:
+        side_status = {
+            side: {"status": "available", "reason": None}
+            for side in ("left", "right")
+        }
+    left = None if geometry is None else geometry.get("left")
+    right = None if geometry is None else geometry.get("right")
+    success = left is not None or right is not None
+    bilateral_success = left is not None and right is not None
     internal_reason = stage3_result.get("unavailable_reason")
-    if stage3_result.get("success") and not success:
+    if stage3_result.get("success") and not bilateral_success:
         internal_reason = "stage3_atomic_result_contract_invalid"
     pitch = _pitch_provenance(stage3_result)
     interactive_result = {
@@ -364,6 +583,8 @@ def build_desktop_result(
         "success": success,
         "status": "available" if success else "unavailable",
         "unavailable_reason": None if success else internal_reason,
+        "bilateral_success": bilateral_success,
+        "side_status": side_status,
         "failure_reasons": (
             []
             if success
@@ -378,10 +599,10 @@ def build_desktop_result(
             ]
         ),
         "warning_flags": [],
-        "left": None if geometry is None else geometry["left"],
-        "right": None if geometry is None else geometry["right"],
+        "left": left,
+        "right": right,
         "stripe_spacing_px": (
-            None if geometry is None else geometry["stripe_spacing_px"]
+            None if geometry is None else geometry.get("stripe_spacing_px")
         ),
         "pitch_evidence": pitch,
         "pitch_guard": {
@@ -391,9 +612,14 @@ def build_desktop_result(
             "interval_pitch_ratios": [],
         },
         "adjacency_verification": {
-            "status": "verified" if success else "unavailable",
-            "reason": None if success else internal_reason,
+            "status": (
+                "verified"
+                if bilateral_success
+                else "partial" if success else "unavailable"
+            ),
+            "reason": None if bilateral_success else internal_reason,
             "source": "frozen_separator_basin_hypothesis",
+            "sides": side_status,
         },
         "geometry": geometry,
     }
@@ -422,18 +648,20 @@ def build_desktop_result(
         },
         "interactive_result": interactive_result,
     }
-    line_angle_deg = (
-        _estimate_formal_line_angle_deg(image_gray, bounds, stage3_result)
-        if geometry is not None
-        else 0.0
-    )
-    overlay = _draw_formal_overlay(
-        image_gray,
-        reference_global,
-        bounds,
-        geometry,
-        line_angle_deg,
-    )
+    with profile_stage("overlay_preparation", "overlay_visualization"):
+        line_angle_deg = (
+            _estimate_formal_line_angle_deg(image_gray, bounds, stage3_result)
+            if geometry is not None
+            else 0.0
+        )
+    with profile_stage("overlay_drawing", "overlay_visualization"):
+        overlay = _draw_formal_overlay(
+            image_gray,
+            reference_global,
+            bounds,
+            geometry,
+            line_angle_deg,
+        )
     return Stage3DesktopResult(
         click_x_global=reference_global["x"],
         click_y_global=reference_global["y"],

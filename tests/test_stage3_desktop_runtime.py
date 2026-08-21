@@ -12,9 +12,12 @@ import numpy as np
 
 from tests.test_basin_shadow_integration import (
     available_shadow_result,
+    basin,
+    separator_candidate,
     unavailable_shadow_result,
 )
 from tools import desktop_performance as performance
+from tools.lightweight_profile import ProfileSession, activate, stage
 from tools import stage3_desktop_runtime as runtime
 
 
@@ -28,6 +31,57 @@ def bounds():
 
 
 class Stage3DesktopRuntimeTests(unittest.TestCase):
+    def test_lightweight_profile_separates_nested_self_time(self):
+        session = ProfileSession()
+        with activate(session):
+            with stage("outer", "geometry_validation"):
+                with stage("inner", "preprocessing"):
+                    pass
+
+        report = session.report()
+        self.assertEqual(1, report["call_counts"]["outer"])
+        self.assertEqual(1, report["call_counts"]["inner"])
+        self.assertIn("geometry_validation", report["categories_ms"])
+        self.assertIn("preprocessing", report["categories_ms"])
+
+    def _partial_stage3_result(self, failing_side: str) -> dict:
+        stage3 = available_shadow_result()
+        stage3.update(
+            success=False,
+            status="unavailable",
+            unavailable_reason="basin_structure_not_verified",
+            final_hypothesis=None,
+        )
+        candidates = stage3["debug"]["separator_result"]["candidates"]
+        candidates.insert(0, separator_candidate("C00", [160.0] * 3))
+        for candidate in candidates:
+            candidate.update(support_fraction=1.0, mean_step_px=0.0)
+        failing_id = "C00" if failing_side == "left" else "C03"
+        next(item for item in candidates if item["candidate_id"] == failing_id)[
+            "support_fraction"
+        ] = 0.25
+        stage3["debug"]["separator_result"]["arbitration_debug"] = {
+            "role_hypotheses": [
+                {
+                    "type": "clicked_basin_roles",
+                    "selection_candidate_ids": {
+                        "left_adjacent": "C00",
+                        "left_clicked_boundary": "C01",
+                        "right_clicked_boundary": "C02",
+                        "right_adjacent": "C03",
+                    },
+                }
+            ]
+        }
+        stage3["debug"]["basin_graph"]["basin_candidates"] = [
+            basin("B_C00_C01", "C00", "C01", 160.0, 200.0),
+            basin("B_C01_C02", "C01", "C02", 200.0, 240.0),
+            basin("B_C02_C03", "C02", "C03", 240.0, 320.0),
+        ]
+        for item in stage3["debug"]["basin_graph"]["basin_candidates"]:
+            item["verified"] = True
+        return stage3
+
     def test_unreliable_rotation_cannot_diverge_from_reported_basins(self):
         stage3 = available_shadow_result()
         weak_rotation = SimpleNamespace(
@@ -201,6 +255,54 @@ class Stage3DesktopRuntimeTests(unittest.TestCase):
                 np.count_nonzero(np.all(overlay == (0, 255, 255), axis=2)),
                 0,
             )
+
+    def test_partial_left_result_keeps_left_and_marks_right_unavailable(self):
+        result = runtime.build_desktop_result(
+            np.zeros((200, 500), dtype=np.uint8),
+            "synthetic.bmp",
+            {"x": 230, "y": 100},
+            bounds(),
+            self._partial_stage3_result("right"),
+            Path("/tmp/not-written"),
+        )
+
+        interactive = result.report["interactive_result"]
+        self.assertTrue(interactive["success"])
+        self.assertFalse(interactive["bilateral_success"])
+        self.assertIsNotNone(interactive["left"])
+        self.assertIsNone(interactive["right"])
+        self.assertEqual(
+            "unavailable",
+            interactive["side_status"]["right"]["status"],
+        )
+        self.assertIsNone(interactive["stripe_spacing_px"])
+        overlay = result.debug_images[runtime.FORMAL_OVERLAY_FILENAME]
+        self.assertTrue(np.any(np.all(overlay == (255, 0, 0), axis=2)))
+        self.assertFalse(np.any(np.all(overlay == (0, 255, 255), axis=2)))
+
+    def test_partial_right_result_keeps_right_and_marks_left_unavailable(self):
+        result = runtime.build_desktop_result(
+            np.zeros((200, 500), dtype=np.uint8),
+            "synthetic.bmp",
+            {"x": 250, "y": 100},
+            bounds(),
+            self._partial_stage3_result("left"),
+            Path("/tmp/not-written"),
+        )
+
+        interactive = result.report["interactive_result"]
+        self.assertTrue(interactive["success"])
+        self.assertFalse(interactive["bilateral_success"])
+        self.assertIsNone(interactive["left"])
+        self.assertIsNotNone(interactive["right"])
+        self.assertEqual(
+            "unavailable",
+            interactive["side_status"]["left"]["status"],
+        )
+        self.assertIsNone(interactive["stripe_spacing_px"])
+        overlay = result.debug_images[runtime.FORMAL_OVERLAY_FILENAME]
+        self.assertFalse(np.any(np.all(overlay == (255, 0, 0), axis=2)))
+        self.assertTrue(np.any(np.all(overlay == (0, 255, 255), axis=2)))
 
     def test_unavailable_never_exposes_geometry_or_distance(self):
         image = np.zeros((200, 500), dtype=np.uint8)

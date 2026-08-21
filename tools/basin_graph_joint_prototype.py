@@ -22,6 +22,8 @@ import sys
 
 import numpy as np
 
+from tools.lightweight_profile import profiled, stage
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -1209,6 +1211,7 @@ def _pitch_evidence_for_geometry(
     return evidence
 
 
+@profiled("frozen_joint_pass", "geometry_validation")
 def run_joint_case(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -1218,7 +1221,8 @@ def run_joint_case(
 ) -> dict:
     """Build one immutable separator/basin/pitch hypothesis."""
 
-    dependency_checks = verify_frozen_dependencies()
+    with stage("frozen_dependency_checks", "geometry_validation"):
+        dependency_checks = verify_frozen_dependencies()
     separator_result = separator.detect_separator_paths(
         image_gray,
         reference_global,
@@ -1226,26 +1230,30 @@ def run_joint_case(
         direction,
         separator.DEFAULT_CONFIG,
     )
-    raw_roi = separator.extract_raw_roi(
-        image_gray,
-        roi_bounds_global,
-    )
-    graph = build_ordered_basin_graph(
-        separator_result,
-        raw_roi,
-        direction,
-    )
-    relation = resolve_reference_relation(
-        separator_result,
-        graph,
-    )
-    pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
-        image_gray,
-        reference_global,
-        roi_bounds_global,
-        direction,
-        raw_pitch.DEFAULT_CONFIG,
-    )
+    with stage("joint_roi_preparation", "image_roi_preparation"):
+        raw_roi = separator.extract_raw_roi(
+            image_gray,
+            roi_bounds_global,
+        )
+    with stage("ordered_basin_graph", "path_track_basin_search"):
+        graph = build_ordered_basin_graph(
+            separator_result,
+            raw_roi,
+            direction,
+        )
+    with stage("reference_relation_validation", "geometry_validation"):
+        relation = resolve_reference_relation(
+            separator_result,
+            graph,
+        )
+    with stage("raw_pitch_estimation", "pitch_estimation"):
+        pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
+            image_gray,
+            reference_global,
+            roi_bounds_global,
+            direction,
+            raw_pitch.DEFAULT_CONFIG,
+        )
     debug = {
         "separator_result": separator_result,
         "basin_graph": graph,

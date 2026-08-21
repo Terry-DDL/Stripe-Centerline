@@ -25,6 +25,8 @@ import subprocess
 import cv2
 import numpy as np
 
+from tools.lightweight_profile import profiled, stage
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATASET_VERSION = "separator_path_gt_v1"
@@ -1120,6 +1122,7 @@ def select_clicked_basin_paths(
     }
 
 
+@profiled("separator_detection_pass")
 def detect_separator_paths(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -1129,28 +1132,35 @@ def detect_separator_paths(
 ) -> dict:
     """Infer local separator paths without consulting any human paths."""
 
-    roi_gray = extract_raw_roi(image_gray, roi_bounds_global)
-    directional = _directional_roi(roi_gray, direction)
-    reference_x_roi, reference_y_roi = _directional_reference(
-        reference_global,
-        roi_bounds_global,
-        direction,
-    )
-    evidence = build_raw_gray_response(directional, config)
-    candidates = trace_separator_candidates(evidence, config)
-    v1_arbitration = _select_clicked_basin_paths_v1(
-        candidates,
-        reference_x_roi,
-        reference_y_roi,
-        config,
-    )
-    arbitration = select_clicked_basin_paths(
-        candidates,
-        reference_x_roi,
-        reference_y_roi,
-        evidence,
-        config,
-    )
+    with stage("separator_roi_preparation", "image_roi_preparation"):
+        roi_gray = extract_raw_roi(image_gray, roi_bounds_global)
+        directional = _directional_roi(roi_gray, direction)
+        reference_x_roi, reference_y_roi = _directional_reference(
+            reference_global,
+            roi_bounds_global,
+            direction,
+        )
+    with stage("raw_gray_preprocessing", "preprocessing"):
+        evidence = build_raw_gray_response(directional, config)
+    with stage(
+        "frozen_candidate_and_path_search",
+        "candidate_detection_and_path_tracking",
+    ):
+        candidates = trace_separator_candidates(evidence, config)
+    with stage("separator_role_validation", "geometry_validation"):
+        v1_arbitration = _select_clicked_basin_paths_v1(
+            candidates,
+            reference_x_roi,
+            reference_y_roi,
+            config,
+        )
+        arbitration = select_clicked_basin_paths(
+            candidates,
+            reference_x_roi,
+            reference_y_roi,
+            evidence,
+            config,
+        )
     return {
         "algorithm_revision": ALGORITHM_REVISION,
         "configuration_checksum": configuration_checksum(config),

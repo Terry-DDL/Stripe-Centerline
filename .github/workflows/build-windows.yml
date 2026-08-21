@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   build-windows:
+    if: github.ref != 'refs/heads/perf/windows-benchmark'
     runs-on: windows-latest
 
     steps:
@@ -82,4 +83,58 @@ jobs:
         with:
           name: StripeCenterline-Windows
           path: dist/StripeCenterline/
+          if-no-files-found: error
+
+  build-windows-benchmark:
+    if: github.ref == 'refs/heads/perf/windows-benchmark'
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout benchmark branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Verify fixed image and benchmark runner
+        run: |
+          python -m unittest tests.test_windows_benchmark_runner
+
+      - name: Build benchmark application
+        run: >
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --windowed
+          --onedir
+          --name StripeCenterlineBenchmark
+          --paths .
+          --paths src
+          --add-data "benchmark_assets/Stripe_10_e0_t221236602_v8p56736_retry.bmp;benchmark_assets"
+          tools/windows_benchmark_runner.py
+
+      - name: Add benchmark instructions
+        shell: pwsh
+        run: |
+          Copy-Item `
+            "docs/windows_benchmark_README.txt" `
+            "dist/StripeCenterlineBenchmark/README.txt"
+
+      - name: Show packaged files
+        shell: pwsh
+        run: Get-ChildItem -Recurse "dist/StripeCenterlineBenchmark"
+
+      - name: Upload Windows benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StripeCenterline-Windows-Benchmark
+          path: dist/StripeCenterlineBenchmark/
           if-no-files-found: error

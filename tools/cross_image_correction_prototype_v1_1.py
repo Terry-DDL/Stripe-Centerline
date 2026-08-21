@@ -33,6 +33,7 @@ from tools import raw_local_pitch_prototype_v3 as raw_pitch  # noqa: E402
 from tools import separator_path_prototype as separator  # noqa: E402
 from config import CONFIG, INTERACTIVE_CONFIG  # noqa: E402
 from interactive_pipeline import _preprocess_roi  # noqa: E402
+from tools.lightweight_profile import profiled, stage  # noqa: E402
 
 
 EXPERIMENT_START_COMMIT = (
@@ -1268,6 +1269,7 @@ def select_clicked_basin_paths_v1_1(
     return {**frozen, "width_aware_reference": width_debug}
 
 
+@profiled("centerized_separator_pass", "geometry_validation")
 def detect_centerized_separator_paths_v1_1(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -1281,45 +1283,56 @@ def detect_centerized_separator_paths_v1_1(
         direction,
         separator.DEFAULT_CONFIG,
     )
-    roi_gray = separator.extract_raw_roi(
-        image_gray,
-        roi_bounds_global,
-    )
-    directional = separator._directional_roi(  # noqa: SLF001
-        roi_gray,
-        direction,
-    )
-    evidence = separator.build_raw_gray_response(
-        directional,
-        separator.DEFAULT_CONFIG,
-    )
-    raw_candidates = v1._raw_candidates_before_dedup(evidence)  # noqa: SLF001
-    pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
-        image_gray,
-        reference_global,
-        roi_bounds_global,
-        direction,
-        raw_pitch.DEFAULT_CONFIG,
-    )
-    local_pitch = v1._local_pitch_scale(  # noqa: SLF001
-        pitch_result,
-        frozen["candidates"],
-        frozen["reference_y_roi"],
-        directional.shape[1],
-    )
-    candidates, mappings = centerize_frozen_candidates_v1_1(
-        frozen["candidates"],
-        raw_candidates,
-        evidence,
-        local_pitch,
-    )
-    arbitration = select_clicked_basin_paths_v1_1(
-        candidates,
-        frozen["reference_x_roi"],
-        frozen["reference_y_roi"],
-        evidence,
-        local_pitch,
-    )
+    with stage("centerized_roi_preparation", "image_roi_preparation"):
+        roi_gray = separator.extract_raw_roi(
+            image_gray,
+            roi_bounds_global,
+        )
+        directional = separator._directional_roi(  # noqa: SLF001
+            roi_gray,
+            direction,
+        )
+    with stage("centerized_raw_preprocessing", "preprocessing"):
+        evidence = separator.build_raw_gray_response(
+            directional,
+            separator.DEFAULT_CONFIG,
+        )
+    with stage(
+        "raw_candidate_trace_generation",
+        "candidate_detection_and_path_tracking",
+    ):
+        raw_candidates = v1._raw_candidates_before_dedup(  # noqa: SLF001
+            evidence
+        )
+    with stage("centerized_pitch_estimation", "pitch_estimation"):
+        pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
+            image_gray,
+            reference_global,
+            roi_bounds_global,
+            direction,
+            raw_pitch.DEFAULT_CONFIG,
+        )
+    with stage("candidate_centerization", "path_track_basin_search"):
+        local_pitch = v1._local_pitch_scale(  # noqa: SLF001
+            pitch_result,
+            frozen["candidates"],
+            frozen["reference_y_roi"],
+            directional.shape[1],
+        )
+        candidates, mappings = centerize_frozen_candidates_v1_1(
+            frozen["candidates"],
+            raw_candidates,
+            evidence,
+            local_pitch,
+        )
+    with stage("centerized_role_validation", "geometry_validation"):
+        arbitration = select_clicked_basin_paths_v1_1(
+            candidates,
+            frozen["reference_x_roi"],
+            frozen["reference_y_roi"],
+            evidence,
+            local_pitch,
+        )
     return {
         **frozen,
         "algorithm_revision": ALGORITHM_REVISION,
@@ -1870,6 +1883,7 @@ def _recover_local_adaptive_dim_separator(
     }
 
 
+@profiled("cross_image_joint_pass", "geometry_validation")
 def _run_joint_case_v1_1_once(
     image_gray: np.ndarray,
     reference_global: dict,
@@ -1893,27 +1907,31 @@ def _run_joint_case_v1_1_once(
         roi_bounds_global,
         direction,
     )
-    raw_roi = separator.extract_raw_roi(
-        image_gray,
-        roi_bounds_global,
-    )
-    graph = joint.build_ordered_basin_graph(
-        separator_result,
-        raw_roi,
-        direction,
-    )
-    pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
-        image_gray,
-        reference_global,
-        roi_bounds_global,
-        direction,
-        raw_pitch.DEFAULT_CONFIG,
-    )
-    relation = joint.resolve_reference_relation(
-        separator_result,
-        graph,
-        pitch_result,
-    )
+    with stage("cross_image_roi_preparation", "image_roi_preparation"):
+        raw_roi = separator.extract_raw_roi(
+            image_gray,
+            roi_bounds_global,
+        )
+    with stage("cross_image_basin_graph", "path_track_basin_search"):
+        graph = joint.build_ordered_basin_graph(
+            separator_result,
+            raw_roi,
+            direction,
+        )
+    with stage("cross_image_pitch_estimation", "pitch_estimation"):
+        pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
+            image_gray,
+            reference_global,
+            roi_bounds_global,
+            direction,
+            raw_pitch.DEFAULT_CONFIG,
+        )
+    with stage("cross_image_relation_validation", "geometry_validation"):
+        relation = joint.resolve_reference_relation(
+            separator_result,
+            graph,
+            pitch_result,
+        )
     debug = {
         "separator_result": separator_result,
         "basin_graph": graph,
@@ -2243,6 +2261,7 @@ def _run_joint_case_v1_1_once(
     }
 
 
+@profiled("cross_image_v1_1_total")
 def run_joint_case_v1_1(
     image_gray: np.ndarray,
     reference_global: dict,
