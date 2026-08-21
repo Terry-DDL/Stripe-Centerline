@@ -1870,13 +1870,15 @@ def _recover_local_adaptive_dim_separator(
     }
 
 
-def run_joint_case_v1_1(
+def _run_joint_case_v1_1_once(
     image_gray: np.ndarray,
     reference_global: dict,
     roi_bounds_global: dict,
     direction: str = "vertical",
+    *,
+    enable_adaptive_recovery: bool = True,
 ) -> dict:
-    """Run the frozen joint chain with v1.1 separator semantics."""
+    """Run one joint-chain pass with optional adaptive recovery."""
 
     frozen_result = FROZEN_RUN_JOINT_CASE(
         image_gray,
@@ -1952,14 +1954,23 @@ def run_joint_case_v1_1(
                     "source_rejections"
                 ],
             }
-    adaptive_dim_recovery = _recover_local_adaptive_dim_separator(
-        image_gray,
-        roi_bounds_global,
-        direction,
-        separator_result,
-        relation,
-        pitch_result,
-    )
+    if enable_adaptive_recovery:
+        adaptive_dim_recovery = _recover_local_adaptive_dim_separator(
+            image_gray,
+            roi_bounds_global,
+            direction,
+            separator_result,
+            relation,
+            pitch_result,
+        )
+    else:
+        adaptive_dim_recovery = {
+            "triggered": False,
+            "success": False,
+            "reason": "disabled_for_baseline_fallback",
+            "separator_result": separator_result,
+            "candidate": None,
+        }
     debug["adaptive_local_dim_separator_recovery"] = {
         key: value
         for key, value in adaptive_dim_recovery.items()
@@ -2230,6 +2241,48 @@ def run_joint_case_v1_1(
         "unavailable_reason": None,
         "final_hypothesis": hypothesis,
     }
+
+
+def run_joint_case_v1_1(
+    image_gray: np.ndarray,
+    reference_global: dict,
+    roi_bounds_global: dict,
+    direction: str = "vertical",
+) -> dict:
+    """Prefer a fully validated recovery, otherwise retain a prior success."""
+
+    recovered_result = _run_joint_case_v1_1_once(
+        image_gray,
+        reference_global,
+        roi_bounds_global,
+        direction,
+        enable_adaptive_recovery=True,
+    )
+    recovery = recovered_result.get("debug", {}).get(
+        "adaptive_local_dim_separator_recovery",
+        {},
+    )
+    if recovered_result.get("success") or not recovery.get("success"):
+        return recovered_result
+
+    baseline_result = _run_joint_case_v1_1_once(
+        image_gray,
+        reference_global,
+        roi_bounds_global,
+        direction,
+        enable_adaptive_recovery=False,
+    )
+    if not baseline_result.get("success"):
+        return recovered_result
+
+    baseline_result["debug"]["adaptive_local_dim_separator_recovery"] = {
+        **recovery,
+        "fallback_to_baseline_success": True,
+        "recovered_unavailable_reason": recovered_result.get(
+            "unavailable_reason"
+        ),
+    }
+    return baseline_result
 
 
 def _raw_dark_valleys_in_interval(
