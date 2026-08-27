@@ -220,6 +220,7 @@ class Stage3DesktopRuntimeTests(unittest.TestCase):
 
             interactive = result.report["interactive_result"]
             self.assertTrue(interactive["success"])
+            self.assertTrue(interactive["bilateral_success"])
             self.assertEqual(240.0, interactive["left"]["center_x_global"])
             self.assertEqual(300.0, interactive["right"]["center_x_global"])
             self.assertEqual(30.0, interactive["left"]["distance_to_click_px"])
@@ -317,8 +318,17 @@ class Stage3DesktopRuntimeTests(unittest.TestCase):
 
         interactive = result.report["interactive_result"]
         self.assertFalse(interactive["success"])
+        self.assertFalse(interactive["bilateral_success"])
         self.assertIsNone(interactive["left"])
         self.assertIsNone(interactive["right"])
+        self.assertEqual(
+            "unavailable",
+            interactive["side_status"]["left"]["status"],
+        )
+        self.assertEqual(
+            "unavailable",
+            interactive["side_status"]["right"]["status"],
+        )
         self.assertIsNone(interactive["stripe_spacing_px"])
         self.assertIsNone(interactive["geometry"])
         self.assertIn(runtime.UNAVAILABLE_REASON, interactive["failure_reasons"])

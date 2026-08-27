@@ -451,6 +451,23 @@ class DesktopAppHelperTests(unittest.TestCase):
         self.assertEqual("verified", rows[0]["evidence_status"])
         self.assertEqual(40.0, rows[0]["basin_width_px"])
         self.assertEqual("", rows[1]["center_x_global"])
+        self.assertEqual("unavailable", rows[1]["evidence_status"])
+
+    def test_partial_result_metrics_keep_available_side(self):
+        values = result_metric_values(
+            {"x_global": 230, "y_global": 100},
+            {
+                "success": True,
+                "left": {"distance_to_click_px": 30.0},
+                "right": None,
+                "stripe_spacing_px": None,
+                "pitch_guard": {"status": "Not applicable"},
+            },
+        )
+
+        self.assertEqual("30 px", values[1][1])
+        self.assertEqual("unavailable", values[2][1])
+        self.assertEqual("unavailable", values[3][1])
 
     def test_pitch_reference_is_built_once_per_image(self):
         calls = []

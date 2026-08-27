@@ -599,7 +599,7 @@ def basin_table_rows(result_report: dict) -> list[dict]:
                     "center_x_global": "",
                     "distance_to_click_px": "",
                     "basin_width_px": "",
-                    "evidence_status": "",
+                    "evidence_status": "unavailable",
                 }
             )
         else:
@@ -1889,6 +1889,18 @@ class StripeDesktopApp:
         interactive_result = report["interactive_result"]
         click = report["click"]
         success = interactive_result["success"]
+        bilateral_success = interactive_result.get(
+            "bilateral_success",
+            bool(
+                interactive_result.get("left") is not None
+                and interactive_result.get("right") is not None
+            ),
+        )
+        available_sides = [
+            side
+            for side in ("left", "right")
+            if interactive_result.get(side) is not None
+        ]
         stage3_formal = (
             report.get("result_source") == STAGE3_RESULT_SOURCE
         )
@@ -1900,11 +1912,15 @@ class StripeDesktopApp:
             header,
             text=(
                 "Detection successful"
-                if success
+                if bilateral_success
                 else (
-                    "Unable to determine reliably"
-                    if stage3_formal
-                    else "Detection failed"
+                    f"Partial detection — {available_sides[0].capitalize()} available"
+                    if success
+                    else (
+                        "Unable to determine reliably"
+                        if stage3_formal
+                        else "Detection failed"
+                    )
                 )
             ),
             style="Title.TLabel",
@@ -1967,6 +1983,22 @@ class StripeDesktopApp:
             if not flag.startswith("whole_image_pitch_")
         ]
         notes = []
+        if success and not bilateral_success:
+            unavailable_side = (
+                "right" if available_sides == ["left"] else "left"
+            )
+            side_details = interactive_result.get("side_status", {}).get(
+                unavailable_side, {}
+            )
+            side_reason = side_details.get("reason")
+            notes.append(
+                f"{unavailable_side.capitalize()} side unavailable."
+                + (
+                    " Diagnostic reason: " + side_reason.replace("_", " ")
+                    if side_reason
+                    else ""
+                )
+            )
         if not success:
             failure_reasons = interactive_result["failure_reasons"]
             if stage3_formal:
