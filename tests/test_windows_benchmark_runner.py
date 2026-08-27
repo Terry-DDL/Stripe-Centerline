@@ -10,6 +10,14 @@ from tools import windows_benchmark_runner as benchmark
 
 
 class WindowsBenchmarkRunnerTests(unittest.TestCase):
+    def test_system_information_records_opencv_runtime_details(self):
+        information = benchmark.system_information()
+
+        self.assertIsInstance(information["opencv_num_threads"], int)
+        self.assertIsInstance(information["opencv_use_optimized"], bool)
+        self.assertTrue(information["opencv_build_information"])
+        self.assertIsInstance(information["opencv_build_summary"], list)
+
     def test_fixed_asset_is_exact_mac_benchmark_image(self):
         image, info = benchmark.load_fixed_image(
             benchmark.bundled_image_path()

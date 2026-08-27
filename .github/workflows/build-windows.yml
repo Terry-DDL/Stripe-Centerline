@@ -96,17 +96,27 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.11.9"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-windows-benchmark.txt
           python -m pip install pyinstaller
+
+      - name: Record shared benchmark build identity
+        shell: pwsh
+        run: |
+          @{
+            source_revision = "${{ github.sha }}"
+            python_version = $(python -c "import platform; print(platform.python_version())")
+            numpy_version = $(python -c "import numpy; print(numpy.__version__)")
+            opencv_version = $(python -c "import cv2; print(cv2.__version__)")
+          } | ConvertTo-Json | Set-Content -Encoding UTF8 "benchmark_build_info.json"
 
       - name: Verify fixed image and benchmark runner
         run: |
-          python -m unittest tests.test_windows_benchmark_runner
+          python -m unittest tests.test_windows_benchmark_runner tests.test_compare_windows_benchmarks
 
       - name: Build benchmark application
         run: >
@@ -119,11 +129,21 @@ jobs:
           --paths .
           --paths src
           --add-data "benchmark_assets/Stripe_10_e0_t221236602_v8p56736_retry.bmp;benchmark_assets"
+          --add-data "benchmark_build_info.json;."
           tools/windows_benchmark_runner.py
 
-      - name: Add benchmark instructions
+      - name: Add A/B source bundle and instructions
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force -Path "dist/StripeCenterlineBenchmark/source/src" | Out-Null
+          New-Item -ItemType Directory -Force -Path "dist/StripeCenterlineBenchmark/source/tools" | Out-Null
+          New-Item -ItemType Directory -Force -Path "dist/StripeCenterlineBenchmark/source/benchmark_assets" | Out-Null
+          Copy-Item "src/*.py" "dist/StripeCenterlineBenchmark/source/src/"
+          Copy-Item "tools/*.py" "dist/StripeCenterlineBenchmark/source/tools/"
+          Copy-Item "benchmark_assets/Stripe_10_e0_t221236602_v8p56736_retry.bmp" "dist/StripeCenterlineBenchmark/source/benchmark_assets/"
+          Copy-Item "requirements-windows-benchmark.txt" "dist/StripeCenterlineBenchmark/source/"
+          Copy-Item "benchmark_build_info.json" "dist/StripeCenterlineBenchmark/source/"
+          Copy-Item "run_windows_ab_benchmark.bat" "dist/StripeCenterlineBenchmark/"
           Copy-Item `
             "docs/windows_benchmark_README.txt" `
             "dist/StripeCenterlineBenchmark/README.txt"

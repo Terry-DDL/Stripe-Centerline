@@ -59,6 +59,7 @@ RESULTS_DIRECTORY_NAME = "benchmark_results"
 RESULTS_FILENAME = "benchmark_results.json"
 SUMMARY_FILENAME = "benchmark_summary.txt"
 ERROR_FILENAME = "benchmark_error.log"
+BUILD_INFO_FILENAME = "benchmark_build_info.json"
 
 PROFILE_STAGES = (
     "image_roi_preparation",
@@ -298,6 +299,7 @@ def system_information() -> dict:
     """Collect dependency-free platform details plus bundled runtime versions."""
 
     uname = platform.uname()
+    opencv_build_information = cv2.getBuildInformation()
     return {
         "platform": platform.platform(),
         "system": uname.system,
@@ -305,6 +307,11 @@ def system_information() -> dict:
         "version": uname.version,
         "machine": uname.machine,
         "processor": platform.processor(),
+        "processor_identifier": os.environ.get("PROCESSOR_IDENTIFIER", ""),
+        "processor_architecture": os.environ.get(
+            "PROCESSOR_ARCHITECTURE",
+            "",
+        ),
         "cpu_count": os.cpu_count(),
         "python_version": platform.python_version(),
         "python_implementation": platform.python_implementation(),
@@ -313,12 +320,63 @@ def system_information() -> dict:
         "frozen": bool(getattr(sys, "frozen", False)),
         "opencv_version": cv2.__version__,
         "numpy_version": np.__version__,
+        "opencv_num_threads": int(cv2.getNumThreads()),
+        "opencv_use_optimized": bool(cv2.useOptimized()),
+        "opencv_build_summary": _opencv_build_summary(
+            opencv_build_information
+        ),
+        "opencv_build_information": opencv_build_information,
+        "benchmark_build": _benchmark_build_information(),
     }
 
 
+def _opencv_build_summary(build_information: str) -> list[str]:
+    """Extract CPU/SIMD and parallel-runtime lines for quick comparison."""
+
+    lines = build_information.splitlines()
+    selected = []
+    in_cpu_section = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("CPU/HW features:"):
+            in_cpu_section = True
+        elif in_cpu_section and not stripped:
+            in_cpu_section = False
+        if in_cpu_section or any(
+            label in stripped
+            for label in (
+                "Parallel framework:",
+                "Intel IPP:",
+                "Intel IPP IW:",
+                "OpenCL:",
+            )
+        ):
+            selected.append(stripped)
+    return selected
+
+
+def _benchmark_build_information() -> dict | None:
+    """Read the artifact revision shared by the EXE and source bundle."""
+
+    path = PROJECT_ROOT / BUILD_INFO_FILENAME
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
 def build_summary_text(payload: dict) -> str:
+    system = payload["system"]
     lines = [
         "Stripe Centerline Windows fixed-point benchmark",
+        "",
+        f"Mode: {'frozen EXE' if system['frozen'] else 'Python source'}",
+        f"Python: {system['python_version']}",
+        f"NumPy: {system['numpy_version']}",
+        f"OpenCV: {system['opencv_version']}",
+        f"OpenCV threads: {system['opencv_num_threads']}",
+        f"OpenCV optimized: {system['opencv_use_optimized']}",
+        f"Platform: {system['platform']}",
+        f"CPU: {system['processor_identifier'] or system['processor']}",
         "",
     ]
     for run in payload["runs"]:

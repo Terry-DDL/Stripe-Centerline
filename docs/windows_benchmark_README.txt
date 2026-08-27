@@ -1,13 +1,21 @@
-Stripe Centerline Windows 性能 Benchmark
+Stripe Centerline Windows EXE vs Python A/B Benchmark
 
-1. 请先完整解压 StripeCenterline-Windows-Benchmark artifact。
-2. 不要移动或删除 _internal 文件夹。
-3. 双击 StripeCenterlineBenchmark.exe。
-4. 程序会自动对固定图片、固定 ROI 和固定 reference point 连续运行 5 次。
-5. 完成后会显示提示框。
-6. 请把 benchmark_results 文件夹中的 benchmark_results.json 发回。
+准备：
+1. 安装 python.org 的 64-bit Python 3.11.9（勾选 Python Launcher）。
+2. 完整解压 StripeCenterline-Windows-Benchmark artifact。
+3. 不要移动或删除 _internal、source 或其他文件。
 
-不需要选择图片、点击参考点或输入参数。
+运行：
+1. 双击 run_windows_ab_benchmark.bat。
+2. 首次运行会自动建立隔离环境并安装锁定版本的 NumPy/OpenCV。
+3. 脚本会依次执行 EXE 5 次和 Python 源码 5 次。
+4. 两边都使用固定图片、固定点 (775,427)、固定 ROI 和相同计时定义。
+5. 完成后结果位于 windows_ab_results 文件夹。
 
-如运行失败，请把 benchmark_results 文件夹中的 benchmark_error.log 和
-benchmark_results.json 一并发回。
+请发回整个 windows_ab_results 文件夹，至少应包含：
+- frozen_exe/benchmark_results.json
+- python_source/benchmark_results.json
+- ab_summary.json
+- ab_summary.txt
+
+如失败，请同时提供命令窗口截图。无需选择图片、点击参考点或输入参数。
