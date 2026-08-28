@@ -336,6 +336,38 @@ class Stage3DesktopRuntimeTests(unittest.TestCase):
         self.assertFalse(np.any(np.all(overlay == (255, 0, 0), axis=2)))
         self.assertFalse(np.any(np.all(overlay == (0, 255, 255), axis=2)))
 
+    def test_report_and_overlay_can_be_persisted_separately(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_dir = Path(temporary_directory)
+            result = runtime.build_desktop_result(
+                np.zeros((200, 500), dtype=np.uint8),
+                "synthetic.bmp",
+                {"x": 270, "y": 100},
+                bounds(),
+                available_shadow_result(),
+                output_dir,
+            )
+
+            runtime.persist_formal_report(result)
+
+            report_path = output_dir / runtime.FORMAL_REPORT_FILENAME
+            overlay_path = output_dir / runtime.FORMAL_OVERLAY_FILENAME
+            self.assertTrue(report_path.is_file())
+            self.assertFalse(overlay_path.exists())
+
+            runtime.persist_formal_overlay(
+                result,
+                temporary_token="test-run",
+            )
+
+            self.assertTrue(overlay_path.is_file())
+            saved_overlay = cv2.imread(str(overlay_path), cv2.IMREAD_COLOR)
+            np.testing.assert_array_equal(
+                result.debug_images[runtime.FORMAL_OVERLAY_FILENAME],
+                saved_overlay,
+            )
+            self.assertEqual([], list(output_dir.glob("*.tmp.png")))
+
     def test_non_atomic_success_is_converted_to_safe_unavailable(self):
         image = np.zeros((200, 500), dtype=np.uint8)
         stage3 = available_shadow_result()

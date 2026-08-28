@@ -85,6 +85,7 @@ def update_timing(
         "stage3_error",
         "legacy_diagnostic_error",
         "result_write_error",
+        "overlay_write_ms",
     }
     if unknown:
         raise ValueError(f"unknown timing fields: {sorted(unknown)}")

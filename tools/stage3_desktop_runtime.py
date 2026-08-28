@@ -673,28 +673,51 @@ def build_desktop_result(
     )
 
 
-def persist_formal_result(result: Stage3DesktopResult) -> None:
-    """Atomically save only the formal Stage 3.1 report and final overlay."""
+def persist_formal_report(result: Stage3DesktopResult) -> None:
+    """Atomically save the formal Stage 3.1 JSON report."""
 
-    result.output_dir.mkdir(parents=True, exist_ok=True)
-    report_path = result.output_dir / FORMAL_REPORT_FILENAME
-    temporary_report = report_path.with_suffix(".json.tmp")
-    temporary_report.write_text(
-        json.dumps(result.report, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    temporary_report.replace(report_path)
-
-    overlay_path = result.output_dir / FORMAL_OVERLAY_FILENAME
-    temporary_overlay = overlay_path.with_name(
-        f"{overlay_path.stem}.tmp{overlay_path.suffix}"
-    )
-    if not cv2.imwrite(
-        str(temporary_overlay),
-        result.debug_images[FORMAL_OVERLAY_FILENAME],
+    with profile_stage(
+        "formal_report_json_serialization_and_write",
+        "post_analysis_json_write",
     ):
-        raise OSError(
-            f"could not write Stage 3.1 formal overlay: "
-            f"{temporary_overlay}"
+        result.output_dir.mkdir(parents=True, exist_ok=True)
+        report_path = result.output_dir / FORMAL_REPORT_FILENAME
+        temporary_report = report_path.with_suffix(".json.tmp")
+        temporary_report.write_text(
+            json.dumps(result.report, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
         )
-    temporary_overlay.replace(overlay_path)
+        temporary_report.replace(report_path)
+
+
+def persist_formal_overlay(
+    result: Stage3DesktopResult,
+    temporary_token: str | None = None,
+) -> None:
+    """Atomically save the already-built full-image formal overlay."""
+
+    with profile_stage(
+        "formal_overlay_image_encode_and_write",
+        "post_analysis_overlay_write",
+    ):
+        overlay_path = result.output_dir / FORMAL_OVERLAY_FILENAME
+        token = f".{temporary_token}" if temporary_token else ""
+        temporary_overlay = overlay_path.with_name(
+            f"{overlay_path.stem}{token}.tmp{overlay_path.suffix}"
+        )
+        if not cv2.imwrite(
+            str(temporary_overlay),
+            result.debug_images[FORMAL_OVERLAY_FILENAME],
+        ):
+            raise OSError(
+                f"could not write Stage 3.1 formal overlay: "
+                f"{temporary_overlay}"
+            )
+        temporary_overlay.replace(overlay_path)
+
+
+def persist_formal_result(result: Stage3DesktopResult) -> None:
+    """Atomically save the formal report and full-image overlay."""
+
+    persist_formal_report(result)
+    persist_formal_overlay(result)

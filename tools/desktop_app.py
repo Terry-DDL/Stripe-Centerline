@@ -1,6 +1,7 @@
 """Tkinter desktop UI for interactive single-image stripe analysis."""
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 import hashlib
 import math
@@ -47,7 +48,8 @@ from tools.desktop_performance import (  # noqa: E402
 from tools.stage3_desktop_runtime import (  # noqa: E402
     RESULT_SOURCE as STAGE3_RESULT_SOURCE,
     build_desktop_result,
-    persist_formal_result,
+    persist_formal_overlay,
+    persist_formal_report,
     run_frozen_stage3,
 )
 
@@ -943,6 +945,11 @@ class StripeDesktopApp:
         self.analysis_queue = queue.Queue()
         self.analysis_running = False
         self.active_analysis_run_id = None
+        self.overlay_write_executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="stripe-overlay-writer",
+        )
+        self.overlay_write_futures = []
         self.pitch_reference_cache = {}
         self.pitch_reference_lock = threading.Lock()
 
@@ -1526,7 +1533,7 @@ class StripeDesktopApp:
             phase = "result_write"
             write_started_ns = time.perf_counter_ns()
             try:
-                persist_formal_result(result)
+                persist_formal_report(result)
             finally:
                 result_write_ms = elapsed_ms(
                     write_started_ns,
@@ -1759,6 +1766,52 @@ class StripeDesktopApp:
                 file=sys.stderr,
             )
 
+    def _persist_overlay_worker(
+        self,
+        result,
+        run_id: str,
+        metadata: dict,
+    ) -> float | None:
+        """Write one captured result overlay without touching Tk state."""
+
+        started_ns = time.perf_counter_ns()
+        try:
+            persist_formal_overlay(result, temporary_token=run_id)
+        except Exception as overlay_error:
+            if sys.stderr is not None:
+                print(
+                    "Overlay persistence failed: "
+                    f"{type(overlay_error).__name__}: {overlay_error}",
+                    file=sys.stderr,
+                )
+            return None
+        overlay_write_ms = elapsed_ms(
+            started_ns,
+            time.perf_counter_ns(),
+        )
+        self._record_performance(
+            result.output_dir,
+            run_id,
+            metadata,
+            {"overlay_write_ms": overlay_write_ms},
+        )
+        return overlay_write_ms
+
+    def _schedule_overlay_persistence(
+        self,
+        completion: AnalysisCompletion,
+    ):
+        """Queue overlay persistence only after the result is displayed."""
+
+        future = self.overlay_write_executor.submit(
+            self._persist_overlay_worker,
+            completion.result,
+            completion.run_id,
+            dict(completion.performance_metadata),
+        )
+        self.overlay_write_futures.append(future)
+        return future
+
     def _poll_analysis(self) -> None:
         try:
             completion = self.analysis_queue.get_nowait()
@@ -1814,6 +1867,7 @@ class StripeDesktopApp:
         )
         self.root.update_idletasks()
         displayed_ns = time.perf_counter_ns()
+        self._schedule_overlay_persistence(completion)
         total_ms = elapsed_ms(
             completion.click_started_ns,
             displayed_ns,
