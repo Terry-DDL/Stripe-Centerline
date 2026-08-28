@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -11,6 +12,30 @@ from tools import cross_image_correction_prototype_v1_1 as prototype
 
 
 class CrossImageCorrectionV11Tests(unittest.TestCase):
+    def test_basin_graph_reuse_key_uses_only_graph_inputs(self):
+        first = {
+            "reference_y_roi": 10.0,
+            "candidates": [
+                {
+                    "candidate_id": "C01",
+                    "accepted": True,
+                    "band_centers_y_roi": [5.0, 15.0],
+                    "x_by_band_roi": [20.0, 21.0],
+                    "plateau_centerization": {"adopted": False},
+                }
+            ],
+        }
+        second = copy.deepcopy(first)
+        second["candidates"][0]["plateau_centerization"] = {
+            "adopted": False,
+            "diagnostic": "different metadata",
+        }
+
+        self.assertTrue(prototype._basin_graph_inputs_match(first, second))
+
+        second["candidates"][0]["x_by_band_roi"][1] = 22.0
+        self.assertFalse(prototype._basin_graph_inputs_match(first, second))
+
     def synthetic_plateau(self):
         band_count = 12
         width = 100
@@ -509,17 +534,23 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
                 }
             ],
         }
+        frozen_separator_result = {"source": "already_computed"}
         with (
             patch.object(
                 prototype,
                 "FROZEN_RUN_JOINT_CASE",
-                return_value={"success": True},
+                return_value={
+                    "success": True,
+                    "debug": {
+                        "separator_result": frozen_separator_result,
+                    },
+                },
             ),
             patch.object(
                 prototype,
                 "detect_centerized_separator_paths_v1_1",
                 return_value=separator_result,
-            ),
+            ) as detect_centerized,
             patch.object(
                 prototype.joint,
                 "build_ordered_basin_graph",
@@ -558,6 +589,12 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
             )
 
         self.assertFalse(result["success"])
+        self.assertIs(
+            detect_centerized.call_args.kwargs[
+                "frozen_separator_result"
+            ],
+            frozen_separator_result,
+        )
         self.assertEqual(result["status"], "unavailable")
         self.assertEqual(
             result["unavailable_reason"],

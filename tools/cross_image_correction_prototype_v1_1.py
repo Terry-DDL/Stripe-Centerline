@@ -1275,13 +1275,19 @@ def detect_centerized_separator_paths_v1_1(
     reference_global: dict,
     roi_bounds_global: dict,
     direction: str = "vertical",
+    *,
+    frozen_separator_result: dict | None = None,
 ) -> dict:
-    frozen = FROZEN_DETECT_SEPARATOR_PATHS(
-        image_gray,
-        reference_global,
-        roi_bounds_global,
-        direction,
-        separator.DEFAULT_CONFIG,
+    frozen = (
+        frozen_separator_result
+        if frozen_separator_result is not None
+        else FROZEN_DETECT_SEPARATOR_PATHS(
+            image_gray,
+            reference_global,
+            roi_bounds_global,
+            direction,
+            separator.DEFAULT_CONFIG,
+        )
     )
     with stage("centerized_roi_preparation", "image_roi_preparation"):
         roi_gray = separator.extract_raw_roi(
@@ -1883,6 +1889,40 @@ def _recover_local_adaptive_dim_separator(
     }
 
 
+def _basin_graph_input_key(separator_result: dict) -> tuple:
+    """Return exactly the separator fields read by basin graph construction."""
+
+    return (
+        separator_result["reference_y_roi"],
+        tuple(
+            (
+                path["candidate_id"],
+                tuple(path["band_centers_y_roi"]),
+                tuple(path["x_by_band_roi"]),
+                bool(path.get("adaptive_local_recovery")),
+            )
+            for path in separator_result["candidates"]
+            if path["accepted"]
+        ),
+    )
+
+
+def _basin_graph_inputs_match(
+    first: dict | None,
+    second: dict | None,
+) -> bool:
+    """Return whether two separator results produce the same basin graph."""
+
+    if first is None or second is None:
+        return False
+    try:
+        return _basin_graph_input_key(first) == _basin_graph_input_key(
+            second
+        )
+    except (KeyError, TypeError):
+        return False
+
+
 @profiled("cross_image_joint_pass", "geometry_validation")
 def _run_joint_case_v1_1_once(
     image_gray: np.ndarray,
@@ -1901,11 +1941,15 @@ def _run_joint_case_v1_1_once(
         direction,
         joint.DEFAULT_CONFIG,
     )
+    frozen_separator_result = frozen_result.get("debug", {}).get(
+        "separator_result"
+    )
     separator_result = detect_centerized_separator_paths_v1_1(
         image_gray,
         reference_global,
         roi_bounds_global,
         direction,
+        frozen_separator_result=frozen_separator_result,
     )
     with stage("cross_image_roi_preparation", "image_roi_preparation"):
         raw_roi = separator.extract_raw_roi(
@@ -1913,11 +1957,20 @@ def _run_joint_case_v1_1_once(
             roi_bounds_global,
         )
     with stage("cross_image_basin_graph", "path_track_basin_search"):
-        graph = joint.build_ordered_basin_graph(
+        frozen_debug = frozen_result.get("debug", {})
+        frozen_separator = frozen_debug.get("separator_result")
+        frozen_graph = frozen_debug.get("basin_graph")
+        if _basin_graph_inputs_match(
+            frozen_separator,
             separator_result,
-            raw_roi,
-            direction,
-        )
+        ) and frozen_graph is not None:
+            graph = copy.deepcopy(frozen_graph)
+        else:
+            graph = joint.build_ordered_basin_graph(
+                separator_result,
+                raw_roi,
+                direction,
+            )
     with stage("cross_image_pitch_estimation", "pitch_estimation"):
         pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
             image_gray,
