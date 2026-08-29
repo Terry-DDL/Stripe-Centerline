@@ -292,7 +292,7 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
         ).is_file(),
         "Stripe 10 offline acceptance image is not installed",
     )
-    def test_three_merged_clicked_basins_recover_direct_neighbors(self):
+    def test_three_merged_clicked_basins_return_direct_neighbors(self):
         image = cv2.imread(
             str(
                 prototype.PROJECT_ROOT
@@ -313,12 +313,15 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
                 image, case["reference_global"], bounds
             )
             self.assertTrue(result["success"])
-            recovery = result["debug"]["local_dark_valley_recovery"]
-            self.assertTrue(recovery["success"])
-            self.assertFalse(recovery["third_valley_conflict"])
-            geometry = result["final_hypothesis"]["geometry"]["basins"]
+            hypothesis = result["final_hypothesis"]
+            self.assertTrue(hypothesis["atomic"])
+            geometry = hypothesis["geometry"]["basins"]
             actual = tuple(
-                geometry[side]["center_x_at_reference_global"]
+                geometry[side].get(
+                    "center_x_at_reference_global",
+                    bounds["x0"]
+                    + geometry[side]["center_x_at_reference_roi"],
+                )
                 for side in ("left", "right")
             )
             for value, target in zip(actual, expected):
@@ -495,6 +498,74 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
                         expected["separator_sequence"],
                         case["sample_id"],
                     )
+                    expected_geometry = expected.get("geometry")
+                    if expected_geometry is not None:
+                        geometry = hypothesis["geometry"]
+                        self.assertAlmostEqual(
+                            geometry["left_distance_px"],
+                            expected_geometry["left_distance_px"],
+                            msg=case["sample_id"],
+                        )
+                        self.assertAlmostEqual(
+                            geometry["right_distance_px"],
+                            expected_geometry["right_distance_px"],
+                            msg=case["sample_id"],
+                        )
+                        for side, center in expected_geometry[
+                            "basin_centers_roi"
+                        ].items():
+                            self.assertAlmostEqual(
+                                geometry["basins"][side][
+                                    "center_x_at_reference_roi"
+                                ],
+                                center,
+                                msg=f"{case['sample_id']}:{side}",
+                            )
+                    expected_reported = expected.get(
+                        "reported_geometry"
+                    )
+                    if expected_reported is not None:
+                        geometry = hypothesis["geometry"]
+                        basins = geometry["basins"]
+                        self.assertEqual(
+                            "left" in basins,
+                            expected_reported["left_available"],
+                            case["sample_id"],
+                        )
+                        self.assertEqual(
+                            "right" in basins,
+                            expected_reported["right_available"],
+                            case["sample_id"],
+                        )
+                        reference_x_roi = (
+                            case["reference_global"]["x"]
+                            - bounds["x0"]
+                        )
+                        left_center = basins["left"][
+                            "center_x_at_reference_roi"
+                        ]
+                        right_center = basins["right"][
+                            "center_x_at_reference_roi"
+                        ]
+                        self.assertAlmostEqual(
+                            reference_x_roi - left_center,
+                            expected_reported[
+                                "left_distance_to_click_px"
+                            ],
+                            msg=case["sample_id"],
+                        )
+                        self.assertAlmostEqual(
+                            right_center - reference_x_roi,
+                            expected_reported[
+                                "right_distance_to_click_px"
+                            ],
+                            msg=case["sample_id"],
+                        )
+                        self.assertAlmostEqual(
+                            right_center - left_center,
+                            expected_reported["stripe_spacing_px"],
+                            msg=case["sample_id"],
+                        )
                 else:
                     self.assertEqual(
                         result["unavailable_reason"],

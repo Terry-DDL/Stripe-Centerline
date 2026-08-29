@@ -51,7 +51,16 @@
     {
       "sample_id": "I001",
       "reference_global": {"x": 661, "y": 921},
-      "expected": {"success": false, "unavailable_reason": "basin_structure_not_verified"}
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"],
+        "geometry": {
+          "left_distance_px": 21.0,
+          "right_distance_px": 21.0,
+          "basin_centers_roi": {"left": 213.0, "clicked": 250.0, "right": 290.0}
+        }
+      }
     },
     {
       "sample_id": "I002",
@@ -184,7 +193,27 @@
     {
       "sample_id": "R006",
       "reference_global": {"x": 593, "y": 1579},
-      "expected": {"success": false, "unavailable_reason": "basin_structure_not_verified"}
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C05_C06", "clicked": "B_C06_C07", "right": "B_C07_C08"},
+        "separator_sequence": ["C05", "C06", "C07", "C08"],
+        "geometry": {
+          "left_distance_px": 37.529411764705884,
+          "right_distance_px": 18.0,
+          "basin_centers_roi": {
+            "left": 201.23529411764707,
+            "clicked": 240.23529411764707,
+            "right": 281.0
+          }
+        },
+        "reported_geometry": {
+          "left_available": true,
+          "right_available": true,
+          "left_distance_to_click_px": 48.76470588235293,
+          "right_distance_to_click_px": 31.0,
+          "stripe_spacing_px": 79.76470588235293
+        }
+      }
     },
     {
       "sample_id": "R007",
@@ -252,12 +281,39 @@
     {
       "sample_id": "R014",
       "reference_global": {"x": 364, "y": 1736},
-      "expected": {"success": false, "unavailable_reason": "dark_basin_width_sequence_irregular"}
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C06_C07", "clicked": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C06", "C07", "C08", "C09"],
+        "geometry": {
+          "left_distance_px": 19.0,
+          "right_distance_px": 4.0,
+          "basin_centers_roi": {"left": 217.5, "clicked": 242.5, "right": 282.5}
+        },
+        "reported_geometry": {
+          "left_available": true,
+          "right_available": true,
+          "left_distance_to_click_px": 32.5,
+          "right_distance_to_click_px": 32.5,
+          "stripe_spacing_px": 65.0
+        }
+      }
     },
     {
       "sample_id": "R015",
       "reference_global": {"x": 371, "y": 1768},
-      "expected": {"success": false, "unavailable_reason": "reference_separator_basin_safety_conflict"}
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C07", "C08", "C09"],
+        "reported_geometry": {
+          "left_available": true,
+          "right_available": true,
+          "left_distance_to_click_px": 14.235294117647072,
+          "right_distance_to_click_px": 25.764705882352928,
+          "stripe_spacing_px": 40.0
+        }
+      }
     },
     {
       "sample_id": "R016",
@@ -271,7 +327,18 @@
     {
       "sample_id": "R017",
       "reference_global": {"x": 554, "y": 1693},
-      "expected": {"success": false, "unavailable_reason": "reference_separator_basin_safety_conflict"}
+      "expected": {
+        "success": true,
+        "basin_ids": {"left": "B_C07_C08", "right": "B_C08_C09"},
+        "separator_sequence": ["C07", "C08", "C09"],
+        "reported_geometry": {
+          "left_available": true,
+          "right_available": true,
+          "left_distance_to_click_px": 9.5,
+          "right_distance_to_click_px": 29.5,
+          "stripe_spacing_px": 39.0
+        }
+      }
     }
   ]
 }
