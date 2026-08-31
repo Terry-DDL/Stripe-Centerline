@@ -12,6 +12,30 @@ from tools import cross_image_correction_prototype_v1_1 as prototype
 
 
 class CrossImageCorrectionV11Tests(unittest.TestCase):
+    def test_reused_pitch_result_is_deep_copied(self):
+        frozen = {
+            "diagnostic_pitch_px": 40.0,
+            "nested": {"values": [1, 2, 3]},
+        }
+        with patch.object(
+            prototype.raw_pitch,
+            "estimate_raw_local_pitch_v3",
+        ) as estimate:
+            reused = prototype._reuse_or_estimate_pitch_result(
+                frozen,
+                np.zeros((4, 4), dtype=np.uint8),
+                {"x": 2, "y": 2},
+                {"x0": 0, "y0": 0, "x1": 4, "y1": 4},
+                "vertical",
+            )
+
+        estimate.assert_not_called()
+        self.assertEqual(frozen, reused)
+        self.assertIsNot(frozen, reused)
+        self.assertIsNot(frozen["nested"], reused["nested"])
+        reused["nested"]["values"].append(4)
+        self.assertEqual([1, 2, 3], frozen["nested"]["values"])
+
     def test_basin_graph_reuse_key_uses_only_graph_inputs(self):
         first = {
             "reference_y_roi": 10.0,
@@ -614,6 +638,7 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
                     "success": True,
                     "debug": {
                         "separator_result": frozen_separator_result,
+                        "raw_pitch_result": pitch_result,
                     },
                 },
             ),
@@ -636,7 +661,7 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
                 prototype.raw_pitch,
                 "estimate_raw_local_pitch_v3",
                 return_value=pitch_result,
-            ),
+            ) as estimate_pitch,
             patch.object(
                 prototype.joint,
                 "_basin_geometry",
@@ -666,6 +691,13 @@ class CrossImageCorrectionV11Tests(unittest.TestCase):
             ],
             frozen_separator_result,
         )
+        self.assertIs(
+            detect_centerized.call_args.kwargs["frozen_pitch_result"],
+            pitch_result,
+        )
+        estimate_pitch.assert_not_called()
+        self.assertEqual(result["debug"]["raw_pitch_result"], pitch_result)
+        self.assertIsNot(result["debug"]["raw_pitch_result"], pitch_result)
         self.assertEqual(result["status"], "unavailable")
         self.assertEqual(
             result["unavailable_reason"],

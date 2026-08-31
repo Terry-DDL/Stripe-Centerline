@@ -1277,6 +1277,7 @@ def detect_centerized_separator_paths_v1_1(
     direction: str = "vertical",
     *,
     frozen_separator_result: dict | None = None,
+    frozen_pitch_result: dict | None = None,
 ) -> dict:
     frozen = (
         frozen_separator_result
@@ -1311,12 +1312,12 @@ def detect_centerized_separator_paths_v1_1(
             evidence
         )
     with stage("centerized_pitch_estimation", "pitch_estimation"):
-        pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
+        pitch_result = _reuse_or_estimate_pitch_result(
+            frozen_pitch_result,
             image_gray,
             reference_global,
             roi_bounds_global,
             direction,
-            raw_pitch.DEFAULT_CONFIG,
         )
     with stage("candidate_centerization", "path_track_basin_search"):
         local_pitch = v1._local_pitch_scale(  # noqa: SLF001
@@ -1923,6 +1924,26 @@ def _basin_graph_inputs_match(
         return False
 
 
+def _reuse_or_estimate_pitch_result(
+    frozen_pitch_result: dict | None,
+    image_gray: np.ndarray,
+    reference_global: dict,
+    roi_bounds_global: dict,
+    direction: str,
+) -> dict:
+    """Return an isolated copy of the same-request frozen pitch result."""
+
+    if frozen_pitch_result is not None:
+        return copy.deepcopy(frozen_pitch_result)
+    return raw_pitch.estimate_raw_local_pitch_v3(
+        image_gray,
+        reference_global,
+        roi_bounds_global,
+        direction,
+        raw_pitch.DEFAULT_CONFIG,
+    )
+
+
 @profiled("cross_image_joint_pass", "geometry_validation")
 def _run_joint_case_v1_1_once(
     image_gray: np.ndarray,
@@ -1941,15 +1962,18 @@ def _run_joint_case_v1_1_once(
         direction,
         joint.DEFAULT_CONFIG,
     )
-    frozen_separator_result = frozen_result.get("debug", {}).get(
+    frozen_debug = frozen_result.get("debug", {})
+    frozen_separator_result = frozen_debug.get(
         "separator_result"
     )
+    frozen_pitch_result = frozen_debug.get("raw_pitch_result")
     separator_result = detect_centerized_separator_paths_v1_1(
         image_gray,
         reference_global,
         roi_bounds_global,
         direction,
         frozen_separator_result=frozen_separator_result,
+        frozen_pitch_result=frozen_pitch_result,
     )
     with stage("cross_image_roi_preparation", "image_roi_preparation"):
         raw_roi = separator.extract_raw_roi(
@@ -1957,7 +1981,6 @@ def _run_joint_case_v1_1_once(
             roi_bounds_global,
         )
     with stage("cross_image_basin_graph", "path_track_basin_search"):
-        frozen_debug = frozen_result.get("debug", {})
         frozen_separator = frozen_debug.get("separator_result")
         frozen_graph = frozen_debug.get("basin_graph")
         if _basin_graph_inputs_match(
@@ -1972,12 +1995,12 @@ def _run_joint_case_v1_1_once(
                 direction,
             )
     with stage("cross_image_pitch_estimation", "pitch_estimation"):
-        pitch_result = raw_pitch.estimate_raw_local_pitch_v3(
+        pitch_result = _reuse_or_estimate_pitch_result(
+            frozen_pitch_result,
             image_gray,
             reference_global,
             roi_bounds_global,
             direction,
-            raw_pitch.DEFAULT_CONFIG,
         )
     with stage("cross_image_relation_validation", "geometry_validation"):
         relation = joint.resolve_reference_relation(
