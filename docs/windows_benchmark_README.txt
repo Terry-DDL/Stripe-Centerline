@@ -8,7 +8,7 @@ Stripe Centerline Windows EXE vs Python A/B Benchmark
 运行：
 1. 双击 run_windows_ab_benchmark.bat。
 2. 首次运行会自动建立隔离环境并安装锁定版本的 NumPy/OpenCV。
-3. 脚本会依次执行 EXE 5 次和 Python 源码 5 次。
+3. 脚本会依次执行 EXE 和 Python 源码，各 1 次 warm-up + 10 次 measured。
 4. 两边都使用固定图片、固定点 (775,427)、固定 ROI 和相同计时定义。
 5. 完成后结果位于 windows_ab_results 文件夹。
 

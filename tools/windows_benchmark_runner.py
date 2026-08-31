@@ -279,11 +279,12 @@ def run_once(
 
 
 def summarize_warm_runs(runs: list[dict]) -> dict:
-    """Return median/min/max for every required stage over runs 2–5."""
+    """Return median/min/max for every required stage after warm-up."""
 
     warm_runs = [run for run in runs if run["run_kind"] == "warm"]
-    if len(warm_runs) != RUN_COUNT - 1:
-        raise ValueError(f"expected {RUN_COUNT - 1} warm runs")
+    expected_warm_runs = len(runs) - 1
+    if len(warm_runs) != expected_warm_runs:
+        raise ValueError(f"expected {expected_warm_runs} warm runs")
     summary = {}
     for stage in PROFILE_STAGES:
         values = [float(run["timings_ms"][stage]) for run in warm_runs]
@@ -380,10 +381,14 @@ def build_summary_text(payload: dict) -> str:
         "",
     ]
     for run in payload["runs"]:
-        lines.append(
-            f"Run {run['run_number']} Analysis: "
-            f"{run['timings_ms']['analysis_total']:.3f} ms"
+        run_label = (
+            "warm-up" if run["run_kind"] == "cold" else "measured"
         )
+        lines.append(f"Run {run['run_number']} ({run_label})")
+        for stage in PROFILE_STAGES:
+            label = SUMMARY_LABELS[stage]
+            value = run["timings_ms"][stage]
+            lines.append(f"  {label}: {value:.3f} ms")
     lines.extend(
         [
             "",
@@ -410,8 +415,15 @@ def build_summary_text(payload: dict) -> str:
     return "\n".join(lines)
 
 
-def run_benchmark(image_path: Path, results_dir: Path) -> dict:
-    """Execute five fixed runs in one process and persist both reports."""
+def run_benchmark(
+    image_path: Path,
+    results_dir: Path,
+    run_count: int = RUN_COUNT,
+) -> dict:
+    """Execute fixed runs in one process and persist both reports."""
+
+    if run_count < 2:
+        raise ValueError("run count must include warm-up and measured runs")
 
     results_dir.mkdir(parents=True, exist_ok=True)
     image_load_started = time.perf_counter()
@@ -423,7 +435,7 @@ def run_benchmark(image_path: Path, results_dir: Path) -> dict:
     formal_output_dir = results_dir / "formal_output"
     runs = [
         run_once(image_gray, formal_output_dir, run_number)
-        for run_number in range(1, RUN_COUNT + 1)
+        for run_number in range(1, run_count + 1)
     ]
     signatures = [run["detection_state_sha256"] for run in runs]
     payload = {
@@ -443,7 +455,7 @@ def run_benchmark(image_path: Path, results_dir: Path) -> dict:
                 "x1": EXPECTED_ROI[2],
                 "y1": EXPECTED_ROI[3],
             },
-            "run_count": RUN_COUNT,
+            "run_count": run_count,
             "same_process": True,
             "image_loaded_once": True,
         },
@@ -479,6 +491,12 @@ def parse_arguments(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-dialog", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--output-dir", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--run-count",
+        type=int,
+        default=RUN_COUNT,
+        help=argparse.SUPPRESS,
+    )
     return parser.parse_args(argv)
 
 
@@ -486,7 +504,11 @@ def main(argv=None) -> int:
     arguments = parse_arguments(argv)
     results_dir = arguments.output_dir or default_results_directory()
     try:
-        payload = run_benchmark(bundled_image_path(), results_dir)
+        payload = run_benchmark(
+            bundled_image_path(),
+            results_dir,
+            arguments.run_count,
+        )
     except Exception as error:
         results_dir.mkdir(parents=True, exist_ok=True)
         error_text = traceback.format_exc()
@@ -513,7 +535,8 @@ def main(argv=None) -> int:
     if not arguments.no_dialog:
         _show_message(
             "Benchmark complete",
-            "Five benchmark runs completed. Results were saved to:\n"
+            f"{arguments.run_count} benchmark runs completed. "
+            "Results were saved to:\n"
             f"{results_dir}\n\n"
             f"Results consistent: {payload['results_consistent']}",
         )

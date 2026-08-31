@@ -129,7 +129,7 @@ jobs:
           --paths src
           --add-data "benchmark_assets/Stripe_10_e0_t221236602_v8p56736_retry.bmp;benchmark_assets"
           --add-data "benchmark_build_info.json;."
-          tools/windows_benchmark_runner.py
+          tools/windows_benchmark_10_measured.py
 
       - name: Add A/B source bundle and instructions
         shell: pwsh
