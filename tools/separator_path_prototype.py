@@ -15,6 +15,7 @@ Run the complete development evaluation with:
 from __future__ import annotations
 
 import argparse
+import copy
 import csv
 from dataclasses import asdict, dataclass
 import hashlib
@@ -514,6 +515,129 @@ def _profile_positions_share_bright_ridge(
     valley_level = float(np.percentile(profile[x0 : x1 + 1], 10))
     valley_ratio = (valley_level - dark_level) / denominator
     return valley_ratio >= config.same_ridge_valley_ratio
+
+
+RAW_SEED_TRACE_REUSE_KEY = "_raw_seed_trace_reuse"
+
+
+def _trace_raw_separator_candidates(
+    evidence: dict,
+    config: SeparatorPathConfig = DEFAULT_CONFIG,
+) -> list[dict]:
+    """Trace raw-gray separator hypotheses before deduplication."""
+
+    traced = [
+        _trace_one_seed(seed, evidence, config)
+        for seed in _seed_peaks(
+            evidence["aggregate_response"],
+            config,
+        )
+    ]
+    traced.sort(
+        key=lambda path: (
+            not path["accepted"],
+            -path["path_score"],
+            path["seed_x_roi"],
+        )
+    )
+    return traced
+
+
+def _deduplicate_traced_candidates(
+    raw_candidates: list[dict],
+    evidence: dict,
+    config: SeparatorPathConfig = DEFAULT_CONFIG,
+) -> list[dict]:
+    """Deduplicate an isolated copy of raw separator hypotheses."""
+
+    traced = copy.deepcopy(raw_candidates)
+    unique = []
+    for path in traced:
+        duplicate = next(
+            (
+                existing
+                for existing in unique
+                if _paths_are_duplicates(
+                    path,
+                    existing,
+                    evidence,
+                    config,
+                    config.duplicate_path_distance_px,
+                )
+            ),
+            None,
+        )
+        if duplicate is None:
+            path["suppressed_candidates"] = []
+            unique.append(path)
+        else:
+            duplicate["suppressed_candidates"].append(
+                {
+                    "seed_x_roi": path["seed_x_roi"],
+                    "path_score": path["path_score"],
+                    "reason": "same_physical_bright_ridge",
+                }
+            )
+    unique.sort(key=lambda path: path["seed_x_roi"])
+    for candidate_id, path in enumerate(unique, start=1):
+        path["candidate_id"] = f"C{candidate_id:02d}"
+    return unique
+
+
+def _raw_seed_trace_reuse_payload(
+    raw_candidates: list[dict],
+    evidence: dict,
+    config: SeparatorPathConfig,
+) -> dict:
+    """Capture exact trace inputs and an isolated raw-candidate snapshot."""
+
+    return {
+        "input_key": _raw_seed_trace_input_key(evidence, config),
+        "raw_candidates": copy.deepcopy(raw_candidates),
+    }
+
+
+def _raw_seed_trace_input_key(
+    evidence: dict,
+    config: SeparatorPathConfig = DEFAULT_CONFIG,
+) -> dict:
+    """Return a stable fingerprint of every seed-tracing input."""
+
+    arrays = {}
+    for name in (
+        "band_centers_y",
+        "responses",
+        "aggregate_response",
+    ):
+        value = np.ascontiguousarray(evidence[name])
+        arrays[name] = {
+            "dtype": value.dtype.str,
+            "shape": list(value.shape),
+            "sha256": hashlib.sha256(value.tobytes()).hexdigest(),
+        }
+    return {
+        "configuration_checksum": configuration_checksum(config),
+        "arrays": arrays,
+    }
+
+
+def raw_seed_trace_reuse_inputs_match(
+    payload: dict | None,
+    evidence: dict,
+    config: SeparatorPathConfig = DEFAULT_CONFIG,
+) -> bool:
+    """Return whether every seed-tracing input is exactly identical."""
+
+    if not isinstance(payload, dict):
+        return False
+    try:
+        return (
+            payload["input_key"]
+            == _raw_seed_trace_input_key(evidence, config)
+            and isinstance(payload["raw_candidates"], list)
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
 
 
 def trace_separator_candidates(
@@ -1146,7 +1270,12 @@ def detect_separator_paths(
         "frozen_candidate_and_path_search",
         "candidate_detection_and_path_tracking",
     ):
-        candidates = trace_separator_candidates(evidence, config)
+        raw_candidates = _trace_raw_separator_candidates(evidence, config)
+        candidates = _deduplicate_traced_candidates(
+            raw_candidates,
+            evidence,
+            config,
+        )
     with stage("separator_role_validation", "geometry_validation"):
         v1_arbitration = _select_clicked_basin_paths_v1(
             candidates,
@@ -1188,6 +1317,11 @@ def detect_separator_paths(
             "crossing": v1_arbitration["crossing"],
         },
         "candidates": candidates,
+        RAW_SEED_TRACE_REUSE_KEY: _raw_seed_trace_reuse_payload(
+            raw_candidates,
+            evidence,
+            config,
+        ),
         "raw_gray_evidence": {
             "band_centers_y_roi": evidence[
                 "band_centers_y"

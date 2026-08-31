@@ -1308,8 +1308,9 @@ def detect_centerized_separator_paths_v1_1(
         "raw_candidate_trace_generation",
         "candidate_detection_and_path_tracking",
     ):
-        raw_candidates = v1._raw_candidates_before_dedup(  # noqa: SLF001
-            evidence
+        raw_candidates = _reuse_or_trace_raw_candidates(
+            frozen,
+            evidence,
         )
     with stage("centerized_pitch_estimation", "pitch_estimation"):
         pitch_result = _reuse_or_estimate_pitch_result(
@@ -1341,7 +1342,11 @@ def detect_centerized_separator_paths_v1_1(
             local_pitch,
         )
     return {
-        **frozen,
+        **{
+            key: value
+            for key, value in frozen.items()
+            if key != separator.RAW_SEED_TRACE_REUSE_KEY
+        },
         "algorithm_revision": ALGORITHM_REVISION,
         "configuration_checksum": configuration_checksum(),
         "status": arbitration["status"],
@@ -1942,6 +1947,27 @@ def _reuse_or_estimate_pitch_result(
         direction,
         raw_pitch.DEFAULT_CONFIG,
     )
+
+
+def _reuse_or_trace_raw_candidates(
+    frozen_separator_result: dict,
+    evidence: dict,
+) -> list[dict]:
+    """Reuse isolated raw traces only when every trace input is identical."""
+
+    payload = frozen_separator_result.get(
+        separator.RAW_SEED_TRACE_REUSE_KEY
+    )
+    if not separator.raw_seed_trace_reuse_inputs_match(
+        payload,
+        evidence,
+        separator.DEFAULT_CONFIG,
+    ):
+        return v1._raw_candidates_before_dedup(evidence)  # noqa: SLF001
+    raw_candidates = copy.deepcopy(payload["raw_candidates"])
+    for index, path in enumerate(raw_candidates, start=1):
+        path["raw_candidate_id"] = f"R{index:02d}"
+    return raw_candidates
 
 
 @profiled("cross_image_joint_pass", "geometry_validation")
