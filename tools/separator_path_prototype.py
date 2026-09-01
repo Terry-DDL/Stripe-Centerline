@@ -115,6 +115,35 @@ class SeparatorPathConfig:
 DEFAULT_CONFIG = SeparatorPathConfig()
 
 
+@dataclass(frozen=True)
+class BasinBandPercentileStatistics:
+    """Immutable percentile scalars for one exact basin/profile band."""
+
+    band_index: int
+    x0: int
+    x1: int
+    interior_start: int
+    interior_stop: int
+    local_start: int
+    local_stop: int
+    interior_p40: float
+    local_p90: np.floating
+    local_p10: np.floating
+
+
+@dataclass(frozen=True)
+class BasinPercentileStatistics:
+    """Identity guard plus immutable per-band basin percentile scalars."""
+
+    left_candidate_id: str | None
+    right_candidate_id: str | None
+    left_x_by_band: tuple[int, ...]
+    right_x_by_band: tuple[int, ...]
+    profiles_identity: int
+    profile_count: int
+    bands: tuple[BasinBandPercentileStatistics | None, ...]
+
+
 def canonical_configuration(config: SeparatorPathConfig) -> dict:
     return {
         "algorithm_revision": ALGORITHM_REVISION,
@@ -852,36 +881,55 @@ def _dark_basin_evidence(
     right: dict,
     evidence: dict,
     config: SeparatorPathConfig,
-) -> dict:
+    *,
+    capture_percentile_statistics: bool = False,
+) -> dict | tuple[dict, BasinPercentileStatistics]:
     left_x = np.rint(left["x_by_band_roi"]).astype(int)
     right_x = np.rint(right["x_by_band_roi"]).astype(int)
     contrast_by_band = []
+    percentile_statistics = []
     for band_index, (left_value, right_value) in enumerate(
         zip(left_x, right_x)
     ):
         x0, x1 = sorted((int(left_value), int(right_value)))
         if x1 - x0 < 3:
             contrast_by_band.append(-1.0)
+            percentile_statistics.append(None)
             continue
         profile = evidence["profiles"][band_index]
-        interior = profile[x0 + 1 : x1]
-        local = profile[
-            max(0, x0 - 5) : min(profile.size, x1 + 6)
-        ]
+        interior_start = x0 + 1
+        interior_stop = x1
+        local_start = max(0, x0 - 5)
+        local_stop = min(profile.size, x1 + 6)
+        interior = profile[interior_start:interior_stop]
+        local = profile[local_start:local_stop]
         boundary_level = min(
             float(profile[x0]),
             float(profile[x1]),
         )
         interior_level = float(np.percentile(interior, 40))
+        local_p90 = np.percentile(local, 90)
+        local_p10 = np.percentile(local, 10)
         scale = max(
-            float(
-                np.percentile(local, 90)
-                - np.percentile(local, 10)
-            ),
+            float(local_p90 - local_p10),
             8.0,
         )
         contrast_by_band.append(
             (boundary_level - interior_level) / scale
+        )
+        percentile_statistics.append(
+            BasinBandPercentileStatistics(
+                band_index=band_index,
+                x0=x0,
+                x1=x1,
+                interior_start=interior_start,
+                interior_stop=interior_stop,
+                local_start=local_start,
+                local_stop=local_stop,
+                interior_p40=interior_level,
+                local_p90=local_p90,
+                local_p10=local_p10,
+            )
         )
     contrast = np.asarray(contrast_by_band, dtype=np.float64)
     stable_fraction = float(
@@ -892,7 +940,7 @@ def _dark_basin_evidence(
         stable_fraction >= config.minimum_dark_basin_band_fraction
         and median_contrast >= config.minimum_dark_basin_contrast
     )
-    return {
+    result = {
         "left_candidate_id": left["candidate_id"],
         "right_candidate_id": right["candidate_id"],
         "normalized_contrast_by_band": contrast.tolist(),
@@ -900,6 +948,17 @@ def _dark_basin_evidence(
         "stable_band_fraction": stable_fraction,
         "verified": verified,
     }
+    if not capture_percentile_statistics:
+        return result
+    return result, BasinPercentileStatistics(
+        left_candidate_id=left.get("candidate_id"),
+        right_candidate_id=right.get("candidate_id"),
+        left_x_by_band=tuple(int(value) for value in left_x),
+        right_x_by_band=tuple(int(value) for value in right_x),
+        profiles_identity=id(evidence["profiles"]),
+        profile_count=len(evidence["profiles"]),
+        bands=tuple(percentile_statistics),
+    )
 
 
 def _evaluate_role_hypothesis(

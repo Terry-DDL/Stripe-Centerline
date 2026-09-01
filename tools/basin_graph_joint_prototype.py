@@ -155,11 +155,28 @@ def _basin_center_darkness_evidence(
     left: dict,
     right: dict,
     evidence: dict,
+    percentile_statistics: separator.BasinPercentileStatistics | None = None,
 ) -> dict:
     """Measure whether the geometric basin center is an internal bright ridge."""
 
     left_x = np.rint(left["x_by_band_roi"]).astype(int)
     right_x = np.rint(right["x_by_band_roi"]).astype(int)
+    statistics_match = bool(
+        percentile_statistics is not None
+        and percentile_statistics.left_candidate_id
+        == left.get("candidate_id")
+        and percentile_statistics.right_candidate_id
+        == right.get("candidate_id")
+        and percentile_statistics.left_x_by_band
+        == tuple(int(value) for value in left_x)
+        and percentile_statistics.right_x_by_band
+        == tuple(int(value) for value in right_x)
+        and percentile_statistics.profiles_identity
+        == id(evidence["profiles"])
+        and percentile_statistics.profile_count
+        == len(evidence["profiles"])
+        and len(percentile_statistics.bands) == len(left_x)
+    )
     excess_by_band = []
     for band_index, (left_value, right_value) in enumerate(
         zip(left_x, right_x)
@@ -178,12 +195,32 @@ def _basin_center_darkness_evidence(
             max(0, x0 - 5) : min(profile.size, x1 + 6)
         ]
         center_level = float(np.median(center_window))
-        robust_dark_level = float(np.percentile(interior, 40))
+        band_statistics = (
+            percentile_statistics.bands[band_index]
+            if statistics_match
+            else None
+        )
+        band_statistics_match = bool(
+            band_statistics is not None
+            and band_statistics.band_index == band_index
+            and band_statistics.x0 == x0
+            and band_statistics.x1 == x1
+            and band_statistics.interior_start == x0 + 1
+            and band_statistics.interior_stop == x1
+            and band_statistics.local_start == max(0, x0 - 5)
+            and band_statistics.local_stop
+            == min(profile.size, x1 + 6)
+        )
+        if band_statistics_match:
+            robust_dark_level = band_statistics.interior_p40
+            local_p90 = band_statistics.local_p90
+            local_p10 = band_statistics.local_p10
+        else:
+            robust_dark_level = float(np.percentile(interior, 40))
+            local_p90 = np.percentile(local, 90)
+            local_p10 = np.percentile(local, 10)
         scale = max(
-            float(
-                np.percentile(local, 90)
-                - np.percentile(local, 10)
-            ),
+            float(local_p90 - local_p10),
             8.0,
         )
         excess_by_band.append(
@@ -377,16 +414,18 @@ def _make_basin_node(
         right,
         separator.DEFAULT_CONFIG,
     )
-    dark_evidence = separator._dark_basin_evidence(
+    dark_evidence, percentile_statistics = separator._dark_basin_evidence(
         left,
         right,
         evidence,
         separator.DEFAULT_CONFIG,
+        capture_percentile_statistics=True,
     )
     center_darkness_evidence = _basin_center_darkness_evidence(
         left,
         right,
         evidence,
+        percentile_statistics,
     )
     adaptive_evidence = _adaptive_boundary_basin_evidence(
         left,

@@ -101,6 +101,65 @@ class BasinGraphJointPrototypeTests(unittest.TestCase):
             )
         )
 
+    def test_basin_center_darkness_reuses_only_exact_percentile_statistics(self):
+        left = {
+            "candidate_id": "C01",
+            "x_by_band_roi": [2.0, 2.0, 2.0],
+        }
+        right = {
+            "candidate_id": "C02",
+            "x_by_band_roi": [8.0, 8.0, 8.0],
+        }
+        profiles = np.full((3, 12), 20.0)
+        profiles[:, 2] = 200.0
+        profiles[:, 8] = 200.0
+        evidence = {"profiles": profiles}
+        _dark, statistics = separator._dark_basin_evidence(  # noqa: SLF001
+            left,
+            right,
+            evidence,
+            separator.DEFAULT_CONFIG,
+            capture_percentile_statistics=True,
+        )
+        expected = joint._basin_center_darkness_evidence(  # noqa: SLF001
+            left,
+            right,
+            evidence,
+        )
+
+        original_percentile = np.percentile
+        with mock.patch.object(
+            joint.np,
+            "percentile",
+            wraps=original_percentile,
+        ) as percentile:
+            actual = joint._basin_center_darkness_evidence(  # noqa: SLF001
+                left,
+                right,
+                evidence,
+                statistics,
+            )
+        self.assertEqual(expected, actual)
+        self.assertEqual(0, percentile.call_count)
+        self.assertIsInstance(statistics.bands, tuple)
+        with self.assertRaises(AttributeError):
+            statistics.left_candidate_id = "changed"
+
+        copied_evidence = {"profiles": profiles.copy()}
+        with mock.patch.object(
+            joint.np,
+            "percentile",
+            wraps=original_percentile,
+        ) as percentile:
+            fallback = joint._basin_center_darkness_evidence(  # noqa: SLF001
+                left,
+                right,
+                copied_evidence,
+                statistics,
+            )
+        self.assertEqual(expected, fallback)
+        self.assertEqual(9, percentile.call_count)
+
     def test_output_center_darkness_checks_only_reported_basins(self):
         def basin(basin_id: str, values: list[float]) -> dict:
             return {
