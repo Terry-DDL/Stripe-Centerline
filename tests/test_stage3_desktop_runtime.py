@@ -17,8 +17,11 @@ from tests.test_basin_shadow_integration import (
     unavailable_shadow_result,
 )
 from tools import desktop_performance as performance
+from tools.desktop_app import calculate_interactive_roi_bounds
 from tools.lightweight_profile import ProfileSession, activate, stage
 from tools import stage3_desktop_runtime as runtime
+from tools.windows_benchmark_runner import bundled_image_path
+from config import INTERACTIVE_CONFIG
 
 
 def bounds():
@@ -31,6 +34,37 @@ def bounds():
 
 
 class Stage3DesktopRuntimeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.fixed_image = cv2.imread(
+            str(bundled_image_path()),
+            cv2.IMREAD_GRAYSCALE,
+        )
+        if cls.fixed_image is None:
+            raise RuntimeError("fixed benchmark image could not be decoded")
+
+    def _fixed_result(self, click_x: int, click_y: int):
+        fixed_bounds = calculate_interactive_roi_bounds(
+            self.fixed_image.shape,
+            click_x,
+            click_y,
+            INTERACTIVE_CONFIG,
+        )
+        reference = {"x": click_x, "y": click_y}
+        stage3 = runtime.run_frozen_stage3(
+            self.fixed_image,
+            reference,
+            fixed_bounds,
+        )
+        return runtime.build_desktop_result(
+            self.fixed_image,
+            "fixed-benchmark.bmp",
+            reference,
+            fixed_bounds,
+            stage3,
+            Path("/tmp/not-written"),
+        )
+
     def test_lightweight_profile_separates_nested_self_time(self):
         session = ProfileSession()
         with activate(session):
@@ -304,6 +338,99 @@ class Stage3DesktopRuntimeTests(unittest.TestCase):
         overlay = result.debug_images[runtime.FORMAL_OVERLAY_FILENAME]
         self.assertFalse(np.any(np.all(overlay == (255, 0, 0), axis=2)))
         self.assertTrue(np.any(np.all(overlay == (0, 255, 255), axis=2)))
+
+    def test_left_image_edge_keeps_only_verified_right_side(self):
+        result = self._fixed_result(5, 427)
+        interactive = result.report["interactive_result"]
+
+        self.assertTrue(interactive["success"])
+        self.assertFalse(interactive["bilateral_success"])
+        self.assertIsNone(interactive["left"])
+        self.assertEqual("B_C01_C02", interactive["right"]["basin_id"])
+        self.assertEqual(20.0, interactive["right"]["center_x_global"])
+        self.assertEqual(15.0, interactive["right"]["distance_to_click_px"])
+        self.assertIsNone(interactive["stripe_spacing_px"])
+
+    def test_right_image_edge_keeps_only_verified_left_side(self):
+        result = self._fixed_result(2446, 427)
+        interactive = result.report["interactive_result"]
+
+        self.assertTrue(interactive["success"])
+        self.assertFalse(interactive["bilateral_success"])
+        self.assertEqual("B_C15_C16", interactive["left"]["basin_id"])
+        self.assertEqual(2437.0, interactive["left"]["center_x_global"])
+        self.assertEqual(9.0, interactive["left"]["distance_to_click_px"])
+        self.assertIsNone(interactive["right"])
+        self.assertIsNone(interactive["stripe_spacing_px"])
+
+    def test_edge_side_failing_center_darkness_remains_unavailable(self):
+        result = self._fixed_result(20, 1500)
+        interactive = result.report["interactive_result"]
+
+        self.assertFalse(interactive["success"])
+        self.assertIsNone(interactive["left"])
+        self.assertIsNone(interactive["right"])
+        self.assertEqual(
+            "output_basin_center_not_dark",
+            interactive["side_status"]["right"]["reason"],
+        )
+        self.assertIsNone(interactive["stripe_spacing_px"])
+
+    def test_regular_bilateral_result_is_unchanged(self):
+        result = self._fixed_result(80, 427)
+        interactive = result.report["interactive_result"]
+
+        self.assertTrue(interactive["success"])
+        self.assertTrue(interactive["bilateral_success"])
+        self.assertEqual("B_C04_C05", interactive["left"]["basin_id"])
+        self.assertEqual("B_C06_C07", interactive["right"]["basin_id"])
+        self.assertAlmostEqual(
+            29.764705882352942,
+            interactive["stripe_spacing_px"],
+        )
+
+    def test_result_sequence_has_no_stale_side_or_spacing(self):
+        stage3_results = [
+            available_shadow_result(),
+            self._partial_stage3_result("right"),
+            self._partial_stage3_result("left"),
+            unavailable_shadow_result(),
+        ]
+        expected = [
+            (True, True, True),
+            (True, False, False),
+            (False, True, False),
+            (False, False, False),
+        ]
+
+        for stage3, (has_left, has_right, has_spacing) in zip(
+            stage3_results,
+            expected,
+        ):
+            result = runtime.build_desktop_result(
+                np.zeros((200, 500), dtype=np.uint8),
+                "synthetic.bmp",
+                {"x": 270, "y": 100},
+                bounds(),
+                stage3,
+                Path("/tmp/not-written"),
+            )
+            interactive = result.report["interactive_result"]
+            self.assertEqual(has_left, interactive["left"] is not None)
+            self.assertEqual(has_right, interactive["right"] is not None)
+            self.assertEqual(
+                has_spacing,
+                interactive["stripe_spacing_px"] is not None,
+            )
+            overlay = result.debug_images[runtime.FORMAL_OVERLAY_FILENAME]
+            self.assertEqual(
+                has_left,
+                bool(np.any(np.all(overlay == (255, 0, 0), axis=2))),
+            )
+            self.assertEqual(
+                has_right,
+                bool(np.any(np.all(overlay == (0, 255, 255), axis=2))),
+            )
 
     def test_unavailable_never_exposes_geometry_or_distance(self):
         image = np.zeros((200, 500), dtype=np.uint8)

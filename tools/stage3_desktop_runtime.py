@@ -232,7 +232,9 @@ def _partial_side_geometry(
     debug = stage3_result.get("debug", {})
     if stage3_result.get("unavailable_reason") not in {
         "basin_structure_not_verified",
+        "insufficient_boundary_paths",
         "path_order_conflict",
+        "separator_adjacency_boundary_missing",
         "separator_adjacent_dark_basins_not_verified",
         "reference_separator_basin_safety_conflict",
         "continuous_dark_basins_not_verified",
@@ -273,6 +275,56 @@ def _partial_side_geometry(
             ),
         }
         reference_relation = "inside_basin"
+    elif stage3_result.get("unavailable_reason") == (
+        "insufficient_boundary_paths"
+    ):
+        accepted = [
+            candidate
+            for candidate in separator_result.get("candidates", [])
+            if candidate.get("accepted")
+        ]
+        reference_y_roi = float(separator_result["reference_y_roi"])
+        reference_x_roi = float(separator_result["reference_x_roi"])
+        accepted.sort(
+            key=lambda candidate: (
+                separator._path_x_at_y(  # noqa: SLF001
+                    candidate,
+                    reference_y_roi,
+                ),
+                candidate.get("candidate_id", ""),
+            )
+        )
+        left_ids = [
+            candidate["candidate_id"]
+            for candidate in accepted
+            if separator._path_x_at_y(  # noqa: SLF001
+                candidate,
+                reference_y_roi,
+            )
+            < reference_x_roi
+        ]
+        right_ids = [
+            candidate["candidate_id"]
+            for candidate in accepted
+            if separator._path_x_at_y(  # noqa: SLF001
+                candidate,
+                reference_y_roi,
+            )
+            > reference_x_roi
+        ]
+        side_pairs = {
+            "left": (
+                (left_ids[-2], left_ids[-1])
+                if len(left_ids) >= 2
+                else (None, None)
+            ),
+            "right": (
+                (right_ids[0], right_ids[1])
+                if len(right_ids) >= 2
+                else (None, None)
+            ),
+        }
+        reference_relation = "edge_partial"
     else:
         reference_matches = [
             item
@@ -358,7 +410,13 @@ def _partial_side_geometry(
             side_status[side]["reason"] = "intermediate_dark_basin_present"
             continue
         audit = center_audits.get(side)
-        if audit is not None and not audit.get("accepted"):
+        if audit is None or audit.get("basin_id") != basin.get("basin_id"):
+            audit = _single_basin_center_darkness_audit(
+                side,
+                basin,
+                separator_result.get("reference_y_roi"),
+            )
+        if not audit.get("accepted"):
             side_status[side]["reason"] = "output_basin_center_not_dark"
             continue
 
@@ -400,6 +458,56 @@ def _partial_side_geometry(
             - sides["left"]["center_x_global"]
         )
     return geometry, side_status
+
+
+def _single_basin_center_darkness_audit(
+    side: str,
+    basin: dict,
+    reference_y_roi: float | None,
+) -> dict:
+    """Apply the existing formal center-darkness limit to one output basin."""
+
+    evidence = basin.get("center_darkness_evidence", {})
+    band_centers = basin.get("band_centers_y_roi")
+    excess_by_band = evidence.get(
+        "normalized_center_brightness_excess_by_band"
+    )
+    if (
+        reference_y_roi is None
+        or band_centers is None
+        or excess_by_band is None
+    ):
+        return {
+            "role": side,
+            "basin_id": basin.get("basin_id"),
+            "accepted": False,
+            "reason": "output_basin_center_evidence_missing",
+        }
+
+    centers = np.asarray(band_centers, dtype=np.float64)
+    count = min(joint.DEFAULT_CONFIG.local_reference_band_count, len(centers))
+    local_indices = np.argsort(
+        np.abs(centers - float(reference_y_roi))
+    )[:count]
+    excess = np.asarray(excess_by_band, dtype=np.float64)[local_indices]
+    median_excess = float(np.median(excess))
+    accepted = bool(
+        len(local_indices) == joint.DEFAULT_CONFIG.local_reference_band_count
+        and np.all(np.isfinite(excess))
+        and median_excess
+        <= joint.DEFAULT_CONFIG.local_reference_maximum_center_brightness_excess
+    )
+    return {
+        "role": side,
+        "basin_id": basin.get("basin_id"),
+        "band_indices": sorted(int(value) for value in local_indices),
+        "center_brightness_excess": excess.tolist(),
+        "median_center_brightness_excess": median_excess,
+        "maximum_center_brightness_excess": (
+            joint.DEFAULT_CONFIG.local_reference_maximum_center_brightness_excess
+        ),
+        "accepted": accepted,
+    }
 
 
 def _draw_formal_overlay(

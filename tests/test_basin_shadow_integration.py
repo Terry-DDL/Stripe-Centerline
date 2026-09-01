@@ -75,6 +75,9 @@ def basin(
         "center_x_by_band_roi": [(left_x + right_x) / 2.0] * 3,
         "center_x_at_reference_roi": (left_x + right_x) / 2.0,
         "width_at_reference_px": right_x - left_x,
+        "center_darkness_evidence": {
+            "normalized_center_brightness_excess_by_band": [-0.2] * 3,
+        },
     }
 
 
