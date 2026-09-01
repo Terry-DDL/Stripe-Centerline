@@ -63,6 +63,7 @@ CROSS_IMAGE_EXPERIMENT_ENVIRONMENT_VARIABLE = (
 )
 DEBUG_TRUE_VALUES = {"1", "true", "yes", "on"}
 CROSS_IMAGE_EXPERIMENT_START_DELAY_SECONDS = 0.25
+ANALYSIS_POLL_INTERVAL_MS = 10
 
 
 @dataclass
@@ -1471,7 +1472,7 @@ class StripeDesktopApp:
             daemon=True,
         )
         worker.start()
-        self.root.after(50, self._poll_analysis)
+        self.root.after(ANALYSIS_POLL_INTERVAL_MS, self._poll_analysis)
 
     def _run_analysis_worker(
         self,
@@ -1817,7 +1818,10 @@ class StripeDesktopApp:
             completion = self.analysis_queue.get_nowait()
         except queue.Empty:
             if self.analysis_running:
-                self.root.after(50, self._poll_analysis)
+                self.root.after(
+                    ANALYSIS_POLL_INTERVAL_MS,
+                    self._poll_analysis,
+                )
             return
 
         current_key = (
@@ -1843,7 +1847,10 @@ class StripeDesktopApp:
                     )
                 )
             elif self.analysis_running:
-                self.root.after(50, self._poll_analysis)
+                self.root.after(
+                    ANALYSIS_POLL_INTERVAL_MS,
+                    self._poll_analysis,
+                )
             return
 
         self.analysis_running = False

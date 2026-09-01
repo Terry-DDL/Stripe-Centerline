@@ -1,8 +1,10 @@
 """Tests for desktop UI helpers that do not require opening a window."""
 
 from pathlib import Path
+import queue
 import sys
 import unittest
+from unittest.mock import Mock
 
 import numpy as np
 
@@ -12,8 +14,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from tools.desktop_app import (  # noqa: E402
+    ANALYSIS_POLL_INTERVAL_MS,
     AnalysisCompletion,
     DesktopSelectionState,
+    StripeDesktopApp,
     STAGE3_RESULT_SOURCE,
     basin_table_rows,
     build_output_dir,
@@ -45,6 +49,21 @@ from tools.desktop_app import (  # noqa: E402
 
 
 class DesktopAppHelperTests(unittest.TestCase):
+    def test_running_analysis_poll_is_short_and_event_driven(self):
+        application = StripeDesktopApp.__new__(StripeDesktopApp)
+        application.analysis_queue = queue.Queue()
+        application.analysis_running = True
+        application.root = Mock()
+
+        application._poll_analysis()
+
+        self.assertGreaterEqual(ANALYSIS_POLL_INTERVAL_MS, 5)
+        self.assertLessEqual(ANALYSIS_POLL_INTERVAL_MS, 10)
+        application.root.after.assert_called_once_with(
+            ANALYSIS_POLL_INTERVAL_MS,
+            application._poll_analysis,
+        )
+
     def test_release_debug_switch_is_off_by_default(self):
         self.assertFalse(desktop_debug_enabled(False, ""))
         self.assertFalse(desktop_debug_enabled(False, "0"))
