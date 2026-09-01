@@ -52,7 +52,7 @@ FROZEN_V1_CONFIGURATION_CHECKSUM = (
     "8e28ca014c0abd378908adbaa3a54a1bd8b9281f450f5985a7e460af4733a184"
 )
 FROZEN_CANDIDATE_SOURCE_CHECKSUM = (
-    "5b1b8f71a8b33b2caa432f62c83f42e896eebfa4ee96c4114fa5d329d58aa630"
+    "a2d7313cc24ac3f05559ef049daf6cc845047d80ce58e3ab6ede4f06e218abf3"
 )
 FROZEN_DEVELOPMENT_CANDIDATE_OUTPUT_CHECKSUM = (
     "c48295fdacb145cef76a2062e9457a07b41d94fbc0c6934e54d0483630af9255"
@@ -366,12 +366,36 @@ def _trace_one_seed(
     previous = np.full((band_count, state_count), -1, dtype=int)
     scores[0] = responses[0, states]
 
+    transition_penalty_input_key = (
+        states.dtype.str,
+        states.shape,
+        states.tobytes(),
+        float(config.transition_penalty_per_px),
+    )
+    transition_penalty_vectors = {}
+    for current_x in states:
+        penalty_vector = (
+            config.transition_penalty_per_px
+            * np.abs(states - current_x)
+        )
+        penalty_vector.setflags(write=False)
+        transition_penalty_vectors[
+            (transition_penalty_input_key, int(current_x))
+        ] = penalty_vector
+
     for band_index in range(1, band_count):
         for current_index, current_x in enumerate(states):
+            transition_penalty = transition_penalty_vectors.get(
+                (transition_penalty_input_key, int(current_x))
+            )
+            if transition_penalty is None:
+                transition_penalty = (
+                    config.transition_penalty_per_px
+                    * np.abs(states - current_x)
+                )
             transition_scores = (
                 scores[band_index - 1]
-                - config.transition_penalty_per_px
-                * np.abs(states - current_x)
+                - transition_penalty
             )
             best_previous = int(np.argmax(transition_scores))
             scores[band_index, current_index] = (
